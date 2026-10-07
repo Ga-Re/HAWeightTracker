@@ -10,7 +10,7 @@ Custom Integration, die die Messwerte **einer** Waage automatisch den richtigen 
 3. **Einstellungen → Geräte & Dienste → Integration hinzufügen → „Weight Tracker“**: einen Namen vergeben und den Gewichtssensor der Waage wählen. Das ist der Sensor, der beim Wiegen den neuen Wert bekommt.
 4. In der Seitenleiste **Gewicht → Einstellungen** öffnen und die Personen anlegen. Alles Weitere stellst du dort ein.
 
-Voraussetzung: Home Assistant **2025.3** oder neuer.
+Voraussetzung: Home Assistant **2025.3** oder neuer. Das Integrations-Icon aus dem Ordner `brand/` zeigt Home Assistant erst ab **2026.3** an.
 
 Auf dem Home Assistant muss danach genau diese Struktur liegen. Wichtig ist der Unterordner `frontend`, ohne ihn gibt es kein Panel:
 
@@ -19,6 +19,9 @@ Auf dem Home Assistant muss danach genau diese Struktur liegen. Wichtig ist der 
 ├── __init__.py, access.py, analytics.py, config_flow.py, const.py, detector.py,
 │   entity.py, manager.py, panel.py, sensor.py, services.py, settings.py
 ├── manifest.json, icons.json, services.yaml
+├── brand/
+│   ├── icon.png
+│   └── icon@2x.png
 ├── frontend/
 │   └── weight-tracker-panel.js
 └── translations/

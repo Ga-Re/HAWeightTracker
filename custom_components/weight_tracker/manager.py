@@ -128,6 +128,10 @@ class WeightTrackerManager:
         self._debounce_unsub: CALLBACK_TYPE | None = None
         self._unsubs: list[CALLBACK_TYPE] = []
         self._listeners: list[Callable[[], None]] = []
+        # True between async_setup and async_unload. The config entry state is
+        # not usable for this: it only becomes LOADED after async_setup_entry
+        # returned, i.e. after the update signal was already sent.
+        self.active = False
 
     # ------------------------------------------------------------------ config
 
@@ -170,6 +174,7 @@ class WeightTrackerManager:
             self._last_source = (float(last["weight"]), ts)
         self._recalculate()
         self._update_notification()
+        self.active = True
 
         self._unsubs.append(
             async_track_state_change_event(
@@ -185,6 +190,7 @@ class WeightTrackerManager:
 
     async def async_unload(self) -> None:
         """Stop listening and flush data."""
+        self.active = False
         for unsub in self._unsubs:
             unsub()
         self._unsubs.clear()

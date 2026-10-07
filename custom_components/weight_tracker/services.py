@@ -7,13 +7,13 @@ from typing import TYPE_CHECKING
 import voluptuous as vol
 
 from homeassistant.auth.models import User
-from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ServiceValidationError, Unauthorized
 from homeassistant.helpers import config_validation as cv
 from homeassistant.util import dt as dt_util
 
 from .access import can_manage, is_unrestricted
+from .panel import active_entries
 from .const import (
     DISCARD_OPTION,
     DOMAIN,
@@ -56,11 +56,7 @@ DELETE_SCHEMA = vol.Schema({**_BASE, vol.Optional(ATTR_MEASUREMENT_ID): cv.strin
 
 
 def _manager(hass: HomeAssistant, call: ServiceCall) -> WeightTrackerManager:
-    entries = [
-        entry
-        for entry in hass.config_entries.async_entries(DOMAIN)
-        if entry.state is ConfigEntryState.LOADED
-    ]
+    entries = active_entries(hass)
     if entry_id := call.data.get(ATTR_CONFIG_ENTRY_ID):
         entries = [entry for entry in entries if entry.entry_id == entry_id]
     if not entries:

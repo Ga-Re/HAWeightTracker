@@ -24,7 +24,6 @@ from homeassistant.components import (
     websocket_api,
 )
 from homeassistant.components.http import StaticPathConfig
-from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
@@ -141,11 +140,12 @@ def _jsonable(value: Any) -> Any:
     return value
 
 
-def _loaded_entries(hass: HomeAssistant) -> list[Any]:
+def active_entries(hass: HomeAssistant) -> list[Any]:
+    """Entries whose manager is running (also during the end of a setup)."""
     return [
         entry
         for entry in hass.config_entries.async_entries(DOMAIN)
-        if entry.state is ConfigEntryState.LOADED
+        if getattr(getattr(entry, "runtime_data", None), "active", False)
     ]
 
 
@@ -153,7 +153,7 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
     """All data the panel may show to this user."""
     admin = is_unrestricted(user)
     entries = []
-    for entry in _loaded_entries(hass):
+    for entry in active_entries(hass):
         manager = entry.runtime_data
         persons = []
         visible: set[str] = set()
@@ -404,7 +404,7 @@ def ws_delete_person(
         connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Person not found")
         return
     deleted = 0
-    if entry.state is ConfigEntryState.LOADED:
+    if getattr(getattr(entry, "runtime_data", None), "active", False):
         deleted = entry.runtime_data.async_delete_person_data(msg["person_id"])
     options[CONF_PERSONS] = remaining
     hass.config_entries.async_update_entry(entry, options=options)
