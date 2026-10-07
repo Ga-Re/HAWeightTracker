@@ -47,7 +47,7 @@ Das Panel hat drei Tabs.
 - **Personen:** anlegen, bearbeiten und löschen. Pro Person gibt es Name, Startgewicht, Größe, Zielgewicht, Anwesenheits-Entität, verknüpften HA-Benutzer, wer zusätzlich ansehen darf und ob Sensoren angelegt werden. Beim Löschen einer Person werden auch ihre Messungen gelöscht.
 - **Freigaben:** Tabelle Benutzer × Personen, siehe unten.
 
-Gewichte lassen sich mit Komma oder Punkt eingeben. Speichern lädt die Integration kurz neu, das Panel aktualisiert sich dabei von selbst. Der Knopf *Konfigurieren* unter Geräte & Dienste verweist nur noch auf das Panel.
+Die Formulare nutzen die Eingabefelder von Home Assistant selbst. Waagen-Sensor und Anwesenheit sind durchsuchbare Entitätsauswahlen mit Filter: Gewichtssensoren bzw. nur `person.*`-Entitäten. Speichern lädt die Integration kurz neu, das Panel aktualisiert sich dabei von selbst. Der Knopf *Konfigurieren* unter Geräte & Dienste verweist nur noch auf das Panel.
 
 Das Panel passt sich dem hellen oder dunklen Theme an, funktioniert auf dem Handy und lädt nichts aus dem Internet. Die Daten kommen live über die WebSocket-Verbindung von Home Assistant.
 

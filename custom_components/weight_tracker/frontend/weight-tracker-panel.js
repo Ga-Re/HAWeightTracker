@@ -5,7 +5,6 @@
  */
 
 const DAY = 864e5;
-const DECIMAL_PATTERN = "\\s*[0-9]+([.,][0-9]+)?\\s*";
 
 // Categorical person colors, fixed order (validated for CVD separation).
 const COLORS = {
@@ -93,14 +92,14 @@ const TEXT = {
     scaleHint: "Welcher Sensor liefert das Gewicht, und wie streng wird zugeordnet?",
     name: "Name",
     source: "Gewichtssensor der Waage",
-    minWeight: "Minimales Gewicht (kg)",
+    minWeight: "Minimales Gewicht",
     minWeightHint: "Leichtere Werte (Taschen, Haustiere) werden ignoriert.",
-    maxWeight: "Maximales Gewicht (kg)",
-    tolerance: "Toleranz (kg)",
+    maxWeight: "Maximales Gewicht",
+    tolerance: "Toleranz",
     toleranceHint: "So weit darf eine Messung vom bisherigen Gewicht abweichen. Wächst um 0,15 kg pro Tag ohne Messung.",
-    margin: "Eindeutigkeits-Abstand (kg)",
+    margin: "Eindeutigkeits-Abstand",
     marginHint: "Passen mehrere Personen, muss die nächste um so viel näher liegen – sonst wird nachgefragt.",
-    debounce: "Wartezeit bis Wert stabil (s)",
+    debounce: "Wartezeit bis Wert stabil",
     debounceHint: "Viele Waagen senden Zwischenwerte. Gespeichert wird der Wert, der so lange gleich bleibt.",
     save: "Speichern",
     cancel: "Abbrechen",
@@ -113,14 +112,14 @@ const TEXT = {
     deletePersonConfirm: (name, n) => `Person „${name}“ und ${n === 1 ? "1 Messung" : `alle ${n} Messungen`} endgültig löschen?`,
     noPersonsAdmin: "Noch keine Personen angelegt.",
     toSettings: "Personen anlegen",
-    startWeight: "Startgewicht (kg)",
+    startWeight: "Startgewicht",
     startWeightHint: "Ungefähres aktuelles Gewicht.",
-    height: "Größe (cm)",
+    height: "Größe",
     heightHint: "Optional, für den BMI.",
-    goalWeight: "Zielgewicht (kg)",
+    goalWeight: "Zielgewicht",
     goalWeightHint: "Optional, für Fortschritt und Prognose.",
     presence: "Anwesenheit",
-    presenceHint: "Optional. Ist nur eine passende Person zu Hause, bekommt sie die Messung.",
+    presenceHint: "Optional: die passende Person-Entität. Ist nur eine passende Person zu Hause, bekommt sie die Messung.",
     linkedUser: "Home-Assistant-Benutzer",
     linkedUserHint: "Dieser Benutzer sieht seine Daten und kann eigene Messungen zuordnen, eintragen und löschen.",
     none: "— keine —",
@@ -130,6 +129,8 @@ const TEXT = {
     noOtherUsers: "Keine weiteren Benutzer vorhanden.",
     createSensors: "Sensoren in Home Assistant anlegen",
     count: (n) => (n === 1 ? "1 Messung" : `${n} Messungen`),
+    required: (label) => `Bitte „${label}“ ausfüllen.`,
+    invalidNumber: (label) => `„${label}“ ist keine gültige Zahl.`,
     start: "Start",
     errors: {
       name_exists: "Es gibt bereits eine Person mit diesem Namen.",
@@ -209,14 +210,14 @@ const TEXT = {
     scaleHint: "Which sensor reports the weight, and how strict is the assignment?",
     name: "Name",
     source: "Weight sensor of the scale",
-    minWeight: "Minimum weight (kg)",
+    minWeight: "Minimum weight",
     minWeightHint: "Lighter readings (bags, pets) are ignored.",
-    maxWeight: "Maximum weight (kg)",
-    tolerance: "Tolerance (kg)",
+    maxWeight: "Maximum weight",
+    tolerance: "Tolerance",
     toleranceHint: "How far a reading may differ from the previous weight. Grows by 0.15 kg per day without a measurement.",
-    margin: "Ambiguity margin (kg)",
+    margin: "Ambiguity margin",
     marginHint: "If several persons match, the closest must be this much closer – otherwise you are asked.",
-    debounce: "Wait until stable (s)",
+    debounce: "Wait until stable",
     debounceHint: "Many scales send intermediate values. The value that stays unchanged this long is stored.",
     save: "Save",
     cancel: "Cancel",
@@ -229,14 +230,14 @@ const TEXT = {
     deletePersonConfirm: (name, n) => `Permanently delete “${name}” and ${n === 1 ? "1 measurement" : `all ${n} measurements`}?`,
     noPersonsAdmin: "No persons yet.",
     toSettings: "Add persons",
-    startWeight: "Start weight (kg)",
+    startWeight: "Start weight",
     startWeightHint: "Approximate current weight.",
-    height: "Height (cm)",
+    height: "Height",
     heightHint: "Optional, for the BMI.",
-    goalWeight: "Goal weight (kg)",
+    goalWeight: "Goal weight",
     goalWeightHint: "Optional, for progress and forecast.",
     presence: "Presence",
-    presenceHint: "Optional. If only one matching person is home, they get the measurement.",
+    presenceHint: "Optional: the matching person entity. If only one matching person is home, they get the measurement.",
     linkedUser: "Home Assistant user",
     linkedUserHint: "This user sees their data and can assign, add and delete their own measurements.",
     none: "— none —",
@@ -246,6 +247,8 @@ const TEXT = {
     noOtherUsers: "No other users.",
     createSensors: "Create sensors in Home Assistant",
     count: (n) => (n === 1 ? "1 measurement" : `${n} measurements`),
+    required: (label) => `Please fill in “${label}”.`,
+    invalidNumber: (label) => `“${label}” is not a valid number.`,
     start: "Start",
     errors: {
       name_exists: "A person with this name already exists.",
@@ -311,6 +314,9 @@ const STYLE = `
   .person-row .info b { font-weight: 500; }
   .editor { border: 1px solid var(--wt-border); border-radius: 12px; padding: 16px; margin: 8px 0; }
   .editor h3 { font-size: 15px; font-weight: 500; margin: 0; display: flex; align-items: center; gap: 8px; }
+  .field { min-width: 0; }
+  .field ha-selector { display: block; width: 100%; }
+  .field.wide { grid-column: 1 / -1; }
   .form-error { color: var(--error-color, #db4437); font-size: 13px; margin-top: 8px; }
   .content { max-width: 1200px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
   .card { background: var(--wt-card); border: 1px solid var(--wt-border); border-radius: var(--wt-radius); box-shadow: var(--ha-card-box-shadow, none); padding: 16px; min-width: 0; }
@@ -422,8 +428,10 @@ class WeightTrackerPanel extends HTMLElement {
     this._chartPoints = [];
     this._tab = "overview";
     this._editPerson = null; // person id, "new" or null
-    this._formState = {}; // unsaved form input, survives live updates
+    this._models = {}; // form values, survive live updates while edited
+    this._forms = {}; // field definitions of the forms on screen
     this._dirty = new Set();
+    this._haReady = false;
     this._formErrors = {};
   }
 
@@ -434,6 +442,7 @@ class WeightTrackerPanel extends HTMLElement {
     this._hass = hass;
     if (first) this._init();
     if (this._menuButton) this._menuButton.hass = hass;
+    if (this.shadowRoot) for (const el of this.shadowRoot.querySelectorAll("ha-selector")) el.hass = hass;
     const dark = Boolean(hass.themes && hass.themes.darkMode);
     if (dark !== this._dark) {
       this._dark = dark;
@@ -489,7 +498,6 @@ class WeightTrackerPanel extends HTMLElement {
     root.addEventListener("click", (ev) => this._onClick(ev));
     root.addEventListener("change", (ev) => this._onChange(ev));
     root.addEventListener("submit", (ev) => this._onSubmit(ev));
-    root.addEventListener("input", (ev) => this._markDirty(ev));
     root.addEventListener("pointermove", (ev) => this._onPointer(ev));
     root.addEventListener("pointerleave", () => this._hideHover(), true);
     this._resizeObserver = new ResizeObserver(() => {
@@ -497,6 +505,29 @@ class WeightTrackerPanel extends HTMLElement {
       if (el && Math.abs(el.clientWidth - this._chartWidth) > 2) this._renderChart();
     });
     if (this.isConnected) this._subscribe();
+    this._loadHaComponents();
+  }
+
+  // Home Assistant loads its form components lazily. Loading a card editor
+  // pulls in <ha-selector>; if that fails we fall back to plain HTML fields.
+  async _loadHaComponents() {
+    if (!customElements.get("ha-selector")) {
+      try {
+        if (window.loadCardHelpers) {
+          const helpers = await window.loadCardHelpers();
+          for (const config of [{ type: "tile", entity: "sun.sun" }, { type: "entities", entities: [] }]) {
+            if (customElements.get("ha-selector")) break;
+            const card = await helpers.createCardElement(config);
+            if (card && card.constructor.getConfigElement) await card.constructor.getConfigElement();
+          }
+        }
+      } catch (err) {
+        // ignore, fallback below
+      }
+      await Promise.race([customElements.whenDefined("ha-selector"), new Promise((r) => setTimeout(r, 5000))]);
+    }
+    this._haReady = Boolean(customElements.get("ha-selector"));
+    if (this._haReady && this._data) this._render();
   }
 
   async _subscribe() {
@@ -615,7 +646,7 @@ class WeightTrackerPanel extends HTMLElement {
       return;
     }
 
-    this._captureForms();
+    this._forms = {};
     if (this._tab === "settings") {
       this._content(this._renderSettings());
     } else if (!this._entry.persons.length) {
@@ -640,7 +671,7 @@ class WeightTrackerPanel extends HTMLElement {
         </div>
         ${this._renderMonthly()}`);
     }
-    this._restoreForms();
+    this._mountFields();
     this._resizeObserver.disconnect();
     const chart = this.shadowRoot.getElementById("chart");
     if (chart) {
@@ -842,52 +873,187 @@ class WeightTrackerPanel extends HTMLElement {
     return `${this._renderScaleSettings()}${this._renderPersonsSettings()}${this._entry.persons.length ? this._renderAccess() : ""}`;
   }
 
-  _field(label, input, hint = "", wide = false) {
-    return `<label class="${wide ? "wide" : ""}">${esc(label)}${input}${hint ? `<span class="hint">${esc(hint)}</span>` : ""}</label>`;
+  // ---------------------------------------------------------------- forms
+
+  // Field definition: { name, label, helper, required, wide, kind, selector, ... }
+  _def(kind, name, label, opts = {}) {
+    const def = { kind, name, label, ...opts };
+    if (kind === "text") def.selector = { text: {} };
+    if (kind === "number") {
+      def.selector = { number: { min: opts.min ?? 0, max: opts.max ?? 500, step: opts.step ?? 0.1, mode: "box", unit_of_measurement: opts.unit } };
+    }
+    if (kind === "entity") def.selector = { entity: { filter: opts.filter } };
+    if (kind === "select") def.selector = { select: { options: opts.options, mode: "dropdown" } };
+    if (kind === "multi") def.selector = { select: { options: opts.options, multiple: true, mode: "list" } };
+    if (kind === "boolean") def.selector = { boolean: {} };
+    if (kind === "datetime") def.selector = { datetime: {} };
+    return def;
   }
 
-  _num(name, value, { step = 0.1, min = 0, max = 500, required = false } = {}) {
-    const v = value === null || value === undefined ? "" : value;
-    // Text input instead of type=number: accepts "75,5" and "75.5" in every browser (incl. iOS).
-    const shown = v === "" ? "" : this._kg(Number(v), { unit: false, digits: step >= 1 ? 0 : 1 }).replace("−", "-");
-    return `<input name="${name}" type="text" inputmode="decimal" autocomplete="off" pattern="${DECIMAL_PATTERN}" value="${esc(shown)}" ${required ? "required" : ""}>`;
+  // Register a form for this render and return the placeholders for its fields.
+  _formFields(formId, fields, defaults) {
+    if (!this._dirty.has(formId) || !this._models[formId]) this._models[formId] = { ...defaults };
+    this._forms[formId] = fields;
+    return `<div class="fields">${fields.map((f) => `<div class="field ${f.wide ? "wide" : ""}" data-form="${esc(formId)}" data-field="${esc(f.name)}"></div>`).join("")}</div>
+      ${this._formErrors[formId] ? `<div class="form-error" role="alert">${esc(this._formErrors[formId])}</div>` : ""}`;
   }
 
-  _entityOptions(predicate, current, emptyLabel) {
-    const states = Object.values(this._hass.states || {}).filter(predicate);
-    if (current && !states.some((st) => st.entity_id === current)) states.push({ entity_id: current, attributes: {} });
-    states.sort((a, b) => (a.attributes.friendly_name || a.entity_id).localeCompare(b.attributes.friendly_name || b.entity_id));
-    const empty = emptyLabel !== undefined ? `<option value="">${esc(emptyLabel)}</option>` : "";
-    return empty + states.map((st) => {
-      const name = st.attributes.friendly_name || st.entity_id;
-      const unit = st.attributes.unit_of_measurement;
-      const value = st.state !== undefined && unit ? ` – ${st.state} ${unit}` : "";
-      return `<option value="${esc(st.entity_id)}" ${st.entity_id === current ? "selected" : ""}>${esc(`${name} (${st.entity_id})${value}`)}</option>`;
-    }).join("");
+  _mountFields() {
+    for (const host of this.shadowRoot.querySelectorAll(".field[data-field]")) {
+      const formId = host.dataset.form;
+      const def = (this._forms[formId] || []).find((f) => f.name === host.dataset.field);
+      if (!def) continue;
+      const value = this._models[formId][def.name];
+      host.appendChild(this._haReady ? this._haField(formId, def, value) : this._nativeField(formId, def, value));
+    }
+  }
+
+  _setValue(formId, def, value) {
+    this._models[formId][def.name] = value;
+    this._dirty.add(formId);
+    if (def.onChange) def.onChange(value);
+  }
+
+  _haField(formId, def, value) {
+    const el = document.createElement("ha-selector");
+    el.hass = this._hass;
+    el.selector = def.selector;
+    el.label = def.label;
+    if (def.helper) el.helper = def.helper;
+    el.required = Boolean(def.required);
+    el.value = value === null ? undefined : value;
+    el.addEventListener("value-changed", (ev) => {
+      ev.stopPropagation();
+      this._setValue(formId, def, ev.detail.value);
+    });
+    return el;
+  }
+
+  _entityMatches(st, filter) {
+    const filters = Array.isArray(filter) ? filter : [filter || {}];
+    const domain = st.entity_id.split(".")[0];
+    return filters.some((f) => {
+      const domains = f.domain ? [].concat(f.domain) : null;
+      const classes = f.device_class ? [].concat(f.device_class) : null;
+      return (!domains || domains.includes(domain)) && (!classes || classes.includes(st.attributes.device_class));
+    });
+  }
+
+  // Plain HTML fallback with the same behavior.
+  _nativeField(formId, def, value) {
+    const t = this._t;
+    const wrap = document.createElement("label");
+    const helper = def.helper ? `<span class="hint">${esc(def.helper)}</span>` : "";
+    const label = `${esc(def.label)}${def.required ? " *" : ""}`;
+    const set = (v) => this._setValue(formId, def, v);
+    if (def.kind === "boolean") {
+      wrap.className = "check";
+      wrap.innerHTML = `<input type="checkbox" ${value ? "checked" : ""}>${label}`;
+      wrap.querySelector("input").addEventListener("change", (ev) => set(ev.target.checked));
+      if (!def.helper) return wrap;
+      const box = document.createElement("div");
+      box.append(wrap);
+      box.insertAdjacentHTML("beforeend", `<div class="hint" style="margin-top:4px">${esc(def.helper)}</div>`);
+      return box;
+    }
+    if (def.kind === "multi") {
+      const box = document.createElement("div");
+      const selected = value || [];
+      box.innerHTML = `<div class="hint" style="margin-bottom:6px">${label}</div>
+        <div class="checks">${def.options.length ? def.options.map((o) => `<label class="check"><input type="checkbox" value="${esc(o.value)}" ${selected.includes(o.value) ? "checked" : ""}>${esc(o.label)}</label>`).join("") : `<span class="hint">${esc(t.noOtherUsers)}</span>`}</div>${helper}`;
+      box.addEventListener("change", () => set([...box.querySelectorAll("input:checked")].map((i) => i.value)));
+      return box;
+    }
+    let control;
+    if (def.kind === "entity" || def.kind === "select") {
+      let options = def.options;
+      if (def.kind === "entity") {
+        const states = Object.values(this._hass.states || {}).filter((st) => this._entityMatches(st, def.filter));
+        if (value && !states.some((st) => st.entity_id === value)) states.push({ entity_id: value, attributes: {} });
+        options = states
+          .map((st) => ({ value: st.entity_id, label: `${st.attributes.friendly_name || st.entity_id} (${st.entity_id})` }))
+          .sort((a, b) => a.label.localeCompare(b.label));
+      }
+      control = `<select>${def.required ? "" : `<option value="">${esc(t.none)}</option>`}${options.map((o) => `<option value="${esc(o.value)}" ${o.value === value ? "selected" : ""}>${esc(o.label)}</option>`).join("")}</select>`;
+    } else if (def.kind === "number") {
+      // text instead of type=number: accepts "75,5" and "75.5" in every browser
+      const shown = value === null || value === undefined ? "" : String(value).replace(".", this._lang.startsWith("de") ? "," : ".");
+      control = `<input type="text" inputmode="decimal" autocomplete="off" value="${esc(shown)}">`;
+    } else if (def.kind === "datetime") {
+      control = `<input type="datetime-local" value="${esc(String(value || "").replace(" ", "T").slice(0, 16))}">`;
+    } else {
+      control = `<input type="text" value="${esc(value ?? "")}">`;
+    }
+    wrap.innerHTML = `${label}${def.unit ? ` (${esc(def.unit)})` : ""}${control}${helper}`;
+    const input = wrap.querySelector("input, select");
+    input.addEventListener(input.tagName === "SELECT" ? "change" : "input", () => {
+      const raw = input.value;
+      if (def.kind === "number") {
+        const text = raw.trim().replace(",", ".");
+        set(text === "" ? null : /^-?\d+(\.\d+)?$/.test(text) ? parseFloat(text) : NaN);
+      } else if (def.kind === "datetime") {
+        set(raw ? `${raw.replace("T", " ")}:00`.slice(0, 19) : null);
+      } else {
+        set(raw === "" && def.kind !== "text" ? null : raw);
+      }
+    });
+    return wrap;
+  }
+
+  _validate(formId) {
+    const t = this._t;
+    const model = this._models[formId];
+    for (const def of this._forms[formId] || []) {
+      const value = model[def.name];
+      const empty = value === null || value === undefined || value === "" || (typeof value === "string" && !value.trim());
+      if (def.required && empty) return t.required(def.label);
+      if (def.kind === "number" && !empty && Number.isNaN(Number(value))) return t.invalidNumber(def.label);
+    }
+    return null;
+  }
+
+  _formActions(formId, extra = "") {
+    return `<div class="actions"><button class="btn primary" type="button" data-action="save-form" data-form="${esc(formId)}">${esc(this._t.save)}</button>${extra}</div>`;
+  }
+
+  _nowString() {
+    const pad = (n) => String(n).padStart(2, "0");
+    const d = new Date();
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+  }
+
+  _renderSettings() {
+    return `${this._renderScaleSettings()}${this._renderPersonsSettings()}${this._entry.persons.length ? this._renderAccess() : ""}`;
   }
 
   _renderScaleSettings() {
     const t = this._t;
     const cfg = this._entry.settings || {};
-    const units = ["kg", "g", "lb", "lbs", "st", "oz"];
-    const isWeight = (st) => st.entity_id.startsWith("sensor.") && (units.includes(st.attributes.unit_of_measurement) || st.attributes.device_class === "weight");
+    const states = Object.values(this._hass.states || {});
+    const current = this._hass.states && this._hass.states[cfg.source_entity];
+    const hasWeightSensors = states.some((st) => st.entity_id.startsWith("sensor.") && st.attributes.device_class === "weight");
+    // Prefer real weight sensors; show all sensors if the scale lacks a device class.
+    const filter = hasWeightSensors && (!current || current.attributes.device_class === "weight")
+      ? { domain: "sensor", device_class: "weight" }
+      : { domain: "sensor" };
+    const fields = [
+      this._def("text", "name", t.name, { required: true }),
+      this._def("entity", "source_entity", t.source, { required: true, filter }),
+      this._def("number", "min_weight", t.minWeight, { required: true, min: 1, max: 300, step: 0.5, unit: "kg", helper: t.minWeightHint }),
+      this._def("number", "max_weight", t.maxWeight, { required: true, min: 1, max: 500, step: 0.5, unit: "kg" }),
+      this._def("number", "tolerance", t.tolerance, { required: true, min: 0.5, max: 20, step: 0.1, unit: "kg", helper: t.toleranceHint }),
+      this._def("number", "ambiguity_margin", t.margin, { required: true, min: 0.1, max: 10, step: 0.1, unit: "kg", helper: t.marginHint }),
+      this._def("number", "debounce_seconds", t.debounce, { required: true, min: 0, max: 120, step: 1, unit: "s", helper: t.debounceHint }),
+    ];
+    const defaults = { name: this._entry.title, ...cfg };
     return `
       <div class="card">
         <h2>⚖️ ${esc(t.scale)}</h2>
         <div class="hint" style="margin-top:4px">${esc(t.scaleHint)}</div>
-        <form class="form" id="settings-form">
-          <div class="fields">
-            ${this._field(t.name, `<input name="name" type="text" maxlength="50" required value="${esc(this._entry.title)}">`)}
-            ${this._field(t.source, `<select name="source_entity" required>${this._entityOptions(isWeight, cfg.source_entity)}</select>`)}
-            ${this._field(t.minWeight, this._num("min_weight", cfg.min_weight, { step: 0.5, min: 1, max: 300, required: true }), t.minWeightHint)}
-            ${this._field(t.maxWeight, this._num("max_weight", cfg.max_weight, { step: 0.5, min: 1, max: 500, required: true }))}
-            ${this._field(t.tolerance, this._num("tolerance", cfg.tolerance, { min: 0.5, max: 20, required: true }), t.toleranceHint)}
-            ${this._field(t.margin, this._num("ambiguity_margin", cfg.ambiguity_margin, { min: 0.1, max: 10, required: true }), t.marginHint)}
-            ${this._field(t.debounce, this._num("debounce_seconds", cfg.debounce_seconds, { step: 1, min: 0, max: 120, required: true }), t.debounceHint)}
-          </div>
-          ${this._formErrors["settings-form"] ? `<div class="form-error">${esc(this._formErrors["settings-form"])}</div>` : ""}
-          <div class="actions"><button class="btn primary" type="submit">${esc(t.save)}</button></div>
-        </form>
+        <div class="form" id="settings-form">
+          ${this._formFields("settings-form", fields, defaults)}
+          ${this._formActions("settings-form")}
+        </div>
       </div>`;
   }
 
@@ -924,40 +1090,55 @@ class WeightTrackerPanel extends HTMLElement {
 
   _renderPersonEditor(person) {
     const t = this._t;
-    const p = person || { viewers: [] };
+    const p = person || {};
     const id = person ? person.id : "new";
     const formId = `person-form-${id}`;
     const users = this._data.users || [];
-    const isPresence = (st) => st.entity_id.startsWith("person.") || st.entity_id.startsWith("device_tracker.");
-    const viewerUsers = users.filter((u) => !u.is_admin && u.id !== p.user_id);
-    const counts = this._entry.measurements.filter((m) => m.person_id === id).length;
+    const defaults = {
+      name: p.name || "",
+      start_weight: p.start_weight ?? null,
+      height: p.height ?? null,
+      goal_weight: p.goal ?? null,
+      person_entity: p.person_entity || null,
+      user_id: p.user_id || null,
+      viewers: p.viewers || [],
+      create_sensors: Boolean(p.create_sensors),
+    };
+    // Build the model first so the viewer list can exclude the chosen user.
+    if (!this._dirty.has(formId) || !this._models[formId]) this._models[formId] = { ...defaults };
+    const owner = this._models[formId].user_id;
+    const viewerOptions = users
+      .filter((u) => !u.is_admin && u.id !== owner)
+      .map((u) => ({ value: u.id, label: u.name }));
+    const fields = [
+      this._def("text", "name", t.name, { required: true }),
+      this._def("number", "start_weight", t.startWeight, { required: true, min: 1, max: 300, step: 0.1, unit: "kg", helper: t.startWeightHint }),
+      this._def("number", "height", t.height, { min: 50, max: 250, step: 1, unit: "cm", helper: t.heightHint }),
+      this._def("number", "goal_weight", t.goalWeight, { min: 1, max: 300, step: 0.1, unit: "kg", helper: t.goalWeightHint }),
+      this._def("entity", "person_entity", t.presence, { filter: { domain: "person" }, helper: t.presenceHint }),
+      this._def("select", "user_id", t.linkedUser, {
+        options: users.map((u) => ({ value: u.id, label: u.is_admin ? `${u.name} (${t.admin})` : u.name })),
+        helper: t.linkedUserHint,
+        onChange: (value) => {
+          const model = this._models[formId];
+          model.viewers = (model.viewers || []).filter((v) => v !== value);
+          this._render(); // refresh the viewer list
+        },
+      }),
+      this._def("multi", "viewers", t.viewers, { options: viewerOptions, helper: t.viewersHint, wide: true }),
+      this._def("boolean", "create_sensors", t.createSensors, { helper: t.sensorsHint, wide: true }),
+    ];
+    const count = this._entry.measurements.filter((m) => m.person_id === id).length;
+    const extra = `
+      <button class="btn" type="button" data-action="cancel-edit" data-form="${esc(formId)}">${esc(t.cancel)}</button>
+      <span class="spacer"></span>
+      ${person ? `<button class="btn danger" type="button" data-action="delete-person" data-person="${esc(id)}" data-count="${count}">${esc(t.deletePerson)}</button>` : ""}`;
     return `
-      <form class="form editor" id="${esc(formId)}" data-person="${esc(id)}">
+      <div class="form editor" id="${esc(formId)}" data-person="${esc(id)}">
         <h3>${person ? `<span class="dot" style="background:${this._color(p.color_index)}"></span>${esc(p.name)}` : esc(t.newPerson)}</h3>
-        <div class="fields">
-          ${this._field(t.name, `<input name="name" type="text" maxlength="50" required value="${esc(p.name || "")}">`)}
-          ${this._field(t.startWeight, this._num("start_weight", p.start_weight, { min: 1, max: 300, required: true }), t.startWeightHint)}
-          ${this._field(t.height, this._num("height", p.height, { step: 1, min: 50, max: 250 }), t.heightHint)}
-          ${this._field(t.goalWeight, this._num("goal_weight", p.goal, { min: 1, max: 300 }), t.goalWeightHint)}
-          ${this._field(t.presence, `<select name="person_entity">${this._entityOptions(isPresence, p.person_entity, t.none)}</select>`, t.presenceHint)}
-          ${this._field(t.linkedUser, `<select name="user_id"><option value="">${esc(t.noUser)}</option>${users.map((u) => `<option value="${esc(u.id)}" ${p.user_id === u.id ? "selected" : ""}>${esc(u.name)}${u.is_admin ? ` (${esc(t.admin)})` : ""}</option>`).join("")}</select>`, t.linkedUserHint)}
-          <div class="wide">
-            <div class="hint" style="margin-bottom:6px">${esc(t.viewers)} – ${esc(t.viewersHint)}</div>
-            <div class="checks">${viewerUsers.length ? viewerUsers.map((u) => `<label class="check"><input type="checkbox" name="viewers" value="${esc(u.id)}" ${(p.viewers || []).includes(u.id) ? "checked" : ""}>${esc(u.name)}</label>`).join("") : `<span class="hint">${esc(t.noOtherUsers)}</span>`}</div>
-          </div>
-          <div class="wide">
-            <label class="check"><input type="checkbox" name="create_sensors" value="1" ${p.create_sensors ? "checked" : ""}>${esc(t.createSensors)}</label>
-            <div class="hint" style="margin-top:4px">${esc(t.sensorsHint)}</div>
-          </div>
-        </div>
-        ${this._formErrors[formId] ? `<div class="form-error">${esc(this._formErrors[formId])}</div>` : ""}
-        <div class="actions">
-          <button class="btn primary" type="submit">${esc(t.save)}</button>
-          <button class="btn" type="button" data-action="cancel-edit" data-form="${esc(formId)}">${esc(t.cancel)}</button>
-          <span class="spacer"></span>
-          ${person ? `<button class="btn danger" type="button" data-action="delete-person" data-person="${esc(id)}" data-count="${counts}">${esc(t.deletePerson)}</button>` : ""}
-        </div>
-      </form>`;
+        ${this._formFields(formId, fields, defaults)}
+        ${this._formActions(formId, extra)}
+      </div>`;
   }
 
   async _ws(message) {
@@ -970,62 +1151,65 @@ class WeightTrackerPanel extends HTMLElement {
   }
 
   _clearForm(formId) {
-    delete this._formState[formId];
+    delete this._models[formId];
     delete this._formErrors[formId];
     this._dirty.delete(formId);
   }
 
-  async _saveSettings(form) {
-    const data = new FormData(form);
-    const num = (key) => parseFloat(String(data.get(key)).replace(",", "."));
-    try {
-      await this._ws({
-        type: "weight_tracker/update_settings",
-        settings: {
-          name: String(data.get("name") || "").trim(),
-          source_entity: data.get("source_entity"),
-          min_weight: num("min_weight"),
-          max_weight: num("max_weight"),
-          tolerance: num("tolerance"),
-          ambiguity_margin: num("ambiguity_margin"),
-          debounce_seconds: Math.round(num("debounce_seconds")),
-        },
-      });
-      this._clearForm(form.id);
-      this._toast(this._t.saved);
-    } catch (err) {
-      this._formErrors[form.id] = this._errorText(err);
+  async _saveForm(formId) {
+    const error = this._validate(formId);
+    if (error) {
+      this._formErrors[formId] = error;
+      this._render();
+      return;
     }
-    this._render();
-  }
-
-  async _savePerson(form) {
-    const data = new FormData(form);
-    const optNum = (key) => {
-      const raw = String(data.get(key) || "").replace(",", ".").trim();
-      return raw ? parseFloat(raw) : null;
-    };
-    const id = form.dataset.person;
+    delete this._formErrors[formId];
+    const m = this._models[formId];
     try {
-      await this._ws({
-        type: "weight_tracker/save_person",
-        person: {
-          person_id: id === "new" ? null : id,
-          name: String(data.get("name") || "").trim(),
-          start_weight: optNum("start_weight"),
-          height: optNum("height"),
-          goal_weight: optNum("goal_weight"),
-          person_entity: data.get("person_entity") || null,
-          user_id: data.get("user_id") || null,
-          viewers: data.getAll("viewers"),
-          create_sensors: data.get("create_sensors") === "1",
-        },
-      });
-      this._clearForm(form.id);
-      this._editPerson = null;
-      this._toast(this._t.saved);
+      if (formId === "settings-form") {
+        await this._ws({
+          type: "weight_tracker/update_settings",
+          settings: {
+            name: String(m.name).trim(),
+            source_entity: m.source_entity,
+            min_weight: Number(m.min_weight),
+            max_weight: Number(m.max_weight),
+            tolerance: Number(m.tolerance),
+            ambiguity_margin: Number(m.ambiguity_margin),
+            debounce_seconds: Math.round(Number(m.debounce_seconds)),
+          },
+        });
+        this._toast(this._t.saved);
+      } else if (formId.startsWith("person-form-")) {
+        const id = formId.slice("person-form-".length);
+        const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v));
+        await this._ws({
+          type: "weight_tracker/save_person",
+          person: {
+            person_id: id === "new" ? null : id,
+            name: String(m.name).trim(),
+            start_weight: num(m.start_weight),
+            height: num(m.height),
+            goal_weight: num(m.goal_weight),
+            person_entity: m.person_entity || null,
+            user_id: m.user_id || null,
+            viewers: m.viewers || [],
+            create_sensors: Boolean(m.create_sensors),
+          },
+        });
+        this._editPerson = null;
+        this._toast(this._t.saved);
+      } else if (formId === "add-form") {
+        await this._hass.callService("weight_tracker", "add_measurement", {
+          config_entry_id: this._entry.entry_id,
+          person: m.person,
+          weight: Number(m.weight),
+          ...(m.ts ? { timestamp: m.ts } : {}),
+        });
+      }
+      this._clearForm(formId);
     } catch (err) {
-      this._formErrors[form.id] = this._errorText(err);
+      this._formErrors[formId] = this._errorText(err);
     }
     this._render();
   }
@@ -1045,45 +1229,6 @@ class WeightTrackerPanel extends HTMLElement {
     this._render();
   }
 
-  // Keep unsaved input when live updates re-render the page.
-  _markDirty(ev) {
-    const form = ev.composedPath().find((n) => n.tagName === "FORM");
-    if (form && form.id) this._dirty.add(form.id);
-  }
-
-  _captureForms() {
-    for (const id of this._dirty) {
-      const form = this.shadowRoot.getElementById(id);
-      if (!form) continue;
-      this._formState[id] = [...form.elements]
-        .filter((el) => el.name)
-        .map((el) => ({ name: el.name, value: el.value, checked: el.checked, type: el.type }));
-    }
-  }
-
-  _restoreForms() {
-    for (const [id, fields] of Object.entries(this._formState)) {
-      const form = this.shadowRoot.getElementById(id);
-      if (!form) continue;
-      for (const el of form.elements) {
-        if (!el.name) continue;
-        if (el.type === "checkbox" || el.type === "radio") {
-          const field = fields.find((f) => f.name === el.name && f.value === el.value);
-          if (field) el.checked = field.checked;
-        } else {
-          const field = fields.find((f) => f.name === el.name);
-          if (field) el.value = field.value;
-        }
-      }
-    }
-    const add = this.shadowRoot.getElementById("add-form");
-    if (add && !add.ts.value) {
-      const pad = (n) => String(n).padStart(2, "0");
-      const d = new Date();
-      add.ts.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    }
-  }
-
   async _setAccess(personId, changes) {
     try {
       await this._hass.callWS({ type: "weight_tracker/set_access", entry_id: this._entry.entry_id, person_id: personId, ...changes });
@@ -1096,17 +1241,19 @@ class WeightTrackerPanel extends HTMLElement {
 
   _renderAddForm() {
     const t = this._t;
+    const own = this._entry.persons.filter((p) => p.can_manage);
+    const fields = [
+      this._def("select", "person", t.person, { required: true, options: own.map((p) => ({ value: p.id, label: p.name })) }),
+      this._def("number", "weight", t.weight, { required: true, min: 1, max: 500, step: 0.1, unit: "kg" }),
+      this._def("datetime", "ts", t.date, { required: true }),
+    ];
+    const defaults = { person: (own.find((p) => p.is_me) || own[0] || {}).id, weight: null, ts: this._nowString() };
     return `
       <h2>${esc(t.add)}</h2>
-      <form class="form" id="add-form">
-        <label>${esc(t.person)}
-          <select name="person" required>${this._entry.persons.filter((p) => p.can_manage).map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("")}</select></label>
-        <label>${esc(t.weight)} (kg)
-          <input name="weight" type="text" inputmode="decimal" autocomplete="off" pattern="${DECIMAL_PATTERN}" required></label>
-        <label>${esc(t.date)}
-          <input name="ts" type="datetime-local" required></label>
-        <button class="btn primary" type="submit">${esc(t.addButton)}</button>
-      </form>`;
+      <div class="form" id="add-form">
+        ${this._formFields("add-form", fields, defaults)}
+        <div class="actions"><button class="btn primary" type="button" data-action="save-form" data-form="add-form">${esc(t.addButton)}</button></div>
+      </div>`;
   }
 
   _renderMonthly() {
@@ -1331,7 +1478,9 @@ class WeightTrackerPanel extends HTMLElement {
     const el = ev.composedPath().find((n) => n.dataset && n.dataset.action);
     if (!el || el.tagName === "SELECT") return;
     const { action } = el.dataset;
-    if (action === "tab") {
+    if (action === "save-form") {
+      this._saveForm(el.dataset.form);
+    } else if (action === "tab") {
       this._tab = el.dataset.tab;
       this._render();
       this.shadowRoot.querySelector(".scroller").scrollTop = 0;
@@ -1339,10 +1488,7 @@ class WeightTrackerPanel extends HTMLElement {
       this._editPerson = el.dataset.person;
       this._render();
       const form = this.shadowRoot.getElementById(`person-form-${el.dataset.person}`);
-      if (form) {
-        form.scrollIntoView({ block: "nearest", behavior: "smooth" });
-        form.querySelector("input[name=name]").focus({ preventScroll: true });
-      }
+      if (form) form.scrollIntoView({ block: "nearest", behavior: "smooth" });
     } else if (action === "cancel-edit") {
       this._clearForm(el.dataset.form);
       this._editPerson = null;
@@ -1377,7 +1523,6 @@ class WeightTrackerPanel extends HTMLElement {
   }
 
   _onChange(ev) {
-    this._markDirty(ev);
     const el = ev.composedPath()[0];
     if (!el.dataset) return;
     if (el.dataset.action === "reassign" && el.value) {
@@ -1401,23 +1546,8 @@ class WeightTrackerPanel extends HTMLElement {
     }
   }
 
-  async _onSubmit(ev) {
+  _onSubmit(ev) {
     ev.preventDefault();
-    const form = ev.composedPath()[0];
-    if (form.id === "settings-form") return this._saveSettings(form);
-    if (form.id && form.id.startsWith("person-form-")) return this._savePerson(form);
-    if (form.id !== "add-form") return;
-    const data = new FormData(form);
-    const weight = parseFloat(String(data.get("weight")).replace(",", "."));
-    if (!weight) return;
-    const ts = String(data.get("ts") || "");
-    await this._call("add_measurement", {
-      person: data.get("person"),
-      weight,
-      ...(ts ? { timestamp: `${ts.replace("T", " ")}:00`.slice(0, 19) } : {}),
-    });
-    this._clearForm("add-form");
-    this._render();
   }
 
 }
