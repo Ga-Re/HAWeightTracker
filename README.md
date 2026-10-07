@@ -169,3 +169,7 @@ Seit Version 1.2.0 meldet die Integration eine fehlende Datei selbst als Benachr
 
 - Meldet die Waage zweimal hintereinander **exakt** denselben Wert, löst Home Assistant keine Zustandsänderung aus. Die zweite Messung wird dann nicht erfasst.
 - Wiegt ihr ungefähr gleich viel (weniger als ~1 kg Unterschied), entscheidet nur die Anwesenheit. Ohne `person.*`-Entität fragt die Integration nach.
+
+## Lizenz
+
+[MIT](LICENSE)
