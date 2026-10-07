@@ -1,0 +1,50 @@
+assign_measurement:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: weight_tracker
+    measurement_id:
+      example: "3f9a1c2b7d4e"
+      selector:
+        text:
+    person:
+      required: true
+      example: "Anna"
+      selector:
+        text:
+
+add_measurement:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: weight_tracker
+    person:
+      required: true
+      example: "Anna"
+      selector:
+        text:
+    weight:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 500
+          step: 0.1
+          unit_of_measurement: kg
+          mode: box
+    timestamp:
+      selector:
+        datetime:
+
+delete_measurement:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: weight_tracker
+    measurement_id:
+      example: "3f9a1c2b7d4e"
+      selector:
+        text:

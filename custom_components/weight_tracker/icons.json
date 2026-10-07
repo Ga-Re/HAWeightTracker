@@ -1,0 +1,53 @@
+{
+  "entity": {
+    "sensor": {
+      "weight": {
+        "default": "mdi:scale-bathroom"
+      },
+      "trend": {
+        "default": "mdi:chart-bell-curve-cumulative"
+      },
+      "change_last": {
+        "default": "mdi:swap-vertical"
+      },
+      "change_7d": {
+        "default": "mdi:calendar-week"
+      },
+      "change_30d": {
+        "default": "mdi:calendar-month"
+      },
+      "change_total": {
+        "default": "mdi:delta"
+      },
+      "rate": {
+        "default": "mdi:speedometer"
+      },
+      "bmi": {
+        "default": "mdi:human"
+      },
+      "goal_distance": {
+        "default": "mdi:flag-checkered"
+      },
+      "goal_eta": {
+        "default": "mdi:calendar-check"
+      },
+      "last_measured": {
+        "default": "mdi:clock-check-outline"
+      },
+      "pending": {
+        "default": "mdi:account-question"
+      }
+    }
+  },
+  "services": {
+    "assign_measurement": {
+      "service": "mdi:account-switch"
+    },
+    "add_measurement": {
+      "service": "mdi:plus-circle-outline"
+    },
+    "delete_measurement": {
+      "service": "mdi:delete-outline"
+    }
+  }
+}

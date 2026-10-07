@@ -1,0 +1,118 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add scale",
+        "description": "Choose the sensor your scale reports the weight with. Persons, detection and access are configured afterwards in the **Weight** sidebar panel (tab “Settings”).",
+        "data": {
+          "name": "Name",
+          "source_entity": "Weight sensor of the scale"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This sensor is already in use."
+    }
+  },
+  "options": {
+    "abort": {
+      "use_panel": "All settings, persons and access rights are in the **Weight** sidebar panel, tab **Settings**."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "weight": {
+        "name": "Weight"
+      },
+      "trend": {
+        "name": "Trend weight"
+      },
+      "change_last": {
+        "name": "Change since last measurement"
+      },
+      "change_7d": {
+        "name": "Change 7 days"
+      },
+      "change_30d": {
+        "name": "Change 30 days"
+      },
+      "change_total": {
+        "name": "Total change"
+      },
+      "rate": {
+        "name": "Rate per week"
+      },
+      "bmi": {
+        "name": "BMI"
+      },
+      "goal_distance": {
+        "name": "Distance to goal"
+      },
+      "goal_eta": {
+        "name": "Goal expected"
+      },
+      "last_measured": {
+        "name": "Last measurement"
+      },
+      "pending": {
+        "name": "Pending measurements"
+      }
+    }
+  },
+  "services": {
+    "assign_measurement": {
+      "name": "Assign measurement",
+      "description": "Assigns a measurement to a person. \"discard\" discards it, \"pending\" makes it pending again. Non-admins may only change their own measurements.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Scale",
+          "description": "Only needed with several scales."
+        },
+        "measurement_id": {
+          "name": "Measurement ID",
+          "description": "Empty = newest measurement."
+        },
+        "person": {
+          "name": "Person",
+          "description": "Name of the person, \"discard\" or \"pending\"."
+        }
+      }
+    },
+    "add_measurement": {
+      "name": "Add measurement",
+      "description": "Adds a weight manually (e.g. to import old data).",
+      "fields": {
+        "config_entry_id": {
+          "name": "Scale",
+          "description": "Only needed with several scales."
+        },
+        "person": {
+          "name": "Person",
+          "description": "Name of the person."
+        },
+        "weight": {
+          "name": "Weight",
+          "description": "Weight in kg."
+        },
+        "timestamp": {
+          "name": "Time",
+          "description": "Empty = now."
+        }
+      }
+    },
+    "delete_measurement": {
+      "name": "Delete measurement",
+      "description": "Deletes a measurement permanently.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Scale",
+          "description": "Only needed with several scales."
+        },
+        "measurement_id": {
+          "name": "Measurement ID",
+          "description": "Empty = newest measurement."
+        }
+      }
+    }
+  }
+}

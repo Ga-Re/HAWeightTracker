@@ -1,0 +1,20 @@
+{
+  "domain": "weight_tracker",
+  "name": "Weight Tracker",
+  "codeowners": [
+    "@Ga-Re"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "frontend",
+    "http",
+    "panel_custom",
+    "websocket_api"
+  ],
+  "documentation": "https://github.com/Ga-Re/HAWeightTracker",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/Ga-Re/HAWeightTracker/issues",
+  "requirements": [],
+  "version": "1.3.0"
+}

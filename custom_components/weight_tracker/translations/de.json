@@ -1,0 +1,118 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Waage hinzufügen",
+        "description": "Wähle den Sensor, über den deine Waage das Gewicht meldet. Personen, Erkennung und Freigaben stellst du danach im Panel **Gewicht** in der Seitenleiste ein (Tab „Einstellungen“).",
+        "data": {
+          "name": "Name",
+          "source_entity": "Gewichtssensor der Waage"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Dieser Sensor wird bereits verwendet."
+    }
+  },
+  "options": {
+    "abort": {
+      "use_panel": "Alle Einstellungen, Personen und Freigaben findest du im Panel **Gewicht** in der Seitenleiste im Tab **Einstellungen**."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "weight": {
+        "name": "Gewicht"
+      },
+      "trend": {
+        "name": "Trendgewicht"
+      },
+      "change_last": {
+        "name": "Veränderung seit letzter Messung"
+      },
+      "change_7d": {
+        "name": "Veränderung 7 Tage"
+      },
+      "change_30d": {
+        "name": "Veränderung 30 Tage"
+      },
+      "change_total": {
+        "name": "Veränderung gesamt"
+      },
+      "rate": {
+        "name": "Tempo pro Woche"
+      },
+      "bmi": {
+        "name": "BMI"
+      },
+      "goal_distance": {
+        "name": "Abstand zum Ziel"
+      },
+      "goal_eta": {
+        "name": "Ziel voraussichtlich erreicht"
+      },
+      "last_measured": {
+        "name": "Letzte Messung"
+      },
+      "pending": {
+        "name": "Offene Messungen"
+      }
+    }
+  },
+  "services": {
+    "assign_measurement": {
+      "name": "Messung zuordnen",
+      "description": "Ordnet eine Messung einer Person zu. \"discard\" verwirft sie, \"pending\" macht sie wieder offen. Nicht-Admins dürfen nur eigene Messungen ändern.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Waage",
+          "description": "Nur nötig, wenn mehrere Waagen eingerichtet sind."
+        },
+        "measurement_id": {
+          "name": "Messungs-ID",
+          "description": "Leer = neueste Messung."
+        },
+        "person": {
+          "name": "Person",
+          "description": "Name der Person, \"discard\" oder \"pending\"."
+        }
+      }
+    },
+    "add_measurement": {
+      "name": "Messung hinzufügen",
+      "description": "Trägt ein Gewicht manuell ein (z. B. zum Import alter Daten).",
+      "fields": {
+        "config_entry_id": {
+          "name": "Waage",
+          "description": "Nur nötig, wenn mehrere Waagen eingerichtet sind."
+        },
+        "person": {
+          "name": "Person",
+          "description": "Name der Person."
+        },
+        "weight": {
+          "name": "Gewicht",
+          "description": "Gewicht in kg."
+        },
+        "timestamp": {
+          "name": "Zeitpunkt",
+          "description": "Leer = jetzt."
+        }
+      }
+    },
+    "delete_measurement": {
+      "name": "Messung löschen",
+      "description": "Löscht eine Messung endgültig.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Waage",
+          "description": "Nur nötig, wenn mehrere Waagen eingerichtet sind."
+        },
+        "measurement_id": {
+          "name": "Messungs-ID",
+          "description": "Leer = neueste Messung."
+        }
+      }
+    }
+  }
+}
