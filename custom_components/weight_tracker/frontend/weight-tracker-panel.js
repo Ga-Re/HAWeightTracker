@@ -748,8 +748,9 @@ const STYLE = `
   .editor h3 { font-size: 15px; font-weight: 500; margin: 0; display: flex; align-items: center; gap: 8px; }
   .field { min-width: 0; }
   .bd-label { font-size: 12px; color: var(--wt-muted); margin-bottom: 4px; }
-  .bd-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr) auto; gap: 8px; align-items: end; max-width: 640px; }
-  .bd-age { min-width: 72px; text-align: center; padding: 4px 8px; border-radius: 10px; background: rgba(127,127,127,.1); }
+  .bd-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr) auto; gap: 8px; align-items: start; max-width: 640px; }
+  /* Same top as the fields: below their 16px label + 4px gap, as high as a field. */
+  .bd-age { min-width: 72px; height: 56px; box-sizing: border-box; margin-top: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px 8px; border-radius: 10px; background: rgba(127,127,127,.1); }
   .bd-age b { display: block; font-size: 24px; line-height: 1.1; }
   .bd-age span { font-size: 11px; color: var(--wt-muted); }
   .section-title { font-size: 15px; font-weight: 500; margin: 8px 0 -4px; color: var(--wt-muted); display: flex; align-items: center; gap: 8px; }
@@ -827,6 +828,19 @@ const STYLE = `
   .field.wide { grid-column: 1 / -1; }
   .form-error { color: var(--error-color, #db4437); font-size: 13px; margin-top: 8px; }
   .content { max-width: 1200px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+  .section { background: var(--wt-card); border: 1px solid var(--wt-border); border-radius: var(--wt-radius); box-shadow: var(--ha-card-box-shadow, none); min-width: 0; }
+  .section > summary { list-style: none; display: flex; align-items: center; gap: 16px; padding: 18px 20px; cursor: pointer; border-radius: var(--wt-radius); font-size: 16px; font-weight: 500; user-select: none; }
+  .section > summary::-webkit-details-marker { display: none; }
+  .section > summary:hover { background: rgba(127,127,127,.06); }
+  .section > summary:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: -2px; }
+  .section[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .sec-icon { flex: none; width: 24px; display: grid; place-items: center; color: var(--wt-muted); --mdc-icon-size: 24px; font-size: 20px; line-height: 1; }
+  .sec-title { flex: 1; min-width: 0; }
+  .sec-count { font-size: 13px; font-weight: 400; color: var(--wt-muted); }
+  .sec-chevron { flex: none; width: 9px; height: 9px; margin: 0 4px 4px 0; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); transition: transform .2s; }
+  .section[open] > summary .sec-chevron { transform: translateY(4px) rotate(-135deg); }
+  .sec-body { padding: 0 20px 20px; }
+  @media (prefers-reduced-motion: reduce) { .sec-chevron { transition: none; } }
   .card { background: var(--wt-card); border: 1px solid var(--wt-border); border-radius: var(--wt-radius); box-shadow: var(--ha-card-box-shadow, none); padding: 16px; min-width: 0; }
   h2 { font-size: 16px; font-weight: 500; margin: 0; }
   .muted { color: var(--wt-muted); }
@@ -930,6 +944,11 @@ class WeightTrackerPanel extends HTMLElement {
     this._range = 90;
     this._mode = "abs";
     try {
+      this._openSections = new Set(JSON.parse(localStorage.getItem("wt-sections") || "[]"));
+    } catch (err) {
+      this._openSections = new Set();
+    }
+    try {
       this._unitPref = localStorage.getItem("wt-unit");
     } catch (err) {
       this._unitPref = null;
@@ -1019,6 +1038,8 @@ class WeightTrackerPanel extends HTMLElement {
     root.addEventListener("click", (ev) => this._onClick(ev));
     root.addEventListener("change", (ev) => this._onChange(ev));
     root.addEventListener("submit", (ev) => this._onSubmit(ev));
+    // "toggle" does not bubble: listen in the capture phase.
+    root.addEventListener("toggle", (ev) => this._onSectionToggle(ev), true);
     root.addEventListener("pointermove", (ev) => this._onPointer(ev));
     root.addEventListener("pointerleave", () => {
       this._hideHover();
@@ -2245,17 +2266,14 @@ class WeightTrackerPanel extends HTMLElement {
         <option value="owner" ${value === "owner" ? "selected" : ""}>${esc(t.accOwner)}</option>
       </select>`;
     };
-    return `
-      <div class="card">
-        <h2>🔒 ${esc(t.access)}</h2>
-        <div class="muted small" style="margin-top:4px">${esc(t.accessHint)}</div>
+    return this._section("access", "mdi:shield-account", "🔒", t.access, `
+        <div class="muted small">${esc(t.accessHint)}</div>
         <div class="table-wrap"><table>
           <thead><tr><th>${esc(t.user)}</th>${persons.map((p) => `<th><span class="who"><span class="dot" style="background:${this._color(p.color_index)}"></span>${esc(p.name)}</span></th>`).join("")}</tr></thead>
           <tbody>
             ${users.map((u) => `<tr><td>${esc(u.name)} ${u.is_admin ? `<span class="tag">· ${esc(t.admin)}</span>` : ""}</td>${persons.map((p) => `<td>${cell(u, p)}</td>`).join("")}</tr>`).join("")}
           </tbody>
-        </table></div>
-      </div>`;
+        </table></div>`);
   }
 
   // ---------------------------------------------------------------- forms
@@ -2509,6 +2527,30 @@ class WeightTrackerPanel extends HTMLElement {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
   }
 
+  // Collapsible settings section (like the sections of HA's own settings pages).
+  _section(id, icon, emoji, title, body, { open = false, count = null } = {}) {
+    const isOpen = open || this._openSections.has(id);
+    const iconHtml = customElements.get("ha-icon") ? `<ha-icon icon="${icon}"></ha-icon>` : emoji;
+    return `
+      <details class="section" data-section="${esc(id)}" ${isOpen ? "open" : ""}>
+        <summary><span class="sec-icon" aria-hidden="true">${iconHtml}</span><span class="sec-title">${esc(title)}${count !== null ? ` <span class="sec-count">· ${count}</span>` : ""}</span><span class="sec-chevron" aria-hidden="true"></span></summary>
+        <div class="sec-body">${body}</div>
+      </details>`;
+  }
+
+  _onSectionToggle(ev) {
+    const el = ev.target;
+    if (!(el instanceof HTMLElement) || !el.matches("details.section")) return;
+    const id = el.dataset.section;
+    if (el.open === this._openSections.has(id)) return;
+    if (el.open) this._openSections.add(id); else this._openSections.delete(id);
+    try {
+      localStorage.setItem("wt-sections", JSON.stringify([...this._openSections]));
+    } catch (err) {
+      // only a convenience
+    }
+  }
+
   _renderSettings() {
     return `${this._renderScaleSettings()}${this._renderPersonsSettings()}${this._renderPetsSettings("child")}${this._renderPetsSettings("pet")}${this._entry.persons.length ? this._renderAccess() : ""}${this._renderSensorSettings()}`;
   }
@@ -2541,23 +2583,17 @@ class WeightTrackerPanel extends HTMLElement {
       this._def("entity", "bmr_entity", t.bmrEntity, { filter: { domain: "sensor" }, helper: t.directHint }),
     ];
     const defaults = { name: this._entry.title, ...cfg };
-    return `
-      <div class="card">
-        <h2>⚖️ ${esc(t.scale)}</h2>
-        <div class="hint" style="margin-top:4px">${esc(t.scaleHint)}</div>
+    return this._section("scale", "mdi:scale-bathroom", "⚖️", t.scale, `
+        <div class="hint">${esc(t.scaleHint)}</div>
         <div class="form" id="settings-form">
           ${this._formFields("settings-form", fields, defaults)}
           ${this._formActions("settings-form")}
-        </div>
-      </div>
-      <div class="card">
-        <h2>📡 ${esc(t.scaleSensors)}</h2>
-        <div class="hint" style="margin-top:4px">${esc(t.scaleSensorsHint)}</div>
+        </div>`) + this._section("scale-sensors", "mdi:access-point", "📡", t.scaleSensors, `
+        <div class="hint">${esc(t.scaleSensorsHint)}</div>
         <div class="form" id="scale-sensors-form">
           ${this._formFields("scale-sensors-form", sensors, defaults)}
           ${this._formActions("scale-sensors-form")}
-        </div>
-      </div>`;
+        </div>`, { open: !cfg.source_entity });
   }
 
   _renderPersonsSettings() {
@@ -2583,13 +2619,11 @@ class WeightTrackerPanel extends HTMLElement {
           <button class="btn" data-action="edit-person" data-person="${esc(p.id)}">${esc(t.edit)}</button>
         </div>`;
     }).join("");
-    return `
-      <div class="card">
-        <h2>👥 ${esc(t.persons)}</h2>
-        <div class="hint" style="margin-top:4px">${esc(t.personsHint)}</div>
+    return this._section("persons", "mdi:account-multiple", "👥", t.persons, `
+        <div class="hint">${esc(t.personsHint)}</div>
         <div style="margin-top:8px">${rows}</div>
-        ${this._editPerson === "new" ? this._renderPersonEditor(null) : `<div class="actions"><button class="btn primary" data-action="edit-person" data-person="new">＋ ${esc(t.addPerson)}</button></div>`}
-      </div>`;
+        ${this._editPerson === "new" ? this._renderPersonEditor(null) : `<div class="actions"><button class="btn primary" data-action="edit-person" data-person="new">＋ ${esc(t.addPerson)}</button></div>`}`,
+      { open: !this._entry.persons.length || Boolean(this._editPerson), count: this._entry.persons.length || null });
   }
 
   _renderPersonEditor(person) {
@@ -2687,13 +2721,10 @@ class WeightTrackerPanel extends HTMLElement {
           </div>
         </div>`;
     }).join("");
-    return `
-      <div class="card">
-        <h2>📈 ${esc(t.sensorSettings)}</h2>
-        <div class="hint" style="margin-top:4px">${esc(t.sensorSettingsHint)}</div>
+    return this._section("output-sensors", "mdi:chart-line", "📈", t.sensorSettings, `
+        <div class="hint">${esc(t.sensorSettingsHint)}</div>
         <div class="hint" style="margin-top:4px">${esc(t.sensorsHint)}</div>
-        <div style="margin-top:8px">${rows}</div>
-      </div>`;
+        <div style="margin-top:8px">${rows}</div>`);
   }
 
   _subjectById(kind, id) {
@@ -2746,13 +2777,12 @@ class WeightTrackerPanel extends HTMLElement {
           <button class="btn" data-action="edit-pet" data-pet="${esc(p.id)}">${esc(t.edit)}</button>
         </div>`;
     }).join("");
-    return `
-      <div class="card">
-        <h2>${child ? "👶" : "🐾"} ${esc(child ? t.children : t.pets)}</h2>
-        <div class="hint" style="margin-top:4px">${esc(child ? t.childrenHint : t.petsHint)}</div>
+    const editing = Boolean(this._editPet) && (this._editPet === newId || pets.some((p) => p.id === this._editPet));
+    return this._section(child ? "children" : "pets", child ? "mdi:human-child" : "mdi:paw", child ? "👶" : "🐾", child ? t.children : t.pets, `
+        <div class="hint">${esc(child ? t.childrenHint : t.petsHint)}</div>
         <div style="margin-top:8px">${rows}</div>
-        ${this._editPet === newId ? this._renderPetEditor(null, kind) : `<div class="actions"><button class="btn primary" data-action="edit-pet" data-pet="${newId}">＋ ${esc(child ? t.addChild : t.addPet)}</button></div>`}
-      </div>`;
+        ${this._editPet === newId ? this._renderPetEditor(null, kind) : `<div class="actions"><button class="btn primary" data-action="edit-pet" data-pet="${newId}">＋ ${esc(child ? t.addChild : t.addPet)}</button></div>`}`,
+      { open: editing, count: pets.length || null });
   }
 
   _renderPetEditor(pet, kind = pet ? pet.kind || "pet" : "pet") {
