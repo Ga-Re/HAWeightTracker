@@ -174,6 +174,23 @@ def _person_sensor_ids(hass: HomeAssistant, entry_id: str) -> dict[str, dict[str
     return result
 
 
+def _person_picture(hass: HomeAssistant, person: dict[str, Any]) -> str | None:
+    """Picture of the Home Assistant person behind a tracked person.
+
+    The person entity chosen for presence, otherwise the person entity of the
+    linked Home Assistant user.
+    """
+    entity_id = person.get(CONF_PERSON_ENTITY)
+    if entity_id and entity_id.startswith("person.") and (state := hass.states.get(entity_id)):
+        if picture := state.attributes.get("entity_picture"):
+            return picture
+    if user_id := person.get(CONF_USER_ID):
+        for state in hass.states.async_all("person"):
+            if state.attributes.get("user_id") == user_id and (picture := state.attributes.get("entity_picture")):
+                return picture
+    return None
+
+
 def _jsonable(value: Any) -> Any:
     if isinstance(value, (datetime, date)):
         return value.isoformat()
@@ -214,6 +231,7 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                 "height": person.get(CONF_HEIGHT),
                 "goal": person.get(CONF_GOAL_WEIGHT),
                 "birth_month": person.get(CONF_BIRTH_MONTH),
+                "picture": _person_picture(hass, person),
                 # entity ids of the person's sensors (for HA's more-info dialog)
                 "entities": sensor_ids.get(person_id, {}),
                 "stats": {k: _jsonable(v) for k, v in asdict(stats).items()} if stats else {},

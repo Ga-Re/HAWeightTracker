@@ -171,6 +171,7 @@ const TEXT = {
     noGoal: "Lege unten ein Zielgewicht fest, dann siehst du hier deinen Fortschritt.",
     startedAt: "Start",
     editData: "Angaben ändern",
+    editTile: (label) => `${label} bearbeiten`,
     cm: "cm",
     bmiZones: ["Untergewicht", "Normal", "Übergewicht", "Adipositas"],
     day: "Tag",
@@ -341,6 +342,7 @@ const TEXT = {
     noGoal: "Set a goal weight below to see your progress here.",
     startedAt: "Start",
     editData: "Edit details",
+    editTile: (label) => `Edit ${label}`,
     cm: "cm",
     bmiZones: ["Underweight", "Normal", "Overweight", "Obese"],
     day: "Day",
@@ -433,6 +435,17 @@ const STYLE = `
   .pet-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
   .profile-hero { display: flex; align-items: center; gap: 16px; }
   .avatar { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 24px; font-weight: 500; flex: none; }
+  .avatar.img { background: none; overflow: hidden; }
+  .avatar.img img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+  .tile { position: relative; }
+  .tile.editing { grid-column: 1 / -1; }
+  .tile .pen {
+    position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border-radius: 50%;
+    border: none; background: transparent; color: var(--wt-muted); font-size: 16px; cursor: pointer;
+  }
+  .tile .pen:hover { background: rgba(127,127,127,.15); color: var(--primary-color, #03a9f4); }
+  .tile .pen:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); }
+  .tile .actions { margin-top: 12px; }
   .avatar.pet { background: rgba(127,127,127,.14) !important; font-size: 28px; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
   .tile { background: var(--wt-card); border: 1px solid var(--wt-border); border-radius: var(--wt-radius); padding: 14px 16px; min-width: 0; }
@@ -569,6 +582,7 @@ class WeightTrackerPanel extends HTMLElement {
     this._tab = "overview";
     this._editPerson = null; // person id, "new" or null
     this._editPet = null; // pet id, "new" or null
+    this._editTile = null; // { person, key } of the tile edited on "My details"
     this._models = {}; // form values, survive live updates while edited
     this._forms = {}; // field definitions of the forms on screen
     this._dirty = new Set();
@@ -732,6 +746,17 @@ class WeightTrackerPanel extends HTMLElement {
   _color(index) {
     const palette = this._dark ? COLORS.dark : COLORS.light;
     return palette[index % palette.length];
+  }
+
+  // Picture of the HA person (with a ring in the person's chart color), or the
+  // initial on the person's color.
+  _avatar(person, size = 36) {
+    const color = this._color(person.color_index);
+    const box = `width:${size}px;height:${size}px`;
+    if (person.picture) {
+      return `<span class="avatar img" style="${box};box-shadow:0 0 0 2px ${color}"><img src="${esc(person.picture)}" alt="" loading="lazy"></span>`;
+    }
+    return `<span class="avatar" style="${box};font-size:${Math.round(size * 0.45)}px;background:${color}" aria-hidden="true">${esc(person.name.slice(0, 1).toUpperCase())}</span>`;
   }
 
   _speciesEmoji(species) {
@@ -921,7 +946,7 @@ class WeightTrackerPanel extends HTMLElement {
       : "–";
     return `
       <div class="card person-card">
-        <div class="person-head"><span class="dot" style="background:${color}"></span>
+        <div class="person-head">${this._avatar(person, 36)}
           <h2>${esc(person.name)}${age !== null ? ` <span class="muted small" style="font-weight:400">· ${esc(t.years(age))}</span>` : ""}</h2>
           <span class="muted small">${latestTs ? link("last_measured", t.measured, `${esc(t.measured)} ${esc(this._relative(latestTs))}`) : esc(t.noData)}</span></div>
         <div class="hero">${link("weight", t.weight, `<span class="value num">${this._kg(s.latest_weight, { unit: false })}</span><span class="unit"> kg</span>`)}
@@ -1133,58 +1158,89 @@ class WeightTrackerPanel extends HTMLElement {
     };
   }
 
+  // Editable values on "My details": the tile key, its field and its profile key.
+  _tileDefs(person) {
+    const t = this._t;
+    const refresh = () => this._refreshMyData(person);
+    return {
+      age: this._def("birthmonth", "birth_month", t.birthDate, { helper: t.birthMonthHint, onChange: refresh }),
+      height: this._def("number", "height", t.height, { min: 50, max: 250, step: 1, unit: "cm", helper: t.heightHint, onChange: refresh }),
+      goal: this._def("number", "goal_weight", t.goalWeight, { min: 1, max: 300, step: 0.1, unit: "kg", helper: t.goalWeightHint, onChange: refresh }),
+    };
+  }
+
   _renderMyData(person) {
     const t = this._t;
     const formId = `profile-form-${person.id}`;
     const defaults = { height: person.height ?? null, goal_weight: person.goal ?? null, birth_month: person.birth_month || null };
-    const refresh = () => this._refreshMyData(person);
-    const fields = [
-      this._def("number", "height", t.height, { min: 50, max: 250, step: 1, unit: "cm", helper: t.heightHint, onChange: refresh }),
-      this._def("number", "goal_weight", t.goalWeight, { min: 1, max: 300, step: 0.1, unit: "kg", helper: t.goalWeightHint, onChange: refresh }),
-      this._def("birthmonth", "birth_month", t.birthDate, { helper: t.birthMonthHint, wide: true, onChange: refresh }),
-    ];
-    const formHtml = this._formFields(formId, fields, defaults); // creates the model
+    if (!this._dirty.has(formId) || !this._models[formId]) this._models[formId] = { ...defaults };
     const facts = this._profileFacts(person, this._models[formId]);
     return `
       <div class="card profile-hero">
-        <div class="avatar" style="background:${this._color(person.color_index)}">${esc(person.name.slice(0, 1).toUpperCase())}</div>
+        ${this._avatar(person, 64)}
         <div><h2>${esc(person.name)}</h2><div class="hint" style="margin-top:2px">${esc(t.myDataHint)}</div></div>
       </div>
-      <div class="tiles" data-preview="tiles-${esc(person.id)}">${this._myDataTiles(person, facts)}</div>
+      <div class="tiles">${this._myDataTiles(person, facts, defaults)}</div>
       <div class="two">
         <div class="card" data-preview="health-${esc(person.id)}">${this._myDataHealth(facts)}</div>
         <div class="card" data-preview="goal-${esc(person.id)}">${this._myDataGoal(person, facts)}</div>
-      </div>
-      <div class="card">
-        <h2>✎ ${esc(t.editData)}</h2>
-        <div class="form" id="${esc(formId)}">
-          ${formHtml}
-          ${this._formActions(formId)}
-        </div>
       </div>`;
   }
 
+  // Live update while a tile is edited; the tile being edited keeps its field.
   _refreshMyData(person) {
     const facts = this._profileFacts(person, this._models[`profile-form-${person.id}`] || {});
+    for (const [key, html] of Object.entries(this._tileContents(person, facts))) {
+      if (this._editTile && this._editTile.key === key && this._editTile.person === person.id) continue;
+      const el = this.shadowRoot.querySelector(`[data-tile="${key}-${person.id}"]`);
+      if (el) el.innerHTML = html;
+    }
     const set = (key, html) => {
       const el = this.shadowRoot.querySelector(`[data-preview="${key}-${person.id}"]`);
       if (el) el.innerHTML = html;
     };
-    set("tiles", this._myDataTiles(person, facts));
     set("health", this._myDataHealth(facts));
     set("goal", this._myDataGoal(person, facts));
   }
 
-  _myDataTiles(person, f) {
+  _tileContents(person, f) {
     const t = this._t;
-    const tile = (label, big, sub = "") => `<div class="tile"><div class="label">${esc(label)}</div><div class="big num">${big}</div>${sub ? `<div class="sub">${sub}</div>` : ""}</div>`;
     const remaining = f.goal !== null && f.trend !== null ? f.goal - f.trend : null;
-    return [
-      tile(t.age, f.age !== null ? `${f.age} <small>${esc(t.years(f.age).replace(/^\d+\s*/, ""))}</small>` : "–", f.age === null ? esc(t.ageMissing) : ""),
-      tile(t.height, f.height ? `${this._kg(f.height, { unit: false, digits: 0 })} <small>cm</small>` : "–"),
-      tile(t.bmi, f.bmi ? this._kg(f.bmi, { unit: false }) : "–", f.bmi && (f.age === null || f.age >= 18) ? esc(t.bmiCat(f.bmi)) : ""),
-      tile(t.goal, f.goal ? `${this._kg(f.goal, { unit: false })} <small>kg</small>` : "–", remaining !== null ? esc(Math.abs(remaining) <= 0.2 ? t.goalReached : t.goalLeft(this._kg(Math.abs(remaining)))) : ""),
-    ].join("");
+    const content = (label, big, sub = "") => `<div class="label">${esc(label)}</div><div class="big num">${big}</div>${sub ? `<div class="sub">${sub}</div>` : ""}`;
+    return {
+      age: content(t.age, f.age !== null ? `${f.age} <small>${esc(t.years(f.age).replace(/^\d+\s*/, ""))}</small>` : "–", f.age === null ? esc(t.ageMissing) : ""),
+      height: content(t.height, f.height ? `${this._kg(f.height, { unit: false, digits: 0 })} <small>cm</small>` : "–"),
+      bmi: content(t.bmi, f.bmi ? this._kg(f.bmi, { unit: false }) : "–", f.bmi && (f.age === null || f.age >= 18) ? esc(t.bmiCat(f.bmi)) : ""),
+      goal: content(t.goal, f.goal ? `${this._kg(f.goal, { unit: false })} <small>kg</small>` : "–", remaining !== null ? esc(Math.abs(remaining) <= 0.2 ? t.goalReached : t.goalLeft(this._kg(Math.abs(remaining)))) : ""),
+    };
+  }
+
+  _myDataTiles(person, facts, defaults) {
+    const t = this._t;
+    const formId = `profile-form-${person.id}`;
+    const defs = this._tileDefs(person);
+    const contents = this._tileContents(person, facts);
+    const labels = { age: t.age, height: t.height, bmi: t.bmi, goal: t.goal };
+    return ["age", "height", "bmi", "goal"].map((key) => {
+      const editing = this._editTile && this._editTile.key === key && this._editTile.person === person.id;
+      if (editing) {
+        return `
+          <div class="tile editing">
+            <div class="label">${esc(labels[key])}</div>
+            <div class="form" id="${esc(formId)}">
+              ${this._formFields(formId, [defs[key]], defaults)}
+              <div class="actions">
+                <button class="btn primary" type="button" data-action="save-form" data-form="${esc(formId)}">${esc(t.save)}</button>
+                <button class="btn" type="button" data-action="cancel-tile" data-form="${esc(formId)}">${esc(t.cancel)}</button>
+              </div>
+            </div>
+          </div>`;
+      }
+      const pen = defs[key] && person.can_manage && !this._editTile
+        ? `<button class="pen" data-action="edit-tile" data-tile="${key}" data-person="${esc(person.id)}" title="${esc(t.editTile(labels[key]))}" aria-label="${esc(t.editTile(labels[key]))}">✎</button>`
+        : "";
+      return `<div class="tile">${pen}<div data-tile="${key}-${esc(person.id)}">${contents[key]}</div></div>`;
+    }).join("");
   }
 
   _myDataHealth(f) {
@@ -1624,7 +1680,7 @@ class WeightTrackerPanel extends HTMLElement {
       ].filter(Boolean);
       return `
         <div class="person-row">
-          <span class="dot" style="background:${this._color(p.color_index)}"></span>
+          ${this._avatar(p, 32)}
           <div class="info"><b>${esc(p.name)}</b><div class="hint">${esc(bits.join(" · "))}</div></div>
           <button class="btn" data-action="edit-person" data-person="${esc(p.id)}">${esc(t.edit)}</button>
         </div>`;
@@ -1834,11 +1890,17 @@ class WeightTrackerPanel extends HTMLElement {
         this._toast(this._t.saved);
       } else if (formId.startsWith("profile-form-")) {
         const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v));
+        // Only the value of the tile being edited.
+        const profile = {};
+        for (const def of this._forms[formId] || []) {
+          profile[def.name] = def.kind === "number" ? num(m[def.name]) : m[def.name] || null;
+        }
         await this._ws({
           type: "weight_tracker/update_profile",
           person_id: formId.slice("profile-form-".length),
-          profile: { height: num(m.height), goal_weight: num(m.goal_weight), birth_month: m.birth_month || null },
+          profile,
         });
+        this._editTile = null;
         this._toast(this._t.saved);
       } else if (formId === "add-form") {
         await this._hass.callService("weight_tracker", "add_measurement", {
@@ -2167,6 +2229,13 @@ class WeightTrackerPanel extends HTMLElement {
       this._render();
       const form = this.shadowRoot.getElementById(`person-form-${el.dataset.person}`);
       if (form) form.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    } else if (action === "edit-tile") {
+      this._editTile = { person: el.dataset.person, key: el.dataset.tile };
+      this._render();
+    } else if (action === "cancel-tile") {
+      this._clearForm(el.dataset.form);
+      this._editTile = null;
+      this._render();
     } else if (action === "edit-pet") {
       this._editPet = el.dataset.pet;
       this._render();

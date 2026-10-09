@@ -51,7 +51,9 @@ Jeder, der mit einer Person verknüpft ist (auch Admins), hat hier seine eigene 
 - **Kacheln** mit Alter, Größe, BMI und Ziel.
 - **Gesunder Bereich:** BMI-Skala mit deiner Position und dem Normalgewicht für deine Größe.
 - **Dein Ziel:** Fortschritt, Tempo und voraussichtliches Datum.
-- **Angaben ändern:** Größe, Zielgewicht und Geburtsmonat/-jahr. Alter und BMI rechnen schon beim Tippen mit.
+- **Bearbeiten:** Ein Klick auf den Stift ✎ in den Kacheln Alter (Geburtsmonat/-jahr), Größe oder Ziel öffnet das Feld direkt in der Kachel. BMI und Gesunder Bereich rechnen schon beim Tippen mit.
+
+Vor jedem Namen steht das **Bild der Home-Assistant-Person**. Es stammt von der gewählten Anwesenheits-Entität (`person.*`) oder, falls keine gewählt ist, von der Person des verknüpften Benutzers. Ein Ring in der Personenfarbe zeigt die Zuordnung zum Graphen. Ohne Bild erscheint die Initiale.
 
 ### Einstellungen (nur Admins)
 - **Waage:** Name, Gewichtssensor, minimales und maximales Gewicht, Toleranz, Eindeutigkeits-Abstand und Wartezeit, bis ein Wert stabil ist.
