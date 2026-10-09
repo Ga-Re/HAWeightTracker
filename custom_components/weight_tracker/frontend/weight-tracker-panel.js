@@ -52,7 +52,7 @@ const TEXT = {
     date: "Datum",
     person: "Person",
     weight: "Gewicht",
-    source: "Erkannt",
+    detected: "Erkannt",
     more: "Mehr anzeigen",
     deleteConfirm: (w, d) => `Messung ${w} vom ${d} endgültig löschen?`,
     deleteLabel: "Löschen",
@@ -223,7 +223,7 @@ const TEXT = {
     date: "Date",
     person: "Person",
     weight: "Weight",
-    source: "Detected",
+    detected: "Detected",
     more: "Show more",
     deleteConfirm: (w, d) => `Permanently delete measurement ${w} from ${d}?`,
     deleteLabel: "Delete",
@@ -837,16 +837,13 @@ class WeightTrackerPanel extends HTMLElement {
         : `<div class="message">${esc(t.noAccess)}</div>`);
     } else if (this._tab === "measurements") {
       const canAdd = this._entry.persons.some((p) => p.can_manage) || (this._entry.pets || []).length;
+      // The form comes first so it stays reachable however long the lists get.
       this._content(`
         ${this._renderPetSession()}
         ${this._renderPending()}
-        <div class="split">
-          <div class="side">
-            ${this._entry.persons.length ? `<div class="card">${this._renderList()}</div>` : ""}
-            ${this._renderPetList()}
-          </div>
-          <div class="side">${canAdd ? `<div class="card">${this._renderAddForm()}</div>` : ""}</div>
-        </div>`);
+        ${canAdd ? `<div class="card">${this._renderAddForm()}</div>` : ""}
+        ${this._entry.persons.length ? `<div class="card">${this._renderList()}</div>` : ""}
+        ${this._renderPetList()}`);
     } else {
       const persons = this._entry.persons;
       this._content(`
@@ -1082,7 +1079,7 @@ class WeightTrackerPanel extends HTMLElement {
       <div class="card">
         <h2>🐾 ${esc(t.petMeasurements)}</h2>
         ${rows.length ? `<div class="table-wrap"><table>
-          <thead><tr><th>${esc(t.date)}</th><th class="r">${esc(t.weight)}</th><th>${esc(t.pet)}</th><th>${esc(t.carriedBy)}</th><th>${esc(t.source)}</th><th></th></tr></thead>
+          <thead><tr><th>${esc(t.date)}</th><th class="r">${esc(t.weight)}</th><th>${esc(t.pet)}</th><th>${esc(t.carriedBy)}</th><th>${esc(t.detected)}</th><th></th></tr></thead>
           <tbody>${rows.map((m) => {
             const pet = this._pet(m.pet_id);
             const petCell = m.can_edit
@@ -1311,7 +1308,8 @@ class WeightTrackerPanel extends HTMLElement {
   _renderList() {
     const t = this._t;
     const persons = this._entry.persons;
-    let rows = this._entry.measurements.filter((m) => m.status !== "discarded" || this._listPerson === "all");
+    // Pet suggestions have their own card above.
+    let rows = this._entry.measurements.filter((m) => m.status !== "pet_candidate" && (m.status !== "discarded" || this._listPerson === "all"));
     if (this._listPerson !== "all") rows = rows.filter((m) => m.person_id === this._listPerson);
     rows = rows.slice().reverse();
     const shown = rows.slice(0, this._listLimit);
@@ -1332,7 +1330,7 @@ class WeightTrackerPanel extends HTMLElement {
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>${esc(t.date)}</th><th class="r">${esc(t.weight)}</th><th class="r">±</th><th>${esc(t.person)}</th><th>${esc(t.source)}</th><th></th></tr></thead>
+          <thead><tr><th>${esc(t.date)}</th><th class="r">${esc(t.weight)}</th><th class="r">±</th><th>${esc(t.person)}</th><th>${esc(t.detected)}</th><th></th></tr></thead>
           <tbody>
             ${shown.map((m) => `
               <tr>
