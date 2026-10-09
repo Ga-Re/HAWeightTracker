@@ -36,6 +36,21 @@
       },
       "pending": {
         "default": "mdi:account-question"
+      },
+      "body_fat": {
+        "default": "mdi:water-percent"
+      },
+      "muscle_mass": {
+        "default": "mdi:arm-flex"
+      },
+      "body_water": {
+        "default": "mdi:water"
+      },
+      "bone_mass": {
+        "default": "mdi:bone"
+      },
+      "bmr": {
+        "default": "mdi:fire"
       }
     },
     "button": {

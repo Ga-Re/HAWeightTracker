@@ -161,6 +161,35 @@ const TEXT = {
     birthMonthHint: "Monat und Jahr reichen für das Alter.",
     age: "Alter",
     ageMissing: "Geburtsmonat eintragen",
+    sex: "Geschlecht",
+    sexNames: { male: "Männlich", female: "Weiblich" },
+    sexNone: "— keine Angabe —",
+    sexHint: "Für Körperfett- und Taillen-Einstufung.",
+    waist: "Taille",
+    waistNew: "Neuer Taillenumfang",
+    waistHint: "Auf Höhe des Bauchnabels messen, morgens, entspannt ausgeatmet.",
+    whtr: "Taille/Größe",
+    whtrClass: { low: "niedrig", healthy: "gesund", increased: "erhöht", high: "hoch" },
+    whtrLine: (cm, ratio, cls) => `Taille ${cm} cm · Taille/Größe ${ratio} – ${cls}`,
+    body: "Körperzusammensetzung",
+    bodyHint: "Geschätzt aus der Impedanz deiner Waage (Xiaomi-Formel) – Richtwerte, keine medizinische Messung.",
+    bodyScaleHint: "Von deiner Waage gemessen.",
+    bodyMissing: (fields) => `Deine Waage misst auch die Körperzusammensetzung. Dafür fehlt noch: ${fields}.`,
+    bodyFields: { sex: "Geschlecht", birth_month: "Geburtsmonat", height: "Größe" },
+    bodyFat: "Körperfett",
+    muscle: "Muskelmasse",
+    water: "Körperwasser",
+    bone: "Knochenmasse",
+    bmr: "Grundumsatz",
+    fatClass: { low: "niedrig", healthy: "gesund", high: "erhöht", very_high: "hoch" },
+    fatRange: (lo, hi) => `Gesund für dich: ${lo}–${hi} %`,
+    note: "Notiz",
+    editNote: "Notiz bearbeiten",
+    notePlaceholder: "z. B. nach dem Urlaub, krank, neues Training",
+    impedanceEntity: "Impedanz-Sensor (optional)",
+    impedanceHint: "Nur falls deine Waage die Impedanz liefert (z. B. Xiaomi Body Composition Scale). Daraus werden Körperfett, Muskeln usw. geschätzt.",
+    bodyFatEntity: "Körperfett-Sensor (optional)",
+    bodyFatEntityHint: "Falls die Integration deiner Waage schon Körperfett in % liefert.",
     myDataHint: "Deine Angaben. Sehen können sie nur du und Admins.",
     healthy: "Gesunder Bereich",
     healthyRange: (h, lo, hi) => `Bei ${h} cm liegt das Normalgewicht (BMI 18,5–24,9) bei etwa ${lo} – ${hi}.`,
@@ -356,6 +385,35 @@ const TEXT = {
     birthMonthHint: "Month and year are enough for the age.",
     age: "Age",
     ageMissing: "Add birth month",
+    sex: "Sex",
+    sexNames: { male: "Male", female: "Female" },
+    sexNone: "— not specified —",
+    sexHint: "For the body fat and waist classification.",
+    waist: "Waist",
+    waistNew: "New waist circumference",
+    waistHint: "Measure at the navel, in the morning, after breathing out.",
+    whtr: "Waist/height",
+    whtrClass: { low: "low", healthy: "healthy", increased: "increased", high: "high" },
+    whtrLine: (cm, ratio, cls) => `Waist ${cm} cm · waist/height ${ratio} – ${cls}`,
+    body: "Body composition",
+    bodyHint: "Estimated from your scale's impedance (Xiaomi formula) – guide values, not a medical measurement.",
+    bodyScaleHint: "Measured by your scale.",
+    bodyMissing: (fields) => `Your scale also measures body composition. Still missing: ${fields}.`,
+    bodyFields: { sex: "sex", birth_month: "birth month", height: "height" },
+    bodyFat: "Body fat",
+    muscle: "Muscle mass",
+    water: "Body water",
+    bone: "Bone mass",
+    bmr: "Basal metabolic rate",
+    fatClass: { low: "low", healthy: "healthy", high: "increased", very_high: "high" },
+    fatRange: (lo, hi) => `Healthy for you: ${lo}–${hi} %`,
+    note: "Note",
+    editNote: "Edit note",
+    notePlaceholder: "e.g. after holiday, ill, new training",
+    impedanceEntity: "Impedance sensor (optional)",
+    impedanceHint: "Only if your scale reports impedance (e.g. Xiaomi Body Composition Scale). Body fat, muscles etc. are estimated from it.",
+    bodyFatEntity: "Body fat sensor (optional)",
+    bodyFatEntityHint: "If your scale's integration already reports body fat in %.",
     myDataHint: "Your details. Only you and admins can see them.",
     healthy: "Healthy range",
     healthyRange: (h, lo, hi) => `At ${h} cm a normal weight (BMI 18.5–24.9) is about ${lo} – ${hi}.`,
@@ -494,6 +552,12 @@ const STYLE = `
   .tile .pen:hover { background: rgba(127,127,127,.15); color: var(--primary-color, #03a9f4); }
   .tile .pen:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); }
   .tile .actions { margin-top: 12px; }
+  .note { font-size: 12px; color: var(--wt-muted); font-style: italic; white-space: normal; max-width: 260px; }
+  .note-edit { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .note-edit input { flex: 1 1 220px; font: inherit; font-size: 14px; padding: 6px 10px; min-height: 36px; border-radius: 8px; border: 1px solid var(--wt-border); background: var(--wt-card); color: var(--primary-text-color); }
+  .waist-list { margin-top: 10px; font-size: 13px; }
+  .waist-list div { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px solid var(--wt-grid); padding: 4px 0; }
+  .body-line { font-size: 13px; color: var(--wt-muted); margin-top: 10px; }
   .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 16px; background: rgba(127,127,127,.12); font-size: 13px; }
   .badge small { color: var(--wt-muted); }
@@ -634,6 +698,7 @@ class WeightTrackerPanel extends HTMLElement {
     this._editPerson = null; // person id, "new" or null
     this._editPet = null; // pet id, "new" or null
     this._editTile = null; // { person, key } of the tile edited on "My details"
+    this._editNote = null; // { kind, id } of the measurement note being edited
     this._models = {}; // form values, survive live updates while edited
     this._forms = {}; // field definitions of the forms on screen
     this._dirty = new Set();
@@ -878,6 +943,8 @@ class WeightTrackerPanel extends HTMLElement {
     }
 
     this._forms = {};
+    const noteInput = this.shadowRoot.getElementById("note-input");
+    if (noteInput && this._editNote) this._editNote.draft = noteInput.value;  // survive live updates
     if (this._tab === "settings") {
       this._content(this._renderSettings());
     } else if (this._tab === "mydata") {
@@ -1007,6 +1074,7 @@ class WeightTrackerPanel extends HTMLElement {
           ${stat("change_total", t.total, this._kg(s.change_total, { signed: true }))}
           ${person.height ? stat("bmi", t.bmi, bmiText) : `<div class="stat"><div class="label">Min / Max</div><div class="val num">${s.min_weight ? `${this._kg(s.min_weight, { unit: false })} / ${this._kg(s.max_weight, { unit: false })}` : "–"}</div></div>`}
         </div>
+        ${person.body && person.body.latest ? `<div class="body-line">🧬 ${link("body_fat", t.bodyFat, `${esc(t.bodyFat)} ${this._kg(person.body.latest.body_fat, { unit: false })} %`)}${person.body.latest.muscle_mass ? ` · ${link("muscle_mass", t.muscle, `${esc(t.muscle)} ${this._kg(person.body.latest.muscle_mass)}`)}` : ""}</div>` : ""}
         ${goalHtml}
       </div>`;
   }
@@ -1137,13 +1205,13 @@ class WeightTrackerPanel extends HTMLElement {
               ? `<select class="inline" data-action="pet-reassign" data-id="${esc(m.id)}">${pets.map((p) => `<option value="${esc(p.id)}" ${p.id === m.pet_id ? "selected" : ""}>${this._speciesEmoji(p.species)} ${esc(p.name)}</option>`).join("")}</select>`
               : `${pet ? `${this._speciesEmoji(pet.species)} ${esc(pet.name)}` : "–"}`;
             return `<tr>
-              <td class="num">${esc(this._dateTime(m.ts))}</td>
+              <td class="num">${esc(this._dateTime(m.ts))}${m.note ? `<div class="note">📝 ${esc(m.note)}</div>` : ""}</td>
               <td class="r num"><b>${this._kg(m.weight, { unit: false, digits: 2 })}</b></td>
               <td>${petCell}</td>
               <td>${esc(m.by || "–")}</td>
               <td><span class="tag">${esc(t.petMethods[m.method] || m.method)}</span></td>
-              <td class="r">${m.can_edit ? `<button class="icon-btn" data-action="pet-delete" data-id="${esc(m.id)}" title="${esc(t.deleteLabel)}" aria-label="${esc(t.deleteLabel)}">✕</button>` : ""}</td>
-            </tr>`;
+              <td class="r"><button class="icon-btn" data-action="note-edit" data-kind="pet" data-id="${esc(m.id)}" title="${esc(t.editNote)}" aria-label="${esc(t.editNote)}">📝</button>${m.can_edit ? `<button class="icon-btn" data-action="pet-delete" data-id="${esc(m.id)}" title="${esc(t.deleteLabel)}" aria-label="${esc(t.deleteLabel)}">✕</button>` : ""}</td>
+            </tr>${this._noteEditRow("pet", m)}`;
           }).join("")}</tbody></table></div>` : `<div class="message">${esc(t.petNoData)}</div>`}
       </div>`;
   }
@@ -1200,9 +1268,17 @@ class WeightTrackerPanel extends HTMLElement {
     const age = model.birth_month && model.birth_month !== "invalid" ? this._age(model.birth_month) : null;
     const h = height && !Number.isNaN(height) ? height / 100 : null;
     const bmi = h && weight ? weight / (h * h) : null;
+    const waist = (person.waist || []).length ? person.waist[person.waist.length - 1].cm : null;
+    const whtr = waist && h ? waist / height : null;
+    let whtrClass = null;
+    if (whtr) {
+      const limit = age === null || age < 50 ? 0.5 : 0.5 + Math.min(age - 50, 10) * 0.01;
+      whtrClass = whtr < 0.4 ? "low" : whtr < limit ? "healthy" : whtr < 0.6 ? "increased" : "high";
+    }
     return {
       age, height: h ? height : null, weight, bmi, goal: goal && !Number.isNaN(goal) ? goal : null,
       low: h ? 18.5 * h * h : null, high: h ? 24.9 * h * h : null, trend: s.trend ?? weight,
+      sex: model.sex || null, waist, whtr, whtrClass,
     };
   }
 
@@ -1214,13 +1290,15 @@ class WeightTrackerPanel extends HTMLElement {
       age: this._def("birthmonth", "birth_month", t.birthDate, { helper: t.birthMonthHint, onChange: refresh }),
       height: this._def("number", "height", t.height, { min: 50, max: 250, step: 1, unit: "cm", helper: t.heightHint, onChange: refresh }),
       goal: this._def("number", "goal_weight", t.goalWeight, { min: 1, max: 300, step: 0.1, unit: "kg", helper: t.goalWeightHint, onChange: refresh }),
+      sex: this._def("select", "sex", t.sex, { options: Object.entries(t.sexNames).map(([value, label]) => ({ value, label })), emptyLabel: t.sexNone, helper: t.sexHint, onChange: refresh }),
+      waist: this._def("number", "waist_new", t.waistNew, { min: 30, max: 250, step: 0.5, unit: "cm", helper: t.waistHint }),
     };
   }
 
   _renderMyData(person) {
     const t = this._t;
     const formId = `profile-form-${person.id}`;
-    const defaults = { height: person.height ?? null, goal_weight: person.goal ?? null, birth_month: person.birth_month || null };
+    const defaults = { height: person.height ?? null, goal_weight: person.goal ?? null, birth_month: person.birth_month || null, sex: person.sex || "", waist_new: null };
     if (!this._dirty.has(formId) || !this._models[formId]) this._models[formId] = { ...defaults };
     const facts = this._profileFacts(person, this._models[formId]);
     return `
@@ -1229,6 +1307,7 @@ class WeightTrackerPanel extends HTMLElement {
         <div><h2>${esc(person.name)}</h2><div class="hint" style="margin-top:2px">${esc(t.myDataHint)}</div></div>
       </div>
       <div class="tiles">${this._myDataTiles(person, facts, defaults)}</div>
+      ${this._renderBody(person, facts)}
       <div class="two">
         <div class="card" data-preview="health-${esc(person.id)}">${this._myDataHealth(facts)}</div>
         <div class="card" data-preview="goal-${esc(person.id)}">${this._myDataGoal(person, facts)}</div>
@@ -1314,6 +1393,9 @@ class WeightTrackerPanel extends HTMLElement {
       height: content(t.height, f.height ? `${this._kg(f.height, { unit: false, digits: 0 })} <small>cm</small>` : "–"),
       bmi: content(t.bmi, f.bmi ? this._kg(f.bmi, { unit: false }) : "–", f.bmi && (f.age === null || f.age >= 18) ? esc(t.bmiCat(f.bmi)) : ""),
       goal: content(t.goal, f.goal ? `${this._kg(f.goal, { unit: false })} <small>kg</small>` : "–", remaining !== null ? esc(Math.abs(remaining) <= 0.2 ? t.goalReached : t.goalLeft(this._kg(Math.abs(remaining)))) : ""),
+      sex: content(t.sex, f.sex ? esc(t.sexNames[f.sex]) : "–", f.sex ? "" : esc(t.sexHint)),
+      waist: content(t.waist, f.waist ? `${this._kg(f.waist, { unit: false, digits: f.waist % 1 ? 1 : 0 })} <small>cm</small>` : "–",
+        f.whtr ? `${esc(t.whtr)} ${this._kg(f.whtr, { unit: false, digits: 2 })} · ${esc(t.whtrClass[f.whtrClass])}` : ""),
     };
   }
 
@@ -1322,8 +1404,8 @@ class WeightTrackerPanel extends HTMLElement {
     const formId = `profile-form-${person.id}`;
     const defs = this._tileDefs(person);
     const contents = this._tileContents(person, facts);
-    const labels = { age: t.age, height: t.height, bmi: t.bmi, goal: t.goal };
-    return ["age", "height", "bmi", "goal"].map((key) => {
+    const labels = { age: t.age, height: t.height, bmi: t.bmi, goal: t.goal, sex: t.sex, waist: t.waist };
+    return ["age", "height", "bmi", "goal", "sex", "waist"].map((key) => {
       const editing = this._editTile && this._editTile.key === key && this._editTile.person === person.id;
       if (editing) {
         return `
@@ -1331,6 +1413,7 @@ class WeightTrackerPanel extends HTMLElement {
             <div class="label">${esc(labels[key])}</div>
             <div class="form" id="${esc(formId)}">
               ${this._formFields(formId, [defs[key]], defaults)}
+              ${key === "waist" ? this._waistList(person) : ""}
               <div class="actions">
                 <button class="btn primary" type="button" data-action="save-form" data-form="${esc(formId)}">${esc(t.save)}</button>
                 <button class="btn" type="button" data-action="cancel-tile" data-form="${esc(formId)}">${esc(t.cancel)}</button>
@@ -1343,6 +1426,63 @@ class WeightTrackerPanel extends HTMLElement {
         : "";
       return `<div class="tile">${pen}<div data-tile="${key}-${esc(person.id)}">${contents[key]}</div></div>`;
     }).join("");
+  }
+
+  _waistList(person) {
+    const entries = (person.waist || []).slice(-5).reverse();
+    if (!entries.length) return "";
+    return `<div class="waist-list">${entries.map((w) => `
+      <div><span>${esc(this._date(w.ts))}</span><b class="num">${this._kg(w.cm, { unit: false, digits: w.cm % 1 ? 1 : 0 })} cm</b>
+        <button class="icon-btn" type="button" data-action="waist-delete" data-id="${esc(w.id)}" title="${esc(this._t.deleteLabel)}" aria-label="${esc(this._t.deleteLabel)}">✕</button></div>`).join("")}</div>`;
+  }
+
+  // Only shown when the scale provides impedance / body fat.
+  _renderBody(person, f) {
+    const t = this._t;
+    const body = person.body;
+    if (!body) return "";
+    if (!body.latest) {
+      const fields = (body.missing || []).map((k) => t.bodyFields[k]).join(", ");
+      return `<div class="card"><h2>🧬 ${esc(t.body)}</h2><div class="hint" style="margin-top:6px">${esc(t.bodyMissing(fields))}</div></div>`;
+    }
+    const b = body.latest;
+    const tile = (key, label, value, sub = "") => value === null || value === undefined ? "" :
+      `<div class="tile"><div class="label">${esc(label)}</div><div class="big num">${this._link(person, key, label, value)}</div>${sub ? `<div class="sub">${sub}</div>` : ""}</div>`;
+    const range = body.fat_range ? t.fatRange(body.fat_range[0], body.fat_range[1]) : "";
+    const fatSub = [body.fat_class ? t.fatClass[body.fat_class] : "", range,
+      body.fat_change_30d !== null && body.fat_change_30d !== undefined ? `${this._kg(body.fat_change_30d, { signed: true, unit: false })} % ${t.d30}` : ""].filter(Boolean).join(" · ");
+    return `
+      <div class="card">
+        <h2>🧬 ${esc(t.body)}</h2>
+        <div class="hint" style="margin-top:4px">${esc(body.source === "impedance" ? t.bodyHint : t.bodyScaleHint)}</div>
+        ${body.missing && body.missing.length ? `<div class="hint" style="margin-top:4px">${esc(t.bodyMissing(body.missing.map((k) => t.bodyFields[k]).join(", ")))}</div>` : ""}
+        <div class="tiles" style="margin-top:12px">
+          ${tile("body_fat", t.bodyFat, `${this._kg(b.body_fat, { unit: false })} <small>%</small>`, esc(fatSub))}
+          ${tile("muscle_mass", t.muscle, b.muscle_mass !== null ? `${this._kg(b.muscle_mass, { unit: false })} <small>kg</small>` : null)}
+          ${tile("body_water", t.water, b.water !== null ? `${this._kg(b.water, { unit: false })} <small>%</small>` : null)}
+          ${tile("bone_mass", t.bone, b.bone_mass !== null ? `${this._kg(b.bone_mass, { unit: false })} <small>kg</small>` : null)}
+          ${tile("bmr", t.bmr, b.bmr !== null ? `${new Intl.NumberFormat(this._lang).format(b.bmr)} <small>kcal</small>` : null)}
+        </div>
+        ${this._sparkline((body.history || []).map(([ts, fat]) => [ts, fat]), this._color(person.color_index), "%")}
+      </div>`;
+  }
+
+  // Small line chart for [[ts, value], ...]
+  _sparkline(points, color, unit = "") {
+    if (points.length < 2) return "";
+    const W = 320, H = 70, padL = 34, padR = 6, padT = 6, padB = 6;
+    let lo = Math.min(...points.map((p) => p[1])), hi = Math.max(...points.map((p) => p[1]));
+    if (hi - lo < 1) { lo -= 0.5; hi += 0.5; }
+    const t0 = points[0][0], t1 = points[points.length - 1][0];
+    const x = (ts) => padL + ((ts - t0) / Math.max(t1 - t0, 1)) * (W - padL - padR);
+    const y = (v) => padT + (1 - (v - lo) / (hi - lo)) * (H - padT - padB);
+    const d = points.map((p, i) => `${i ? "L" : "M"}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join("");
+    return `<svg class="mini" viewBox="0 0 ${W} ${H}" style="height:84px" role="img">
+      <text x="0" y="${padT + 8}">${esc(this._kg(hi, { unit: false }))}${unit}</text>
+      <text x="0" y="${H - padB}">${esc(this._kg(lo, { unit: false }))}${unit}</text>
+      <path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      ${points.map((p) => `<circle cx="${x(p[0]).toFixed(1)}" cy="${y(p[1]).toFixed(1)}" r="2.5" fill="${color}"/>`).join("")}
+    </svg>`;
   }
 
   _myDataHealth(f) {
@@ -1361,6 +1501,7 @@ class WeightTrackerPanel extends HTMLElement {
         <div class="labels">${zones.map(([a, b], i) => `<div style="width:${width(a, b)}">${esc(t.bmiZones[i])}</div>`).join("")}</div>
       </div>
       <div class="hint" style="margin-top:10px">${esc(t.healthyRange(this._kg(f.height, { unit: false, digits: 0 }), this._kg(f.low, { unit: false }), this._kg(f.high)))}</div>
+      ${f.whtr ? `<div style="margin-top:8px;font-size:13px">${esc(t.whtrLine(this._kg(f.waist, { unit: false, digits: f.waist % 1 ? 1 : 0 }), this._kg(f.whtr, { unit: false, digits: 2 }), t.whtrClass[f.whtrClass]))}</div>` : ""}
       ${youth ? `<div class="hint" style="margin-top:6px">${esc(t.bmiYouth)}</div>` : ""}`;
   }
 
@@ -1439,18 +1580,28 @@ class WeightTrackerPanel extends HTMLElement {
           <tbody>
             ${shown.map((m) => `
               <tr>
-                <td class="num">${esc(this._dateTime(m.ts))}</td>
+                <td class="num">${esc(this._dateTime(m.ts))}${m.note ? `<div class="note">📝 ${esc(m.note)}</div>` : ""}</td>
                 <td class="r num"><b>${this._kg(m.weight, { unit: false })}</b></td>
                 <td class="r num muted">${m.status === "assigned" && m._delta !== undefined ? this._kg(m._delta, { signed: true, unit: false }) : ""}</td>
                 <td>${this._renderPersonCell(m)}</td>
                 <td><span class="tag ${m.status === "pending" ? "warn" : ""}">${esc(m.status === "pending" ? t.open : m.status === "discarded" ? t.discarded : t.methods[m.method] || m.method)}</span></td>
-                <td class="r">${this._canDelete(m) ? `<button class="icon-btn" data-action="delete" data-id="${esc(m.id)}" title="${esc(t.deleteLabel)}" aria-label="${esc(t.deleteLabel)}">✕</button>` : ""}</td>
-              </tr>`).join("")}
+                <td class="r">${this._canDelete(m) && m.status === "assigned" ? `<button class="icon-btn" data-action="note-edit" data-kind="person" data-id="${esc(m.id)}" title="${esc(t.editNote)}" aria-label="${esc(t.editNote)}">📝</button>` : ""}${this._canDelete(m) ? `<button class="icon-btn" data-action="delete" data-id="${esc(m.id)}" title="${esc(t.deleteLabel)}" aria-label="${esc(t.deleteLabel)}">✕</button>` : ""}</td>
+              </tr>${this._noteEditRow("person", m)}`).join("")}
           </tbody>
         </table>
       </div>
       ${!shown.length ? `<div class="message">${esc(t.noData)}</div>` : ""}
       ${rows.length > shown.length ? `<button class="btn more" data-action="more">${esc(t.more)} (${rows.length - shown.length})</button>` : ""}`;
+  }
+
+  _noteEditRow(kind, m) {
+    if (!this._editNote || this._editNote.kind !== kind || this._editNote.id !== m.id) return "";
+    const t = this._t;
+    return `<tr><td colspan="6"><div class="note-edit">
+      <input type="text" maxlength="200" id="note-input" value="${esc(this._editNote.draft ?? m.note ?? "")}" placeholder="${esc(t.notePlaceholder)}" aria-label="${esc(t.note)}">
+      <button class="btn primary" data-action="note-save" data-kind="${kind}" data-id="${esc(m.id)}">${esc(t.save)}</button>
+      <button class="btn" data-action="note-cancel">${esc(t.cancel)}</button>
+    </div></td></tr>`;
   }
 
   _personOf(m) {
@@ -1752,6 +1903,8 @@ class WeightTrackerPanel extends HTMLElement {
       this._def("number", "tolerance", t.tolerance, { required: true, min: 0.5, max: 20, step: 0.1, unit: "kg", helper: t.toleranceHint }),
       this._def("number", "ambiguity_margin", t.margin, { required: true, min: 0.1, max: 10, step: 0.1, unit: "kg", helper: t.marginHint }),
       this._def("number", "debounce_seconds", t.debounce, { required: true, min: 0, max: 120, step: 1, unit: "s", helper: t.debounceHint }),
+      this._def("entity", "impedance_entity", t.impedanceEntity, { filter: { domain: "sensor" }, helper: t.impedanceHint }),
+      this._def("entity", "body_fat_entity", t.bodyFatEntity, { filter: { domain: "sensor" }, helper: t.bodyFatEntityHint }),
     ];
     const defaults = { name: this._entry.title, ...cfg };
     return `
@@ -1809,6 +1962,7 @@ class WeightTrackerPanel extends HTMLElement {
       height: p.height ?? null,
       goal_weight: p.goal ?? null,
       birth_month: p.birth_month || null,
+      sex: p.sex || "",
       person_entity: p.person_entity || null,
       user_id: p.user_id || null,
       viewers: p.viewers || [],
@@ -1826,6 +1980,7 @@ class WeightTrackerPanel extends HTMLElement {
       this._def("number", "height", t.height, { min: 50, max: 250, step: 1, unit: "cm", helper: t.heightHint }),
       this._def("number", "goal_weight", t.goalWeight, { min: 1, max: 300, step: 0.1, unit: "kg", helper: t.goalWeightHint }),
       this._def("birthmonth", "birth_month", t.birthDate, { helper: t.birthDateHint }),
+      this._def("select", "sex", t.sex, { options: Object.entries(t.sexNames).map(([value, label]) => ({ value, label })), emptyLabel: t.sexNone }),
       this._def("entity", "person_entity", t.presence, { filter: { domain: "person" }, helper: t.presenceHint }),
       this._def("select", "user_id", t.linkedUser, {
         options: users.map((u) => ({ value: u.id, label: u.is_admin ? `${u.name} (${t.admin})` : u.name })),
@@ -1951,6 +2106,8 @@ class WeightTrackerPanel extends HTMLElement {
             tolerance: Number(m.tolerance),
             ambiguity_margin: Number(m.ambiguity_margin),
             debounce_seconds: Math.round(Number(m.debounce_seconds)),
+            impedance_entity: m.impedance_entity || null,
+            body_fat_entity: m.body_fat_entity || null,
           },
         });
         this._toast(this._t.saved);
@@ -1966,6 +2123,7 @@ class WeightTrackerPanel extends HTMLElement {
             height: num(m.height),
             goal_weight: num(m.goal_weight),
             birth_month: m.birth_month || null,
+            sex: m.sex || null,
             person_entity: m.person_entity || null,
             user_id: m.user_id || null,
             viewers: m.viewers || [],
@@ -2003,6 +2161,10 @@ class WeightTrackerPanel extends HTMLElement {
           },
         });
         this._toast(this._t.saved);
+      } else if (formId.startsWith("profile-form-") && this._editTile && this._editTile.key === "waist") {
+        await this._ws({ type: "weight_tracker/waist", action: "add", person_id: formId.slice("profile-form-".length), cm: Number(m.waist_new) });
+        this._editTile = null;
+        this._toast(this._t.saved);
       } else if (formId.startsWith("profile-form-")) {
         const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v));
         // Only the value of the tile being edited.
@@ -2023,6 +2185,7 @@ class WeightTrackerPanel extends HTMLElement {
           person: m.person,
           weight: Number(m.weight),
           ...(m.ts ? { timestamp: m.ts } : {}),
+          ...(m.note && String(m.note).trim() ? { note: String(m.note).trim() } : {}),
         });
       }
       this._clearForm(formId);
@@ -2083,6 +2246,7 @@ class WeightTrackerPanel extends HTMLElement {
       this._def("select", "person", t.person, { required: true, options }),
       this._def("number", "weight", t.weight, { required: true, min: 1, max: 500, step: 0.1, unit: "kg" }),
       this._def("datetime", "ts", t.date, { required: true }),
+      this._def("text", "note", t.note, { helper: t.notePlaceholder }),
     ];
     const defaults = { person: (own.find((p) => p.is_me) || own[0] || pets[0] || {}).id, weight: null, ts: this._nowString() };
     return `
@@ -2216,6 +2380,7 @@ class WeightTrackerPanel extends HTMLElement {
       for (const p of s.pts) {
         const px = x(p.ts), py = y(p.weight - s.base);
         svg += `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="4" fill="${s.color}" fill-opacity="0.35" stroke="${s.color}" stroke-opacity="0.6" stroke-width="1"/>`;
+        if (p.note) svg += `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="7.5" fill="none" stroke="var(--primary-text-color)" stroke-width="1.5"/>`;
         this._chartPoints.push({ px, py, m: p, s });
       }
       // trend line
@@ -2292,6 +2457,7 @@ class WeightTrackerPanel extends HTMLElement {
       <div class="muted small">${esc(this._dateTime(best.m.ts))}</div>
       <div>${esc(t.measurement)}: <b class="num">${this._kg(best.m.weight)}</b></div>
       ${best.m.trend !== null && best.m.trend !== undefined ? `<div>${esc(t.trend)}: <span class="num">${this._kg(best.m.trend)}</span></div>` : ""}
+      ${best.m.note ? `<div class="note" style="max-width:220px">📝 ${esc(best.m.note)}</div>` : ""}
       ${rel}`;
     tip.style.display = "block";
     const cssX = best.px / scale, cssY = best.py / scale;
@@ -2315,6 +2481,26 @@ class WeightTrackerPanel extends HTMLElement {
     const el = ev.composedPath().find((n) => n.dataset && n.dataset.action);
     if (!el || el.tagName === "SELECT") return;
     const { action } = el.dataset;
+    if (action === "note-edit") {
+      this._editNote = { kind: el.dataset.kind, id: el.dataset.id };
+      this._render();
+      const input = this.shadowRoot.getElementById("note-input");
+      if (input) input.focus();
+      return;
+    } else if (action === "note-cancel") {
+      this._editNote = null;
+      this._render();
+      return;
+    } else if (action === "note-save") {
+      const input = this.shadowRoot.getElementById("note-input");
+      this._ws({ type: "weight_tracker/set_note", kind: el.dataset.kind, measurement_id: el.dataset.id, note: input ? input.value : "" })
+        .then(() => { this._editNote = null; this._render(); })
+        .catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
+      return;
+    } else if (action === "waist-delete") {
+      this._ws({ type: "weight_tracker/waist", action: "delete", waist_id: el.dataset.id }).catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
+      return;
+    }
     if (action === "notify-test") {
       const model = this._models[el.dataset.form] || {};
       if (!model.notify_service) {

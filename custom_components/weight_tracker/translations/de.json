@@ -56,6 +56,21 @@
       },
       "pending": {
         "name": "Offene Messungen"
+      },
+      "body_fat": {
+        "name": "Körperfett"
+      },
+      "muscle_mass": {
+        "name": "Muskelmasse"
+      },
+      "body_water": {
+        "name": "Körperwasser"
+      },
+      "bone_mass": {
+        "name": "Knochenmasse"
+      },
+      "bmr": {
+        "name": "Grundumsatz"
       }
     },
     "button": {
@@ -102,6 +117,10 @@
         "timestamp": {
           "name": "Zeitpunkt",
           "description": "Leer = jetzt."
+        },
+        "note": {
+          "name": "Notiz",
+          "description": "Optionale Notiz zur Messung."
         }
       }
     },

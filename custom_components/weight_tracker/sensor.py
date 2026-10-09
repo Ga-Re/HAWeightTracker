@@ -14,7 +14,7 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import UnitOfMass
+from homeassistant.const import PERCENTAGE, UnitOfMass
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -22,7 +22,13 @@ from homeassistant.helpers.typing import StateType
 
 from . import WeightTrackerConfigEntry
 from .analytics import PersonStats
-from .const import CONF_CREATE_SENSORS, CONF_GOAL_WEIGHT, CONF_HEIGHT
+from .const import (
+    CONF_BODY_FAT_ENTITY,
+    CONF_CREATE_SENSORS,
+    CONF_GOAL_WEIGHT,
+    CONF_HEIGHT,
+    CONF_IMPEDANCE_ENTITY,
+)
 
 # Sensors that make sense for pets (no BMI)
 PET_SENSOR_KEYS = {
@@ -125,6 +131,41 @@ PERSON_SENSORS: tuple[PersonSensorDescription, ...] = (
 )
 
 
+@dataclass(frozen=True, kw_only=True)
+class BodySensorDescription(SensorEntityDescription):
+    """Body composition value (only with impedance / body fat from the scale)."""
+
+    field: str
+    needs_impedance: bool = True
+
+
+BODY_SENSORS: tuple[BodySensorDescription, ...] = (
+    BodySensorDescription(
+        key="body_fat", field="body_fat", needs_impedance=False,
+        native_unit_of_measurement=PERCENTAGE, state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+    ),
+    BodySensorDescription(
+        key="muscle_mass", field="muscle_mass", device_class=SensorDeviceClass.WEIGHT,
+        native_unit_of_measurement=KG, state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+    ),
+    BodySensorDescription(
+        key="body_water", field="water", native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1,
+    ),
+    BodySensorDescription(
+        key="bone_mass", field="bone_mass", device_class=SensorDeviceClass.WEIGHT,
+        native_unit_of_measurement=KG, state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+    ),
+    BodySensorDescription(
+        key="bmr", field="bmr", native_unit_of_measurement="kcal",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0,
+    ),
+)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: WeightTrackerConfigEntry,
@@ -141,6 +182,16 @@ async def async_setup_entry(
         if person.get(CONF_CREATE_SENSORS)
         for description in PERSON_SENSORS
         if description.exists_fn(person)
+    )
+    # Body composition only if the scale provides impedance or body fat.
+    has_impedance = bool(manager.options.get(CONF_IMPEDANCE_ENTITY))
+    has_body_fat = bool(manager.options.get(CONF_BODY_FAT_ENTITY))
+    entities.extend(
+        BodySensor(manager, person_id, description)
+        for person_id, person in manager.persons.items()
+        if person.get(CONF_CREATE_SENSORS)
+        for description in BODY_SENSORS
+        if has_impedance or (has_body_fat and not description.needs_impedance)
     )
     entities.extend(
         PersonSensor(manager, None, description, pet_id=pet_id)
@@ -213,3 +264,22 @@ class PendingSensor(WeightTrackerEntity, SensorEntity):
     def native_value(self) -> int:
         """Return the number of pending measurements."""
         return len(self.manager.pending)
+
+
+class BodySensor(WeightTrackerEntity, SensorEntity):
+    """Estimated body composition of a person."""
+
+    entity_description: BodySensorDescription
+
+    def __init__(
+        self, manager: WeightTrackerManager, person_id: str, description: BodySensorDescription
+    ) -> None:
+        """Initialize."""
+        super().__init__(manager, SENSOR_DOMAIN, description.key, person_id)
+        self.entity_description = description
+
+    @property
+    def native_value(self) -> float | None:
+        """Latest estimated value."""
+        latest = (self.manager.body.get(self._person_id or "") or {}).get("latest") or {}
+        return latest.get(self.entity_description.field)

@@ -37,6 +37,10 @@ add_measurement:
     timestamp:
       selector:
         datetime:
+    note:
+      example: "nach dem Urlaub"
+      selector:
+        text:
 
 delete_measurement:
   fields:

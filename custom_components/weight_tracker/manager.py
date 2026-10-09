@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import datetime
 import logging
 from typing import Any
@@ -39,6 +39,7 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util.unit_conversion import MassConverter
 
 from .analytics import PersonStats, Point, compute_stats, trend_series
+from .body import Composition, age_from_birth_month, body_fat_class, body_fat_range, from_impedance
 from .milestones import (
     Milestone,
     achieved,
@@ -51,9 +52,12 @@ from .notifications import milestone_message, reminder_message, test_message, we
 from .pets import closest_pet, match_pet, split_pair
 from .const import (
     CONF_AMBIGUITY_MARGIN,
+    CONF_BIRTH_MONTH,
+    CONF_BODY_FAT_ENTITY,
     CONF_DEBOUNCE,
     CONF_GOAL_WEIGHT,
     CONF_HEIGHT,
+    CONF_IMPEDANCE_ENTITY,
     CONF_MAX_WEIGHT,
     CONF_MIN_WEIGHT,
     CONF_NOTIFY_MILESTONES,
@@ -65,6 +69,7 @@ from .const import (
     CONF_PET_ID,
     CONF_PETS,
     CONF_REMINDER_DAYS,
+    CONF_SEX,
     CONF_SOURCE,
     CONF_START_WEIGHT,
     CONF_TOLERANCE,
@@ -75,6 +80,7 @@ from .const import (
     DEFAULT_TOLERANCE,
     DOMAIN,
     DUPLICATE_WINDOW,
+    EXTRA_READING_MAX_AGE,
     EVENT_MEASUREMENT,
     METHOD_MANUAL,
     METHOD_PET_AUTO,
@@ -109,10 +115,14 @@ class Measurement:
     # Pet candidates: the suggested pet and the "alone" reading of the pair.
     pet_id: str | None = None
     pair_id: str | None = None
+    # Extra values of the scale at the time of the reading (if it provides them)
+    impedance: float | None = None
+    body_fat: float | None = None
+    note: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         """Serialize for storage."""
-        data = {
+        data: dict[str, Any] = {
             "id": self.id,
             "ts": self.ts.isoformat(),
             "weight": self.weight,
@@ -124,6 +134,9 @@ class Measurement:
             data["pet_id"] = self.pet_id
         if self.pair_id:
             data["pair_id"] = self.pair_id
+        for key in ("impedance", "body_fat", "note"):
+            if getattr(self, key) is not None:
+                data[key] = getattr(self, key)
         return data
 
     @classmethod
@@ -138,6 +151,9 @@ class Measurement:
             method=data.get("method", ""),
             pet_id=data.get("pet_id"),
             pair_id=data.get("pair_id"),
+            impedance=data.get("impedance"),
+            body_fat=data.get("body_fat"),
+            note=data.get("note"),
         )
 
 
@@ -151,10 +167,11 @@ class PetMeasurement:
     pet_id: str
     by_person_id: str | None  # who carried the pet
     method: str  # pet_session, pet_auto or manual
+    note: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         """Serialize for storage."""
-        return {
+        data: dict[str, Any] = {
             "id": self.id,
             "ts": self.ts.isoformat(),
             "weight": self.weight,
@@ -162,6 +179,9 @@ class PetMeasurement:
             "by_person_id": self.by_person_id,
             "method": self.method,
         }
+        if self.note:
+            data["note"] = self.note
+        return data
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PetMeasurement:
@@ -173,6 +193,29 @@ class PetMeasurement:
             pet_id=data["pet_id"],
             by_person_id=data.get("by_person_id"),
             method=data.get("method", ""),
+            note=data.get("note"),
+        )
+
+
+@dataclass
+class WaistMeasurement:
+    """A manually entered waist circumference."""
+
+    id: str
+    ts: datetime
+    cm: float
+    person_id: str
+
+    def as_dict(self) -> dict[str, Any]:
+        """Serialize for storage."""
+        return {"id": self.id, "ts": self.ts.isoformat(), "cm": self.cm, "person_id": self.person_id}
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> WaistMeasurement:
+        """Restore from storage."""
+        return cls(
+            data["id"], dt_util.parse_datetime(data["ts"]) or dt_util.utcnow(),
+            float(data["cm"]), data["person_id"],
         )
 
 
@@ -182,7 +225,7 @@ class PetSession:
 
     pet_id: str | None
     started: datetime
-    readings: list[tuple[float, datetime]]
+    readings: list[tuple[float, datetime, dict[str, float]]]
 
     @property
     def expires(self) -> datetime:
@@ -204,6 +247,9 @@ class WeightTrackerManager:
         self.pet_measurements: list[PetMeasurement] = []
         self.pet_stats: dict[str, PersonStats] = {}
         self.pet_session: PetSession | None = None
+        self.waist: list[WaistMeasurement] = []
+        # person id -> estimated body composition (for the panel and sensors)
+        self.body: dict[str, dict[str, Any]] = {}
         # person id -> milestone id -> ISO time it was reached
         self.achievements: dict[str, dict[str, str]] = {}
         # person id -> ISO time of the last reminder
@@ -278,6 +324,9 @@ class WeightTrackerManager:
         self.pet_measurements = sorted(
             (PetMeasurement.from_dict(m) for m in data.get("pet_measurements", [])),
             key=lambda m: m.ts,
+        )
+        self.waist = sorted(
+            (WaistMeasurement.from_dict(w) for w in data.get("waist", [])), key=lambda w: w.ts
         )
         self.achievements = data.get("achievements", {})
         self._reminders = data.get("reminders", {})
@@ -431,15 +480,16 @@ class WeightTrackerManager:
     @callback
     def _async_register(self, weight: float, now: datetime) -> None:
         """Handle a settled reading: pet weighing or normal person measurement."""
+        extras = self._extra_readings(now)
         session = self.pet_session
         if session is not None and now <= session.expires:
-            session.readings.append((weight, now))
+            session.readings.append((weight, now, extras))
             if len(session.readings) < 2:
                 self._notify()  # panel shows "1 of 2"
                 return
             self._async_finish_pet_session(session)
             return
-        measurement = self._async_register_person_reading(weight, now)
+        measurement = self._async_register_person_reading(weight, now, extras)
         self._async_check_pet_suggestion(measurement)
 
     def _detect(self, weight: float, now: datetime) -> Detection:
@@ -451,8 +501,29 @@ class WeightTrackerManager:
             margin=self.options.get(CONF_AMBIGUITY_MARGIN, DEFAULT_AMBIGUITY_MARGIN),
         )
 
+    def _extra_readings(self, now: datetime) -> dict[str, float]:
+        """Impedance / body fat of the scale, if those sensors exist and are fresh."""
+        extras: dict[str, float] = {}
+        for key, conf in (("impedance", CONF_IMPEDANCE_ENTITY), ("body_fat", CONF_BODY_FAT_ENTITY)):
+            if not (entity_id := self.options.get(conf)):
+                continue
+            state = self.hass.states.get(entity_id)
+            if state is None or state.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+                continue
+            try:
+                value = float(state.state)
+            except (TypeError, ValueError):
+                continue
+            updated = getattr(state, "last_updated", None)
+            if not isinstance(updated, datetime) or abs(now - updated) > EXTRA_READING_MAX_AGE or value <= 0:
+                continue
+            extras[key] = value
+        return extras
+
     @callback
-    def _async_register_person_reading(self, weight: float, now: datetime) -> Measurement:
+    def _async_register_person_reading(
+        self, weight: float, now: datetime, extras: dict[str, float] | None = None
+    ) -> Measurement:
         """Detect the person and store a new automatic measurement."""
         detection = detect(
             weight,
@@ -469,6 +540,8 @@ class WeightTrackerManager:
             person_id=detection.person_id,
             status=STATUS_ASSIGNED if detection.person_id else STATUS_PENDING,
             method=detection.reason,
+            impedance=(extras or {}).get("impedance"),
+            body_fat=(extras or {}).get("body_fat"),
         )
         _LOGGER.debug(
             "New measurement %.2f kg -> %s (%s, distances %s)",
@@ -632,8 +705,8 @@ class WeightTrackerManager:
         if self._pet_session_unsub:
             self._pet_session_unsub()
             self._pet_session_unsub = None
-        for weight, ts in session.readings:
-            self._async_register_person_reading(weight, ts)
+        for weight, ts, extras in session.readings:
+            self._async_register_person_reading(weight, ts, extras)
         self._notify()
 
     @callback
@@ -648,9 +721,9 @@ class WeightTrackerManager:
             self._pet_session_unsub()
             self._pet_session_unsub = None
         alone_idx, with_idx = split_pair(session.readings[0][0], session.readings[1][0])
-        alone_weight, alone_ts = session.readings[alone_idx]
-        with_weight, with_ts = session.readings[with_idx]
-        alone = self._async_register_person_reading(alone_weight, alone_ts)
+        alone_weight, alone_ts, alone_extras = session.readings[alone_idx]
+        with_weight, with_ts, _ = session.readings[with_idx]
+        alone = self._async_register_person_reading(alone_weight, alone_ts, alone_extras)
         diff = round(with_weight - alone_weight, 2)
         pet_id = session.pet_id or closest_pet(diff, self._pet_references())
         combined = Measurement(
@@ -855,9 +928,35 @@ class WeightTrackerManager:
         return measurement
 
     @callback
+    def async_add_waist(self, person_id: str, cm: float, ts: datetime) -> WaistMeasurement:
+        """Store a waist circumference."""
+        entry = WaistMeasurement(uuid4().hex[:12], ts, round(cm, 1), person_id)
+        self.waist.append(entry)
+        self.waist.sort(key=lambda w: w.ts)
+        self._async_changed()
+        return entry
+
+    def get_waist(self, waist_id: str) -> WaistMeasurement | None:
+        """Return a waist entry by id."""
+        return next((w for w in self.waist if w.id == waist_id), None)
+
+    @callback
+    def async_delete_waist(self, entry: WaistMeasurement) -> None:
+        """Delete a waist entry."""
+        self.waist.remove(entry)
+        self._async_changed()
+
+    @callback
+    def async_set_note(self, measurement: Measurement | PetMeasurement, note: str | None) -> None:
+        """Add, change or remove (empty) the note of a measurement."""
+        measurement.note = (note or "").strip()[:200] or None
+        self._async_changed()
+
+    @callback
     def async_delete_person_data(self, person_id: str) -> int:
         """Delete all measurements of a person (person is being removed)."""
         before = len(self.measurements)
+        self.waist = [w for w in self.waist if w.person_id != person_id]
         self.measurements = [m for m in self.measurements if m.person_id != person_id]
         self._async_changed()
         return before - len(self.measurements)
@@ -903,6 +1002,7 @@ class WeightTrackerManager:
                 height_cm=person.get(CONF_HEIGHT),
                 goal=person.get(CONF_GOAL_WEIGHT),
             )
+        self._recalculate_body(now)
         self.pet_stats = {}
         for pet_id, pet in self.pets.items():
             measured = [m for m in self.pet_measurements if m.pet_id == pet_id]
@@ -910,6 +1010,50 @@ class WeightTrackerManager:
             for measurement, (_, trend) in zip(measured, trend_series(points)):
                 self.trend_by_id[measurement.id] = round(trend, 2)
             self.pet_stats[pet_id] = compute_stats(points, now, goal=pet.get(CONF_GOAL_WEIGHT))
+
+    def _recalculate_body(self, now: datetime) -> None:
+        """Body composition per person, only from readings that carry scale data."""
+        local = dt_util.as_local(now)
+        self.body = {}
+        for person_id, person in self.persons.items():
+            assigned = [
+                m for m in self.measurements
+                if m.person_id == person_id and m.status == STATUS_ASSIGNED
+                and (m.impedance is not None or m.body_fat is not None)
+            ]
+            if not assigned:
+                continue  # the scale does not provide composition data
+            sex = person.get(CONF_SEX)
+            age = age_from_birth_month(person.get(CONF_BIRTH_MONTH), local.year, local.month)
+            height = person.get(CONF_HEIGHT)
+            history: list[tuple[Measurement, Composition]] = []
+            for m in assigned:
+                composition = None
+                if m.impedance is not None and sex and age and height:
+                    composition = from_impedance(m.weight, height, age, sex, m.impedance)
+                if composition is None and m.body_fat is not None:
+                    composition = Composition(body_fat=round(m.body_fat, 1))
+                if composition is not None:
+                    history.append((m, composition))
+            missing = [
+                key for key, value in (("sex", sex), ("birth_month", age), ("height", height))
+                if not value
+            ] if any(m.impedance is not None for m in assigned) else []
+            data: dict[str, Any] = {"missing": missing, "source": "impedance" if any(m.impedance for m in assigned) else "scale"}
+            if history:
+                latest_m, latest = history[-1]
+                month_ago = [c for m, c in history if (latest_m.ts - m.ts).days >= 28]
+                data.update(
+                    {
+                        "latest": asdict(latest),
+                        "ts": latest_m.ts.isoformat(),
+                        "fat_class": body_fat_class(latest.body_fat, sex, age),
+                        "fat_range": body_fat_range(sex, age),
+                        "fat_change_30d": round(latest.body_fat - month_ago[-1].body_fat, 1) if month_ago else None,
+                        "history": [[int(m.ts.timestamp() * 1000), c.body_fat, c.muscle_mass] for m, c in history][-365:],
+                    }
+                )
+            self.body[person_id] = data
 
     @callback
     def _notify(self) -> None:
@@ -921,6 +1065,7 @@ class WeightTrackerManager:
         data: dict[str, Any] = {
             "measurements": [m.as_dict() for m in self.measurements],
             "pet_measurements": [m.as_dict() for m in self.pet_measurements],
+            "waist": [w.as_dict() for w in self.waist],
             "achievements": self.achievements,
             "reminders": self._reminders,
         }

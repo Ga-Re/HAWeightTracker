@@ -17,7 +17,7 @@ Auf dem Home Assistant muss danach genau diese Struktur liegen. Wichtig ist der 
 ```
 /config/custom_components/weight_tracker/
 ├── __init__.py, access.py, analytics.py, button.py, config_flow.py, const.py,
-│   detector.py, entity.py, manager.py, milestones.py, notifications.py, panel.py, pets.py,
+│   body.py, detector.py, entity.py, manager.py, milestones.py, notifications.py, panel.py, pets.py,
 │   sensor.py, services.py, settings.py
 ├── manifest.json, icons.json, services.yaml
 ├── brand/
@@ -64,6 +64,15 @@ Vor jedem Namen steht das **Bild der Home-Assistant-Person**. Es stammt von der 
 Die Formulare nutzen die Eingabefelder von Home Assistant selbst. Waagen-Sensor und Anwesenheit sind durchsuchbare Entitätsauswahlen mit Filter: Gewichtssensoren bzw. nur `person.*`-Entitäten. Speichern lädt die Integration kurz neu, das Panel aktualisiert sich dabei von selbst. Der Knopf *Konfigurieren* unter Geräte & Dienste verweist nur noch auf das Panel.
 
 Das Panel passt sich dem hellen oder dunklen Theme an, funktioniert auf dem Handy und lädt nichts aus dem Internet. Die Daten kommen live über die WebSocket-Verbindung von Home Assistant.
+
+## Körperdaten
+
+- **Geschlecht, Größe, Geburtsmonat, Ziel** und **Taillenumfang** pflegt jede Person selbst unter *Meine Daten* (Stift ✎ in den Kacheln). Aus Taille und Größe wird das Taille-zu-Größe-Verhältnis (WHtR) berechnet und eingestuft. Es ist aussagekräftiger als der BMI allein.
+- **Körperzusammensetzung (nur wenn die Waage sie liefert):** Unter *Einstellungen → Waage* lassen sich optional ein **Impedanz-Sensor** (z. B. Xiaomi Body Composition Scale) oder ein **Körperfett-Sensor** auswählen. Ist ein Wert beim Wiegen frisch (höchstens 2 Minuten alt), wird er mit der Messung gespeichert.
+  - Aus der Impedanz werden Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz geschätzt (Xiaomi-Formel wie in openScale/bodymiscale). Das sind Richtwerte, keine medizinische Messung. Dafür braucht es Geschlecht, Geburtsmonat und Größe, fehlende Angaben nennt das Panel.
+  - Ohne diese Sensoren erscheint nirgends etwas zur Körperzusammensetzung.
+  - Mit *Sensoren in HA* gibt es zusätzlich die Sensoren Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz.
+- **Notizen zu Messungen** („Urlaub“, „krank“, „neues Training“): beim Eintragen oder über 📝 in der Messliste. Im Graph sind Messungen mit Notiz umrandet, der Tooltip zeigt die Notiz.
 
 ## Benachrichtigungen & Erfolge
 

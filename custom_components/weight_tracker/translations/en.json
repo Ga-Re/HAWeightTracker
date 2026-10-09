@@ -56,6 +56,21 @@
       },
       "pending": {
         "name": "Pending measurements"
+      },
+      "body_fat": {
+        "name": "Body fat"
+      },
+      "muscle_mass": {
+        "name": "Muscle mass"
+      },
+      "body_water": {
+        "name": "Body water"
+      },
+      "bone_mass": {
+        "name": "Bone mass"
+      },
+      "bmr": {
+        "name": "Basal metabolic rate"
       }
     },
     "button": {
@@ -102,6 +117,10 @@
         "timestamp": {
           "name": "Time",
           "description": "Empty = now."
+        },
+        "note": {
+          "name": "Note",
+          "description": "Optional note for the measurement."
         }
       }
     },

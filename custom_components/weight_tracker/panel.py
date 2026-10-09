@@ -28,6 +28,7 @@ from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.util import dt as dt_util
 
 from .access import async_assignable_users, can_manage, can_view, is_unrestricted
 from .settings import (
@@ -45,9 +46,11 @@ from .settings import (
 )
 from .const import (
     CONF_BIRTH_MONTH,
+    CONF_BODY_FAT_ENTITY,
     CONF_CREATE_SENSORS,
     CONF_GOAL_WEIGHT,
     CONF_HEIGHT,
+    CONF_IMPEDANCE_ENTITY,
     CONF_NOTIFY_MILESTONES,
     CONF_NOTIFY_SERVICE,
     CONF_NOTIFY_WEIGH,
@@ -57,6 +60,7 @@ from .const import (
     CONF_PET_ID,
     CONF_PETS,
     CONF_REMINDER_DAYS,
+    CONF_SEX,
     CONF_SOURCE,
     CONF_SPECIES,
     CONF_START_WEIGHT,
@@ -105,6 +109,8 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_save_pet)
     websocket_api.async_register_command(hass, ws_delete_pet)
     websocket_api.async_register_command(hass, ws_notify_test)
+    websocket_api.async_register_command(hass, ws_waist)
+    websocket_api.async_register_command(hass, ws_set_note)
     file_hash = await hass.async_add_executor_job(_panel_file_hash)
     hass.data[DATA_PANEL_HASH] = file_hash
     if file_hash is None:
@@ -238,6 +244,14 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                 "goal": person.get(CONF_GOAL_WEIGHT),
                 "birth_month": person.get(CONF_BIRTH_MONTH),
                 "picture": _person_picture(hass, person),
+                "sex": person.get(CONF_SEX),
+                # only present if the scale provides impedance / body fat
+                "body": manager.body.get(person_id),
+                "waist": [
+                    {"id": w.id, "ts": int(w.ts.timestamp() * 1000), "cm": w.cm}
+                    for w in manager.waist
+                    if w.person_id == person_id
+                ],
                 # entity ids of the person's sensors (for HA's more-info dialog)
                 "entities": sensor_ids.get(person_id, {}),
                 "stats": {k: _jsonable(v) for k, v in asdict(stats).items()} if stats else {},
@@ -297,6 +311,7 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                     "status": m.status,
                     "method": m.method,
                     "trend": manager.trend_by_id.get(m.id),
+                    "note": m.note,
                     **extra,
                 }
             )
@@ -330,6 +345,7 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                     "pet_id": m.pet_id,
                     "method": m.method,
                     "trend": manager.trend_by_id.get(m.id),
+                    "note": m.note,
                     # who carried the pet, only if that person is visible
                     "by": carrier[CONF_NAME] if carrier and can_view(user, carrier) else None,
                     "can_edit": admin or bool(carrier and can_manage(user, carrier)),
@@ -355,6 +371,8 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
         if admin:
             entry_data["settings"] = {
                 CONF_SOURCE: entry.options.get(CONF_SOURCE),
+                CONF_IMPEDANCE_ENTITY: entry.options.get(CONF_IMPEDANCE_ENTITY) or None,
+                CONF_BODY_FAT_ENTITY: entry.options.get(CONF_BODY_FAT_ENTITY) or None,
                 **{k: entry.options.get(k, v) for k, v in SETTING_DEFAULTS.items()},
             }
         entries.append(entry_data)
@@ -802,4 +820,73 @@ def ws_notify_test(
         connection.send_error(msg["id"], "unknown_service", "Unknown notify service")
         return
     manager.async_send_test(msg["service"])
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/waist",
+        vol.Required("entry_id"): str,
+        vol.Required("action"): vol.In(["add", "delete"]),
+        vol.Optional("person_id"): str,
+        vol.Optional("cm"): vol.All(vol.Coerce(float), vol.Range(min=30, max=250)),
+        vol.Optional("waist_id"): str,
+    }
+)
+@callback
+def ws_waist(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Add or delete a waist circumference (the person itself or an admin)."""
+    if (manager := _entry_manager(hass, connection, msg)) is None:
+        return
+    if msg["action"] == "add":
+        person = manager.persons.get(msg.get("person_id", ""))
+        if person is None or "cm" not in msg or not can_manage(connection.user, person):
+            connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Person not found")
+            return
+        manager.async_add_waist(msg["person_id"], msg["cm"], dt_util.utcnow())
+    else:
+        entry = manager.get_waist(msg.get("waist_id", ""))
+        person = manager.persons.get(entry.person_id) if entry else None
+        if entry is None or person is None or not can_manage(connection.user, person):
+            connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Not found")
+            return
+        manager.async_delete_waist(entry)
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/set_note",
+        vol.Required("entry_id"): str,
+        vol.Required("measurement_id"): str,
+        vol.Required("kind"): vol.In(["person", "pet"]),
+        vol.Optional("note"): vol.Any(None, vol.All(str, vol.Length(max=200))),
+    }
+)
+@callback
+def ws_set_note(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Note on a measurement. Pets: everybody; persons: the person itself or admins."""
+    if (manager := _entry_manager(hass, connection, msg)) is None:
+        return
+    if msg["kind"] == "pet":
+        measurement = manager.get_pet_measurement(msg["measurement_id"])
+        allowed = measurement is not None
+    else:
+        measurement = manager.get_measurement(msg["measurement_id"])
+        person = (
+            manager.persons.get(measurement.person_id)
+            if measurement and measurement.status == STATUS_ASSIGNED and measurement.person_id
+            else None
+        )
+        allowed = is_unrestricted(connection.user) or (
+            person is not None and can_manage(connection.user, person)
+        )
+    if measurement is None or not allowed:
+        connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Measurement not found")
+        return
+    manager.async_set_note(measurement, msg.get("note"))
     connection.send_result(msg["id"])

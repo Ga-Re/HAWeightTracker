@@ -8,6 +8,10 @@ DOMAIN = "weight_tracker"
 
 # Settings (stored in entry.options)
 CONF_SOURCE = "source_entity"
+# Optional extra sensors of the scale (only used when the scale provides them)
+CONF_IMPEDANCE_ENTITY = "impedance_entity"
+CONF_BODY_FAT_ENTITY = "body_fat_entity"
+EXTRA_READING_MAX_AGE = timedelta(minutes=2)
 CONF_MIN_WEIGHT = "min_weight"
 CONF_MAX_WEIGHT = "max_weight"
 CONF_TOLERANCE = "tolerance"
@@ -27,6 +31,8 @@ CONF_NOTIFY_SERVICE = "notify_service"  # name of a notify.* service
 CONF_NOTIFY_WEIGH = "notify_weigh"
 CONF_NOTIFY_MILESTONES = "notify_milestones"
 CONF_REMINDER_DAYS = "reminder_days"  # 0 = off
+CONF_SEX = "sex"
+SEXES = ("male", "female")
 REMINDER_HOUR = 18
 LEGACY_BIRTH_DATE = "birth_date"  # before 1.5.0: "YYYY-MM-DD"
 

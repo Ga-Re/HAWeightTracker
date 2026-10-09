@@ -19,7 +19,9 @@ from .const import (
     CONF_CREATE_SENSORS,
     CONF_DEBOUNCE,
     CONF_GOAL_WEIGHT,
+    CONF_BODY_FAT_ENTITY,
     CONF_HEIGHT,
+    CONF_IMPEDANCE_ENTITY,
     CONF_MAX_WEIGHT,
     CONF_MIN_WEIGHT,
     CONF_NOTIFY_MILESTONES,
@@ -31,6 +33,7 @@ from .const import (
     CONF_PET_ID,
     CONF_PETS,
     CONF_REMINDER_DAYS,
+    CONF_SEX,
     CONF_SOURCE,
     CONF_SPECIES,
     CONF_START_WEIGHT,
@@ -45,6 +48,7 @@ from .const import (
     DISCARD_OPTION,
     LEGACY_BIRTH_DATE,
     PENDING_OPTION,
+    SEXES,
     SPECIES,
 )
 
@@ -89,6 +93,7 @@ PROFILE_SCHEMA = vol.Schema(
         vol.Optional(CONF_NOTIFY_WEIGH): cv.boolean,
         vol.Optional(CONF_NOTIFY_MILESTONES): cv.boolean,
         vol.Optional(CONF_REMINDER_DAYS): vol.All(vol.Coerce(int), vol.Range(min=0, max=60)),
+        vol.Optional(CONF_SEX): vol.Any(None, "", vol.In(SEXES)),
     }
 )
 
@@ -100,6 +105,7 @@ PROFILE_KEYS = (
     CONF_NOTIFY_WEIGH,
     CONF_NOTIFY_MILESTONES,
     CONF_REMINDER_DAYS,
+    CONF_SEX,
 )
 
 
@@ -112,6 +118,8 @@ SETTINGS_SCHEMA = vol.Schema(
         vol.Required(CONF_TOLERANCE): _number(0.5, 20),
         vol.Required(CONF_AMBIGUITY_MARGIN): _number(0.1, 10),
         vol.Required(CONF_DEBOUNCE): vol.All(vol.Coerce(int), vol.Range(min=0, max=120)),
+        vol.Optional(CONF_IMPEDANCE_ENTITY): vol.Any(None, "", cv.entity_domain("sensor")),
+        vol.Optional(CONF_BODY_FAT_ENTITY): vol.Any(None, "", cv.entity_domain("sensor")),
     }
 )
 
@@ -123,6 +131,7 @@ PERSON_SCHEMA = vol.Schema(
         vol.Optional(CONF_HEIGHT): _optional_number(50, 250),
         vol.Optional(CONF_GOAL_WEIGHT): _optional_number(1, 300),
         vol.Optional(CONF_BIRTH_MONTH): _birth_month,
+        vol.Optional(CONF_SEX): vol.Any(None, "", vol.In(SEXES)),
         vol.Optional(CONF_PERSON_ENTITY): vol.Any(
             None, "", cv.entity_domain(["person", "device_tracker"])
         ),
@@ -174,6 +183,8 @@ def build_person(
             person[key] = float(data[key])
     if data.get(CONF_BIRTH_MONTH):
         person[CONF_BIRTH_MONTH] = data[CONF_BIRTH_MONTH]
+    if data.get(CONF_SEX):
+        person[CONF_SEX] = data[CONF_SEX]
     if data.get(CONF_PERSON_ENTITY):
         person[CONF_PERSON_ENTITY] = data[CONF_PERSON_ENTITY]
 
