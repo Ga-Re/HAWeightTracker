@@ -59,7 +59,8 @@ Jeder, der mit einer Person verknüpft ist (auch Admins), hat hier seine eigene 
 Vor jedem Namen steht das **Bild der Home-Assistant-Person**. Es stammt von der gewählten Anwesenheits-Entität (`person.*`) oder, falls keine gewählt ist, von der Person des verknüpften Benutzers. Ein Ring in der Personenfarbe zeigt die Zuordnung zum Graphen. Ohne Bild erscheint die Initiale.
 
 ### Einstellungen (nur Admins)
-- **Waage:** Name, Gewichtssensor, minimales und maximales Gewicht, Toleranz, Eindeutigkeits-Abstand und Wartezeit, bis ein Wert stabil ist.
+- **Waage:** Name, minimales und maximales Gewicht, Toleranz, Eindeutigkeits-Abstand und Wartezeit, bis ein Wert stabil ist.
+- **Sensoren der Waage:** welche Werte deine Waage an Home Assistant meldet. Nötig ist nur der Gewichtssensor. Optional kommen Impedanz, Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz dazu, falls deine Waage sie liefert. Direkt gemessene Werte haben Vorrang vor der Schätzung aus der Impedanz.
 - **Personen:** anlegen, bearbeiten und löschen. Pro Person gibt es Name, Startgewicht, Größe, Zielgewicht, Geburtsmonat, Anwesenheits-Entität, verknüpften HA-Benutzer, wer zusätzlich ansehen darf und ob Sensoren angelegt werden. Beim Löschen einer Person werden auch ihre Messungen gelöscht.
 - **Freigaben:** Tabelle Benutzer × Personen, siehe unten.
 
@@ -83,10 +84,10 @@ chart_days: 90      # optional, 0 = ohne Verlauf
 ## Körperdaten
 
 - **Geschlecht, Größe, Geburtsmonat, Ziel** und **Taillenumfang** pflegt jede Person selbst unter *Meine Daten* (Stift ✎ in den Kacheln). Aus Taille und Größe wird das Taille-zu-Größe-Verhältnis (WHtR) berechnet und eingestuft. Es ist aussagekräftiger als der BMI allein.
-- **Körperzusammensetzung (nur wenn die Waage sie liefert):** Unter *Einstellungen → Waage* lassen sich optional ein **Impedanz-Sensor** (z. B. Xiaomi Body Composition Scale) oder ein **Körperfett-Sensor** auswählen. Ist ein Wert beim Wiegen frisch (höchstens 2 Minuten alt), wird er mit der Messung gespeichert.
+- **Körperzusammensetzung (nur wenn die Waage sie liefert):** Unter *Einstellungen → Sensoren der Waage* lassen sich optional ein **Impedanz-Sensor** (z. B. Xiaomi Body Composition Scale) und direkt gemessene Werte (Körperfett, Muskelmasse, Körperwasser, Knochenmasse, Grundumsatz) auswählen. Ist ein Wert beim Wiegen frisch (höchstens 2 Minuten alt), wird er mit der Messung gespeichert.
   - Aus der Impedanz werden Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz geschätzt (Xiaomi-Formel wie in openScale/bodymiscale). Das sind Richtwerte, keine medizinische Messung. Dafür braucht es Geschlecht, Geburtsmonat und Größe, fehlende Angaben nennt das Panel.
   - Ohne diese Sensoren erscheint nirgends etwas zur Körperzusammensetzung.
-  - Unter *Einstellungen → Sensoren* lassen sich dafür zusätzlich die Sensoren Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz anlegen.
+  - Unter *Einstellungen → Werte als HA-Sensoren* lassen sich dafür zusätzlich die Sensoren Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz anlegen.
 - **Notizen zu Messungen** („Urlaub“, „krank“, „neues Training“): beim Eintragen oder über 📝 in der Messliste. Im Graph sind Messungen mit Notiz umrandet, der Tooltip zeigt die Notiz.
 
 ## Mit oder ohne Kleidung
@@ -106,9 +107,9 @@ Ein Admin legt im Personen-Editor (*Einstellungen → Personen*) fest, an welche
 - **Erinnerung:** nach einer selbst gewählten Zahl von Tagen ohne Messung, jeweils um 18 Uhr.
 - **Testnachricht** an das eingerichtete Gerät.
 
-## Sensoren in Home Assistant
+## Werte als HA-Sensoren
 
-Unter *Einstellungen → Sensoren* wählst du pro Person, Haustier und Kind einzeln aus, welche Werte als Sensor angelegt werden: Gewicht, Trend, Veränderungen, Tempo, BMI, Abstand zum Ziel, Zieldatum, letzte Messung und, falls die Waage es liefert, Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz. Mit *Alle* bzw. *Keine* geht es schneller. Wer vor 2.0 „Sensoren in HA“ eingeschaltet hatte, behält automatisch alle Sensoren.
+Unter *Einstellungen → Werte als HA-Sensoren* wählst du pro Person, Haustier und Kind einzeln aus, welche Werte als Sensor angelegt werden: Gewicht, Trend, Veränderungen, Tempo, BMI, Abstand zum Ziel, Zieldatum, letzte Messung und, falls die Waage es liefert, Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz. Mit *Alle* bzw. *Keine* geht es schneller. Wer vor 2.0 „Sensoren in HA“ eingeschaltet hatte, behält automatisch alle Sensoren.
 
 ## Haustiere wiegen
 
@@ -155,7 +156,7 @@ So ist die Privatsphäre abgesichert:
 - Die Benachrichtigung über offene Messungen enthält keine Gewichte, weil Benachrichtigungen in Home Assistant alle Benutzer sehen.
 
 **Wichtig – Grenzen von Home Assistant:**
-- **Sensoren sind für alle Benutzer sichtbar.** Home Assistant kennt keine Rechte pro Entität. Es gibt deshalb standardmäßig **keine** Personen-Sensoren. Unter *Einstellungen → Sensoren* lassen sie sich einzeln anlegen, wenn du die Werte für Automationen brauchst.
+- **Sensoren sind für alle Benutzer sichtbar.** Home Assistant kennt keine Rechte pro Entität. Es gibt deshalb standardmäßig **keine** Personen-Sensoren. Unter *Einstellungen → Werte als HA-Sensoren* lassen sie sich einzeln anlegen, wenn du die Werte für Automationen brauchst.
 - **Der Sensor deiner Waage selbst** (aus der Integration der Waage) zeigt allen Benutzern den letzten Rohwert, allerdings ohne Namen. Das kann diese Integration nicht verhindern.
 - Admins sehen in Home Assistant grundsätzlich alles. Gib deiner Partnerin bzw. dir selbst deshalb ein normales Benutzerkonto, wenn die Trennung in beide Richtungen gelten soll.
 
@@ -175,7 +176,7 @@ Wurde falsch zugeordnet, stellst du es in der Messliste des Panels richtig. Die 
 
 ## Entitäten
 
-Es gibt nur die Sensoren, die unter *Einstellungen → Sensoren* ausgewählt sind (sie sind dann für alle Benutzer sichtbar). Die Entitäts-IDs sind unabhängig von der Sprache (Beispiel: Person „Anna“, Waage „Waage“).
+Es gibt nur die Sensoren, die unter *Einstellungen → Werte als HA-Sensoren* ausgewählt sind (sie sind dann für alle Benutzer sichtbar). Die Entitäts-IDs sind unabhängig von der Sprache (Beispiel: Person „Anna“, Waage „Waage“).
 
 | Entität | Bedeutung |
 |---|---|

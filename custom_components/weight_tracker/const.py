@@ -11,6 +11,19 @@ CONF_SOURCE = "source_entity"
 # Optional extra sensors of the scale (only used when the scale provides them)
 CONF_IMPEDANCE_ENTITY = "impedance_entity"
 CONF_BODY_FAT_ENTITY = "body_fat_entity"
+CONF_MUSCLE_ENTITY = "muscle_mass_entity"
+CONF_WATER_ENTITY = "water_entity"
+CONF_BONE_ENTITY = "bone_mass_entity"
+CONF_BMR_ENTITY = "bmr_entity"
+# value stored with a reading -> setting with the scale's sensor
+EXTRA_ENTITIES = {
+    "impedance": CONF_IMPEDANCE_ENTITY,
+    "body_fat": CONF_BODY_FAT_ENTITY,
+    "muscle_mass": CONF_MUSCLE_ENTITY,
+    "water": CONF_WATER_ENTITY,
+    "bone_mass": CONF_BONE_ENTITY,
+    "bmr": CONF_BMR_ENTITY,
+}
 EXTRA_READING_MAX_AGE = timedelta(minutes=2)
 CONF_MIN_WEIGHT = "min_weight"
 CONF_MAX_WEIGHT = "max_weight"

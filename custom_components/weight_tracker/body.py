@@ -22,7 +22,7 @@ def _clamp(value: float, low: float, high: float) -> float:
 class Composition:
     """Estimated body composition of one measurement."""
 
-    body_fat: float  # %
+    body_fat: float | None = None  # %
     water: float | None = None  # %
     bone_mass: float | None = None  # kg
     muscle_mass: float | None = None  # kg
@@ -100,9 +100,9 @@ _FAT_RANGES = {
 }
 
 
-def body_fat_class(body_fat: float, sex: str | None, age: int | None) -> str | None:
+def body_fat_class(body_fat: float | None, sex: str | None, age: int | None) -> str | None:
     """low / healthy / high / very_high, None without sex or for minors."""
-    if sex not in _FAT_RANGES or age is None or age < 18:
+    if body_fat is None or sex not in _FAT_RANGES or age is None or age < 18:
         return None
     for max_age, low, healthy, high in _FAT_RANGES[sex]:
         if age <= max_age:

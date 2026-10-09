@@ -230,9 +230,16 @@ const TEXT = {
     note: "Notiz",
     editNote: "Notiz bearbeiten",
     notePlaceholder: "z. B. nach dem Urlaub, krank, neues Training",
-    impedanceEntity: "Impedanz-Sensor (optional)",
+    scaleSensors: "Sensoren der Waage",
+    scaleSensorsHint: "Welche Werte deine Waage an Home Assistant meldet. Nur das Gewicht ist nötig – alles andere nur, falls deine Waage es liefert.",
+    muscleEntity: "Muskelmasse-Sensor",
+    waterEntity: "Körperwasser-Sensor",
+    boneEntity: "Knochenmasse-Sensor",
+    bmrEntity: "Grundumsatz-Sensor",
+    directHint: "Falls deine Waage diesen Wert direkt liefert – er ersetzt dann die Schätzung aus der Impedanz.",
+    impedanceEntity: "Impedanz-Sensor",
     impedanceHint: "Nur falls deine Waage die Impedanz liefert (z. B. Xiaomi Body Composition Scale). Daraus werden Körperfett, Muskeln usw. geschätzt.",
-    bodyFatEntity: "Körperfett-Sensor (optional)",
+    bodyFatEntity: "Körperfett-Sensor",
     bodyFatEntityHint: "Falls die Integration deiner Waage schon Körperfett in % liefert.",
     myDataHint: "Deine Angaben. Sehen können sie nur du und Admins.",
     healthy: "Gesunder Bereich",
@@ -261,7 +268,7 @@ const TEXT = {
     measuredWithClothes: (kg) => `gemessen ${kg} mit Kleidung`,
     notifyNoDevice: "Für dich ist noch kein Gerät eingerichtet – ein Admin kann das unter Einstellungen → Personen festlegen.",
     notifyDeviceAdminHint: "Wohin die Nachrichten dieser Person gehen. Welche Nachrichten sie bekommt, entscheidet sie selbst unter „Meine Daten“.",
-    sensorSettings: "Sensoren in Home Assistant",
+    sensorSettings: "Werte als HA-Sensoren",
     sensorSettingsHint: "Wähle pro Person, Haustier und Kind, welche Werte als Sensor in Home Assistant angelegt werden – z. B. für Automationen oder eigene Dashboards.",
     sensorAll: "Alle",
     sensorNone: "Keine",
@@ -512,9 +519,16 @@ const TEXT = {
     note: "Note",
     editNote: "Edit note",
     notePlaceholder: "e.g. after holiday, ill, new training",
-    impedanceEntity: "Impedance sensor (optional)",
+    scaleSensors: "Scale sensors",
+    scaleSensorsHint: "Which values your scale reports to Home Assistant. Only the weight is required – everything else only if your scale provides it.",
+    muscleEntity: "Muscle mass sensor",
+    waterEntity: "Body water sensor",
+    boneEntity: "Bone mass sensor",
+    bmrEntity: "Basal metabolic rate sensor",
+    directHint: "If your scale reports this value directly – it then replaces the estimate from the impedance.",
+    impedanceEntity: "Impedance sensor",
     impedanceHint: "Only if your scale reports impedance (e.g. Xiaomi Body Composition Scale). Body fat, muscles etc. are estimated from it.",
-    bodyFatEntity: "Body fat sensor (optional)",
+    bodyFatEntity: "Body fat sensor",
     bodyFatEntityHint: "If your scale's integration already reports body fat in %.",
     myDataHint: "Your details. Only you and admins can see them.",
     healthy: "Healthy range",
@@ -543,7 +557,7 @@ const TEXT = {
     measuredWithClothes: (kg) => `measured ${kg} with clothes`,
     notifyNoDevice: "No device is set up for you yet – an admin can choose one under Settings → Persons.",
     notifyDeviceAdminHint: "Where this person's messages go. Which messages they get, they decide themselves under “My details”.",
-    sensorSettings: "Sensors in Home Assistant",
+    sensorSettings: "Values as HA sensors",
     sensorSettingsHint: "Choose per person, pet and child which values become sensors in Home Assistant – e.g. for automations or your own dashboards.",
     sensorAll: "All",
     sensorNone: "None",
@@ -716,7 +730,8 @@ const STYLE = `
   .tab:hover { opacity: 1; }
   .tab[aria-selected="true"] { opacity: 1; font-weight: 500; border-bottom-color: currentColor; }
   .scroller { flex: 1; overflow-y: auto; }
-  .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px 16px; margin-top: 12px; }
+  .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(220px, calc((100% - 32px) / 3)), 1fr)); gap: 16px; margin-top: 12px; align-items: start; }
+  .flabel { font-size: 12px; color: var(--wt-muted); margin: 0 0 4px 2px; min-height: 16px; }
   .fields .wide { grid-column: 1 / -1; }
   .hint { font-size: 12px; color: var(--wt-muted); line-height: 1.35; }
   .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
@@ -733,7 +748,7 @@ const STYLE = `
   .editor h3 { font-size: 15px; font-weight: 500; margin: 0; display: flex; align-items: center; gap: 8px; }
   .field { min-width: 0; }
   .bd-label { font-size: 12px; color: var(--wt-muted); margin-bottom: 4px; }
-  .bd-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr) auto; gap: 8px; align-items: center; }
+  .bd-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr) auto; gap: 8px; align-items: end; max-width: 640px; }
   .bd-age { min-width: 72px; text-align: center; padding: 4px 8px; border-radius: 10px; background: rgba(127,127,127,.1); }
   .bd-age b { display: block; font-size: 24px; line-height: 1.1; }
   .bd-age span { font-size: 11px; color: var(--wt-muted); }
@@ -741,7 +756,8 @@ const STYLE = `
   .session { border-left: 4px solid var(--primary-color, #03a9f4); display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
   .session .what { flex: 1 1 260px; }
   .session .count { font-variant-numeric: tabular-nums; font-weight: 500; }
-  .mini { display: block; width: 100%; height: 96px; margin-top: 12px; touch-action: pan-y; }
+  .mini { display: block; margin-top: 12px; touch-action: pan-y; }
+  .spark { width: 100%; min-height: 20px; }
   .mini-wrap { position: relative; }
   .mini text { fill: var(--wt-muted); font-size: 10px; font-family: inherit; }
   .pet-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
@@ -767,7 +783,7 @@ const STYLE = `
   .events .add { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .events .add select, .events .add input { font: inherit; font-size: 13px; padding: 4px 8px; min-height: 34px; border-radius: 8px; border: 1px solid var(--wt-border); background: var(--wt-card); color: var(--primary-text-color); }
   .events .add input[type=text] { flex: 1 1 160px; }
-  .growth { display: block; width: 100%; height: 190px; margin-top: 12px; }
+  .growth { display: block; margin-top: 12px; }
   .growth text { fill: var(--wt-muted); font-size: 10px; font-family: inherit; }
   .unit-select { background: transparent; color: inherit; border: 1px solid currentColor; border-radius: 8px; padding: 2px 6px; font: inherit; font-size: 13px; margin-left: 8px; }
   .unit-select option { color: #000; }
@@ -1008,6 +1024,8 @@ class WeightTrackerPanel extends HTMLElement {
       this._hideHover();
       this._hideMiniHover();
     }, true);
+    this._sparkObserver = new ResizeObserver(() => this._drawSparks());
+    this._sparkObserver.observe(root.getElementById("content"));
     this._resizeObserver = new ResizeObserver(() => {
       const el = root.getElementById("chart");
       if (el && Math.abs(el.clientWidth - this._chartWidth) > 2) this._renderChart();
@@ -1269,6 +1287,7 @@ class WeightTrackerPanel extends HTMLElement {
     }
     this._syncCountdown();
     this._mountFields();
+    this._drawSparks();
     this._resizeObserver.disconnect();
     const chart = this.shadowRoot.getElementById("chart");
     if (chart) {
@@ -1459,9 +1478,14 @@ class WeightTrackerPanel extends HTMLElement {
   _growthChart(child) {
     const g = child.growth;
     if (!g || !g.curves || g.curves.length < 2) return "";
+    return this._spark(`growth-${child.id}`, (W) => this._growthChartSvg(child, W));
+  }
+
+  _growthChartSvg(child, W) {
+    const g = child.growth;
     const uf = this._factor;
     const color = this._color(child.color_index);
-    const W = 320, H = 160, padL = 30, padR = 8, padT = 8, padB = 18;
+    const H = 190, padL = 34, padR = 10, padT = 10, padB = 20;
     const curves = g.curves.map((c) => [c[0], ...c.slice(1).map((v) => v * uf)]);
     const pts = (g.points || []).map(([a, w]) => [a, w * uf]);
     const a0 = curves[0][0], a1 = curves[curves.length - 1][0];
@@ -1480,7 +1504,7 @@ class WeightTrackerPanel extends HTMLElement {
     for (let a = Math.ceil(a0 / stepM) * stepM; a <= a1; a += stepM) {
       ticks += `<text x="${x(a).toFixed(1)}" y="${H - 4}" text-anchor="middle">${yearsAxis ? `${a / 12} J` : `${a} M`}</text>`;
     }
-    return `<svg class="growth" viewBox="0 0 ${W} ${H}" role="img">
+    return `<svg class="growth" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img">
       <path d="${band(1, 5)}" fill="${color}" fill-opacity="0.10"/>
       <path d="${band(2, 4)}" fill="${color}" fill-opacity="0.16"/>
       <path d="${median}" fill="none" stroke="${color}" stroke-width="1" stroke-dasharray="4 3" opacity="0.7"/>
@@ -1556,12 +1580,32 @@ class WeightTrackerPanel extends HTMLElement {
       </div>`;
   }
 
+  // Charts inside cards are drawn after rendering, in the real width of the card.
+  _spark(key, draw) {
+    (this._sparks = this._sparks || {})[key] = draw;
+    return `<div class="spark" data-spark="${esc(key)}"></div>`;
+  }
+
+  _drawSparks() {
+    for (const el of this.shadowRoot.querySelectorAll(".spark[data-spark]")) {
+      const draw = (this._sparks || {})[el.dataset.spark];
+      const width = Math.round(el.clientWidth);
+      if (!draw || !width || el._width === width) continue;
+      el._width = width;
+      el.innerHTML = draw(Math.max(240, width));
+    }
+  }
+
   // Small history chart of one pet (last 180 days): dots + trend line.
   _miniChart(pet, color) {
     const now = Date.now();
     const pts = (this._entry.pet_measurements || []).filter((m) => m.pet_id === pet.id && m.ts >= now - 180 * DAY);
     if (pts.length < 2) return "";
-    const W = 320, H = 80, padL = 30, padR = 6, padT = 6, padB = 6;
+    return this._spark(`pet-${pet.id}`, (W) => this._miniChartSvg(pet, color, pts, now, W));
+  }
+
+  _miniChartSvg(pet, color, pts, now, W) {
+    const H = 96, padL = 34, padR = 8, padT = 8, padB = 8;
     const values = pts.flatMap((m) => [m.weight, m.trend ?? m.weight]);
     let lo = Math.min(...values), hi = Math.max(...values);
     if (hi - lo < 0.4) { lo -= 0.2; hi += 0.2; }
@@ -1571,7 +1615,7 @@ class WeightTrackerPanel extends HTMLElement {
     const trend = pts.map((m, i) => `${i ? "L" : "M"}${x(m.ts).toFixed(1)},${y(m.trend ?? m.weight).toFixed(1)}`).join("");
     this._miniData = this._miniData || {};
     this._miniData[`pet-${pet.id}`] = { W, H, padT, padB, color, points: pts.map((m) => ({ px: x(m.ts), py: y(m.weight), m })) };
-    return `<div class="mini-wrap"><svg class="mini" data-mini="pet-${esc(pet.id)}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(this._t.history)}">
+    return `<div class="mini-wrap"><svg class="mini" data-mini="pet-${esc(pet.id)}" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(this._t.history)}">
       <text x="0" y="${padT + 8}">${esc(this._kg(hi, { unit: false }))}</text>
       <text x="0" y="${H - padB}">${esc(this._kg(lo, { unit: false }))}</text>
       ${pts.map((m) => `<circle cx="${x(m.ts).toFixed(1)}" cy="${y(m.weight).toFixed(1)}" r="3" fill="${color}" fill-opacity="0.35"/>`).join("")}
@@ -1927,14 +1971,18 @@ class WeightTrackerPanel extends HTMLElement {
   // Small line chart for [[ts, value], ...]
   _sparkline(points, color, unit = "") {
     if (points.length < 2) return "";
-    const W = 320, H = 70, padL = 34, padR = 6, padT = 6, padB = 6;
+    return this._spark(`line-${color}-${points.length}-${points[0][0]}`, (W) => this._sparklineSvg(points, color, unit, W));
+  }
+
+  _sparklineSvg(points, color, unit, W) {
+    const H = 84, padL = 38, padR = 8, padT = 8, padB = 8;
     let lo = Math.min(...points.map((p) => p[1])), hi = Math.max(...points.map((p) => p[1]));
     if (hi - lo < 1) { lo -= 0.5; hi += 0.5; }
     const t0 = points[0][0], t1 = points[points.length - 1][0];
     const x = (ts) => padL + ((ts - t0) / Math.max(t1 - t0, 1)) * (W - padL - padR);
     const y = (v) => padT + (1 - (v - lo) / (hi - lo)) * (H - padT - padB);
     const d = points.map((p, i) => `${i ? "L" : "M"}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join("");
-    return `<svg class="mini" viewBox="0 0 ${W} ${H}" style="height:84px" role="img">
+    return `<svg class="mini" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img">
       <text x="0" y="${padT + 8}">${esc(this._kg(hi, { unit: false }))}${unit}</text>
       <text x="0" y="${H - padB}">${esc(this._kg(lo, { unit: false }))}${unit}</text>
       <path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
@@ -2278,7 +2326,10 @@ class WeightTrackerPanel extends HTMLElement {
     const el = document.createElement("ha-selector");
     el.hass = this._hass;
     el.selector = def.selector;
-    el.label = def.label;
+    // Labels above every field (some HA fields put them inside, some above),
+    // so all fields of a row line up. Switches keep their own label.
+    const outside = def.kind !== "boolean";
+    el.label = outside ? "" : def.label;
     if (def.helper) el.helper = def.helper;
     el.required = Boolean(def.required);
     el.value = value === null ? undefined : value;
@@ -2289,7 +2340,11 @@ class WeightTrackerPanel extends HTMLElement {
       el.value = ev.detail.value;
       this._setValue(formId, def, def._from ? def._from(ev.detail.value) : ev.detail.value);
     });
-    return el;
+    if (!outside) return el;
+    const box = document.createElement("div");
+    box.innerHTML = `<div class="flabel">${esc(def.label)}${def.required ? " *" : ""}</div>`;
+    box.append(el);
+    return box;
   }
 
   _birthMonthField(formId, def, value, withDay = false) {
@@ -2470,14 +2525,20 @@ class WeightTrackerPanel extends HTMLElement {
       : { domain: "sensor" };
     const fields = [
       this._def("text", "name", t.name, { required: true }),
-      this._def("entity", "source_entity", t.source, { required: true, filter }),
       this._def("number", "min_weight", t.minWeight, { required: true, min: 1, max: 300, step: 0.5, unit: "kg", helper: t.minWeightHint }),
       this._def("number", "max_weight", t.maxWeight, { required: true, min: 1, max: 500, step: 0.5, unit: "kg" }),
       this._def("number", "tolerance", t.tolerance, { required: true, min: 0.5, max: 20, step: 0.1, unit: "kg", helper: t.toleranceHint }),
       this._def("number", "ambiguity_margin", t.margin, { required: true, min: 0.1, max: 10, step: 0.1, unit: "kg", helper: t.marginHint }),
       this._def("number", "debounce_seconds", t.debounce, { required: true, min: 0, max: 120, step: 1, unit: "s", helper: t.debounceHint }),
+    ];
+    const sensors = [
+      this._def("entity", "source_entity", t.source, { required: true, filter }),
       this._def("entity", "impedance_entity", t.impedanceEntity, { filter: { domain: "sensor" }, helper: t.impedanceHint }),
       this._def("entity", "body_fat_entity", t.bodyFatEntity, { filter: { domain: "sensor" }, helper: t.bodyFatEntityHint }),
+      this._def("entity", "muscle_mass_entity", t.muscleEntity, { filter: { domain: "sensor" }, helper: t.directHint }),
+      this._def("entity", "water_entity", t.waterEntity, { filter: { domain: "sensor" }, helper: t.directHint }),
+      this._def("entity", "bone_mass_entity", t.boneEntity, { filter: { domain: "sensor" }, helper: t.directHint }),
+      this._def("entity", "bmr_entity", t.bmrEntity, { filter: { domain: "sensor" }, helper: t.directHint }),
     ];
     const defaults = { name: this._entry.title, ...cfg };
     return `
@@ -2487,6 +2548,14 @@ class WeightTrackerPanel extends HTMLElement {
         <div class="form" id="settings-form">
           ${this._formFields("settings-form", fields, defaults)}
           ${this._formActions("settings-form")}
+        </div>
+      </div>
+      <div class="card">
+        <h2>📡 ${esc(t.scaleSensors)}</h2>
+        <div class="hint" style="margin-top:4px">${esc(t.scaleSensorsHint)}</div>
+        <div class="form" id="scale-sensors-form">
+          ${this._formFields("scale-sensors-form", sensors, defaults)}
+          ${this._formActions("scale-sensors-form")}
         </div>
       </div>`;
   }
@@ -2552,9 +2621,9 @@ class WeightTrackerPanel extends HTMLElement {
       this._def("number", "start_weight", t.startWeight, { required: true, min: 1, max: 300, step: 0.1, unit: "kg", helper: t.startWeightHint }),
       this._def("number", "height", t.height, { min: 50, max: 250, step: 1, unit: "cm", helper: t.heightHint }),
       this._def("number", "goal_weight", t.goalWeight, { min: 1, max: 300, step: 0.1, unit: "kg", helper: t.goalWeightHint }),
-      this._def("birthmonth", "birth_month", t.birthDate, { helper: t.birthDateHint }),
       this._def("select", "sex", t.sex, { options: Object.entries(t.sexNames).map(([value, label]) => ({ value, label })), emptyLabel: t.sexNone }),
       this._def("entity", "person_entity", t.presence, { filter: { domain: "person" }, helper: t.presenceHint }),
+      this._def("birthmonth", "birth_month", t.birthDate, { helper: t.birthDateHint, wide: true }),
       this._def("select", "user_id", t.linkedUser, {
         options: users.map((u) => ({ value: u.id, label: u.is_admin ? `${u.name} (${t.admin})` : u.name })),
         helper: t.linkedUserHint,
@@ -2564,8 +2633,8 @@ class WeightTrackerPanel extends HTMLElement {
           this._render(); // refresh the viewer list
         },
       }),
+      this._def("select", "notify_service", t.notifyDevice, { options: this._notifyServices(), emptyLabel: t.notifyNone, helper: t.notifyDeviceAdminHint }),
       this._def("multi", "viewers", t.viewers, { options: viewerOptions, helper: t.viewersHint, wide: true }),
-      this._def("select", "notify_service", t.notifyDevice, { options: this._notifyServices(), emptyLabel: t.notifyNone, helper: t.notifyDeviceAdminHint, wide: true }),
     ];
     const count = this._entry.measurements.filter((m) => m.person_id === id).length;
     const extra = `
@@ -2584,7 +2653,8 @@ class WeightTrackerPanel extends HTMLElement {
     const base = ["weight", "trend", "change_last", "change_7d", "change_30d", "change_total", "rate"];
     if (kind !== "person") return [...base, "goal_distance", "goal_eta", "last_measured"];
     const cfg = this._entry.settings || {};
-    const body = cfg.impedance_entity ? ["body_fat", "muscle_mass", "body_water", "bone_mass", "bmr"] : cfg.body_fat_entity ? ["body_fat"] : [];
+    const direct = { body_fat: cfg.body_fat_entity, muscle_mass: cfg.muscle_mass_entity, body_water: cfg.water_entity, bone_mass: cfg.bone_mass_entity, bmr: cfg.bmr_entity };
+    const body = Object.keys(direct).filter((key) => cfg.impedance_entity || direct[key]);
     return [...base, "bmi", "goal_distance", "goal_eta", "last_measured", ...body];
   }
 
@@ -2746,7 +2816,9 @@ class WeightTrackerPanel extends HTMLElement {
     delete this._formErrors[formId];
     const m = this._models[formId];
     try {
-      if (formId === "settings-form") {
+      if (formId === "settings-form" || formId === "scale-sensors-form") {
+        // Both cards are one set of settings: send the current values of both.
+        const m = { ...(this._entry.settings || {}), name: this._entry.title, ...(this._models["settings-form"] || {}), ...(this._models["scale-sensors-form"] || {}) };
         await this._ws({
           type: "weight_tracker/update_settings",
           settings: {
@@ -2759,9 +2831,15 @@ class WeightTrackerPanel extends HTMLElement {
             debounce_seconds: Math.round(Number(m.debounce_seconds)),
             impedance_entity: m.impedance_entity || null,
             body_fat_entity: m.body_fat_entity || null,
+            muscle_mass_entity: m.muscle_mass_entity || null,
+            water_entity: m.water_entity || null,
+            bone_mass_entity: m.bone_mass_entity || null,
+            bmr_entity: m.bmr_entity || null,
           },
         });
         this._toast(this._t.saved);
+        this._clearForm("settings-form");
+        this._clearForm("scale-sensors-form");
       } else if (formId.startsWith("person-form-")) {
         const id = formId.slice("person-form-".length);
         const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v));

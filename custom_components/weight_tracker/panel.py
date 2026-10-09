@@ -71,6 +71,7 @@ from .const import (
     CONF_VIEWERS,
     DATA_PANEL_REGISTERED,
     DOMAIN,
+    EXTRA_ENTITIES,
     PANEL_COMPONENT,
     PET_EVENT_CATEGORIES,
     PANEL_URL_PATH,
@@ -404,8 +405,7 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
         if admin:
             entry_data["settings"] = {
                 CONF_SOURCE: entry.options.get(CONF_SOURCE),
-                CONF_IMPEDANCE_ENTITY: entry.options.get(CONF_IMPEDANCE_ENTITY) or None,
-                CONF_BODY_FAT_ENTITY: entry.options.get(CONF_BODY_FAT_ENTITY) or None,
+                **{conf: entry.options.get(conf) or None for conf in EXTRA_ENTITIES.values()},
                 **{k: entry.options.get(k, v) for k, v in SETTING_DEFAULTS.items()},
             }
         entries.append(entry_data)

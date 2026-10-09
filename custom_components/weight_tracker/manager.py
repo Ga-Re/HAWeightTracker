@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime
 import logging
 from typing import Any
@@ -85,6 +85,7 @@ from .const import (
     DEFAULT_TOLERANCE,
     DOMAIN,
     DUPLICATE_WINDOW,
+    EXTRA_ENTITIES,
     EXTRA_READING_MAX_AGE,
     KIND_CHILD,
     EVENT_MEASUREMENT,
@@ -125,6 +126,11 @@ class Measurement:
     # Extra values of the scale at the time of the reading (if it provides them)
     impedance: float | None = None
     body_fat: float | None = None
+    # values a scale reports directly (instead of the impedance estimate)
+    muscle_mass: float | None = None
+    water: float | None = None
+    bone_mass: float | None = None
+    bmr: float | None = None
     note: str | None = None
     # Weighed with clothes: the clothes weight deducted (None = without clothes)
     clothes_kg: float | None = None
@@ -148,7 +154,7 @@ class Measurement:
             data["pet_id"] = self.pet_id
         if self.pair_id:
             data["pair_id"] = self.pair_id
-        for key in ("impedance", "body_fat", "note", "clothes_kg"):
+        for key in ("impedance", "body_fat", "muscle_mass", "water", "bone_mass", "bmr", "note", "clothes_kg"):
             if getattr(self, key) is not None:
                 data[key] = getattr(self, key)
         return data
@@ -167,6 +173,10 @@ class Measurement:
             pair_id=data.get("pair_id"),
             impedance=data.get("impedance"),
             body_fat=data.get("body_fat"),
+            muscle_mass=data.get("muscle_mass"),
+            water=data.get("water"),
+            bone_mass=data.get("bone_mass"),
+            bmr=data.get("bmr"),
             note=data.get("note"),
             clothes_kg=data.get("clothes_kg"),
         )
@@ -553,7 +563,7 @@ class WeightTrackerManager:
     def _extra_readings(self, now: datetime) -> dict[str, float]:
         """Impedance / body fat of the scale, if those sensors exist and are fresh."""
         extras: dict[str, float] = {}
-        for key, conf in (("impedance", CONF_IMPEDANCE_ENTITY), ("body_fat", CONF_BODY_FAT_ENTITY)):
+        for key, conf in EXTRA_ENTITIES.items():
             if not (entity_id := self.options.get(conf)):
                 continue
             state = self.hass.states.get(entity_id)
@@ -589,8 +599,7 @@ class WeightTrackerManager:
             person_id=detection.person_id,
             status=STATUS_ASSIGNED if detection.person_id else STATUS_PENDING,
             method=detection.reason,
-            impedance=(extras or {}).get("impedance"),
-            body_fat=(extras or {}).get("body_fat"),
+            **{key: (extras or {}).get(key) for key in EXTRA_ENTITIES},
         )
         _LOGGER.debug(
             "New measurement %.2f kg -> %s (%s, distances %s)",
@@ -1183,7 +1192,7 @@ class WeightTrackerManager:
             assigned = [
                 m for m in self.measurements
                 if m.person_id == person_id and m.status == STATUS_ASSIGNED
-                and (m.impedance is not None or m.body_fat is not None)
+                and any(getattr(m, key) is not None for key in EXTRA_ENTITIES)
             ]
             if not assigned:
                 continue  # the scale does not provide composition data
@@ -1195,26 +1204,34 @@ class WeightTrackerManager:
                 composition = None
                 if m.impedance is not None and sex and age and height:
                     composition = from_impedance(m.effective, height, age, sex, m.impedance)
-                if composition is None and m.body_fat is not None:
-                    composition = Composition(body_fat=round(m.body_fat, 1))
+                direct = {
+                    key: round(getattr(m, key), 1 if key != "bmr" else 0)
+                    for key in ("body_fat", "muscle_mass", "water", "bone_mass", "bmr")
+                    if getattr(m, key) is not None
+                }
+                if direct:
+                    composition = replace(composition, **direct) if composition else Composition(**direct)
                 if composition is not None:
                     history.append((m, composition))
             missing = [
                 key for key, value in (("sex", sex), ("birth_month", age), ("height", height))
                 if not value
             ] if any(m.impedance is not None for m in assigned) else []
-            data: dict[str, Any] = {"missing": missing, "source": "impedance" if any(m.impedance for m in assigned) else "scale"}
+            data: dict[str, Any] = {
+                "missing": missing,
+                "source": "scale" if any(getattr(m, k) is not None for m in assigned for k in ("body_fat", "muscle_mass", "water")) and not any(m.impedance for m in assigned) else "impedance",
+            }
             if history:
                 latest_m, latest = history[-1]
-                month_ago = [c for m, c in history if (latest_m.ts - m.ts).days >= 28]
+                month_ago = [c for m, c in history if (latest_m.ts - m.ts).days >= 28 and c.body_fat is not None]
                 data.update(
                     {
                         "latest": asdict(latest),
                         "ts": latest_m.ts.isoformat(),
                         "fat_class": body_fat_class(latest.body_fat, sex, age),
                         "fat_range": body_fat_range(sex, age),
-                        "fat_change_30d": round(latest.body_fat - month_ago[-1].body_fat, 1) if month_ago else None,
-                        "history": [[int(m.ts.timestamp() * 1000), c.body_fat, c.muscle_mass] for m, c in history][-365:],
+                        "fat_change_30d": round(latest.body_fat - month_ago[-1].body_fat, 1) if month_ago and latest.body_fat is not None else None,
+                        "history": [[int(m.ts.timestamp() * 1000), c.body_fat, c.muscle_mass] for m, c in history if c.body_fat is not None][-365:],
                     }
                 )
             self.body[person_id] = data

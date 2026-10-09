@@ -23,7 +23,11 @@ from homeassistant.helpers.typing import StateType
 from . import WeightTrackerConfigEntry
 from .analytics import PersonStats
 from .const import (
+    CONF_BMR_ENTITY,
     CONF_BODY_FAT_ENTITY,
+    CONF_BONE_ENTITY,
+    CONF_MUSCLE_ENTITY,
+    CONF_WATER_ENTITY,
     CONF_SENSORS,
     CONF_GOAL_WEIGHT,
     CONF_HEIGHT,
@@ -183,15 +187,18 @@ async def async_setup_entry(
         for description in PERSON_SENSORS
         if description.key in person.get(CONF_SENSORS, []) and description.exists_fn(person)
     )
-    # Body composition only if the scale provides impedance or body fat.
+    # Body composition only if the scale provides impedance or that value.
     has_impedance = bool(manager.options.get(CONF_IMPEDANCE_ENTITY))
-    has_body_fat = bool(manager.options.get(CONF_BODY_FAT_ENTITY))
+    direct = {
+        "body_fat": CONF_BODY_FAT_ENTITY, "muscle_mass": CONF_MUSCLE_ENTITY,
+        "body_water": CONF_WATER_ENTITY, "bone_mass": CONF_BONE_ENTITY, "bmr": CONF_BMR_ENTITY,
+    }
     entities.extend(
         BodySensor(manager, person_id, description)
         for person_id, person in manager.persons.items()
         for description in BODY_SENSORS
         if description.key in person.get(CONF_SENSORS, [])
-        and (has_impedance or (has_body_fat and not description.needs_impedance))
+        and (has_impedance or bool(manager.options.get(direct[description.key])))
     )
     entities.extend(
         PersonSensor(manager, None, description, pet_id=pet_id)
