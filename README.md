@@ -33,13 +33,12 @@ Nach der Einrichtung erscheint in der Seitenleiste der Eintrag **Gewicht** (bzw.
 
 ## Das Panel „Gewicht“
 
-Das Panel hat drei Tabs.
+Das Panel hat drei Tabs. Der dritte heißt für Admins „Einstellungen“ und für alle anderen „Meine Daten“.
 
 ### Übersicht
 - **Offene Messungen** stehen ganz oben. Ein Klick auf den Namen ordnet die Messung zu.
 - **Eine Karte pro Person** zeigt aktuelles Gewicht, Trend, Veränderung über 7 und 30 Tage und insgesamt, Tempo pro Woche, BMI und Alter. Mit Zielgewicht kommen ein Fortschrittsbalken und das voraussichtliche Datum dazu.
   - Sind für die Person Sensoren angelegt, öffnet ein Klick auf einen Wert die gewohnte Entitätsansicht von Home Assistant mit Verlauf.
-  - Über den Stift ✎ kann jede Person **ihre eigenen Daten** ändern: Größe, Zielgewicht und Geburtsdatum. Admins können das bei allen Personen.
 - **Verlauf als Graph:** Jede Messung ist ein Punkt, dazu kommt die geglättete Trendlinie und das Zielgewicht als gestrichelte Linie. Zeiträume: 30 Tage, 90 Tage, 1 Jahr, alles. Mit *Veränderung* starten alle Personen bei 0, das ist praktisch für den Vergleich. Personen lassen sich ein- und ausblenden, beim Überfahren zeigt ein Tooltip die Details.
 - **Monatsdurchschnitt** pro Person mit Veränderung zum Vormonat.
 
@@ -47,9 +46,12 @@ Das Panel hat drei Tabs.
 - **Messliste** mit Filter pro Person. Die Person kann direkt umgestellt oder die Messung gelöscht werden.
 - **Messung eintragen** für manuelle Werte oder alte Daten.
 
+### Meine Daten (Personen ohne Admin-Rechte)
+Wer mit einer Person verknüpft ist, ändert hier **seine eigenen Daten**: Größe, Zielgewicht und Geburtsdatum.
+
 ### Einstellungen (nur Admins)
 - **Waage:** Name, Gewichtssensor, minimales und maximales Gewicht, Toleranz, Eindeutigkeits-Abstand und Wartezeit, bis ein Wert stabil ist.
-- **Personen:** anlegen, bearbeiten und löschen. Pro Person gibt es Name, Startgewicht, Größe, Zielgewicht, Anwesenheits-Entität, verknüpften HA-Benutzer, wer zusätzlich ansehen darf und ob Sensoren angelegt werden. Beim Löschen einer Person werden auch ihre Messungen gelöscht.
+- **Personen:** anlegen, bearbeiten und löschen. Pro Person gibt es Name, Startgewicht, Größe, Zielgewicht, Geburtsdatum, Anwesenheits-Entität, verknüpften HA-Benutzer, wer zusätzlich ansehen darf und ob Sensoren angelegt werden. Beim Löschen einer Person werden auch ihre Messungen gelöscht.
 - **Freigaben:** Tabelle Benutzer × Personen, siehe unten.
 
 Die Formulare nutzen die Eingabefelder von Home Assistant selbst. Waagen-Sensor und Anwesenheit sind durchsuchbare Entitätsauswahlen mit Filter: Gewichtssensoren bzw. nur `person.*`-Entitäten. Speichern lädt die Integration kurz neu, das Panel aktualisiert sich dabei von selbst. Der Knopf *Konfigurieren* unter Geräte & Dienste verweist nur noch auf das Panel.

@@ -131,6 +131,7 @@ const TEXT = {
     count: (n) => (n === 1 ? "1 Messung" : `${n} Messungen`),
     required: (label) => `Bitte „${label}“ ausfüllen.`,
     editProfile: "Daten bearbeiten",
+    myData: "Meine Daten",
     profileHint: "Diese Angaben kannst du selbst ändern.",
     birthDate: "Geburtsdatum",
     birthDateHint: "Optional, für das Alter. Die BMI-Einstufung gilt nur für Erwachsene.",
@@ -255,6 +256,7 @@ const TEXT = {
     count: (n) => (n === 1 ? "1 measurement" : `${n} measurements`),
     required: (label) => `Please fill in “${label}”.`,
     editProfile: "Edit details",
+    myData: "My details",
     profileHint: "You can change these details yourself.",
     birthDate: "Date of birth",
     birthDateHint: "Optional, for the age. The BMI classification applies to adults only.",
@@ -333,8 +335,6 @@ const STYLE = `
   }
   .link:hover { background: rgba(127, 127, 127, 0.14); }
   .link:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: 1px; }
-  .icon-btn.edit:hover { color: var(--primary-color, #03a9f4); }
-  .person-card .editor { margin: 12px 0 0; }
   .field ha-selector { display: block; width: 100%; }
   .field.wide { grid-column: 1 / -1; }
   .form-error { color: var(--error-color, #db4437); font-size: 13px; margin-top: 8px; }
@@ -448,7 +448,6 @@ class WeightTrackerPanel extends HTMLElement {
     this._chartPoints = [];
     this._tab = "overview";
     this._editPerson = null; // person id, "new" or null
-    this._editProfile = null; // person id whose own details are being edited
     this._models = {}; // form values, survive live updates while edited
     this._forms = {}; // field definitions of the forms on screen
     this._dirty = new Set();
@@ -657,7 +656,9 @@ class WeightTrackerPanel extends HTMLElement {
       ? `<select data-action="scale">${entries.map((e) => `<option value="${esc(e.entry_id)}" ${e === this._entry ? "selected" : ""}>${esc(e.title)}</option>`).join("")}</select>`
       : "";
     const tabs = [["overview", t.tabOverview], ["measurements", t.tabMeasurements]];
+    const ownPersons = entries.length ? this._entry.persons.filter((p) => p.can_manage) : [];
     if (this._isAdmin) tabs.push(["settings", t.tabSettings]);
+    else if (ownPersons.length) tabs.push(["settings", t.myData]);
     if (!tabs.some(([key]) => key === this._tab)) this._tab = "overview";
     this.shadowRoot.getElementById("tabs").innerHTML = entries.length
       ? tabs.map(([key, label]) => `<button class="tab" role="tab" data-action="tab" data-tab="${key}" aria-selected="${this._tab === key}">${esc(label)}</button>`).join("")
@@ -669,7 +670,7 @@ class WeightTrackerPanel extends HTMLElement {
 
     this._forms = {};
     if (this._tab === "settings") {
-      this._content(this._renderSettings());
+      this._content(this._isAdmin ? this._renderSettings() : ownPersons.map((p) => this._renderProfileEditor(p)).join(""));
     } else if (!this._entry.persons.length) {
       this._content(this._isAdmin
         ? `<div class="card message">${esc(t.noPersonsAdmin)}<div class="actions" style="justify-content:center"><button class="btn primary" data-action="tab" data-tab="settings">${esc(t.toSettings)}</button></div></div>`
@@ -747,14 +748,11 @@ class WeightTrackerPanel extends HTMLElement {
     const bmiText = s.bmi
       ? `${this._kg(s.bmi, { unit: false })}${age === null || age >= 18 ? ` <span class="muted small">${esc(t.bmiCat(s.bmi))}</span>` : ""}`
       : "–";
-    const editing = this._editProfile === person.id && person.can_manage;
     return `
       <div class="card person-card">
         <div class="person-head"><span class="dot" style="background:${color}"></span>
           <h2>${esc(person.name)}${age !== null ? ` <span class="muted small" style="font-weight:400">· ${esc(t.years(age))}</span>` : ""}</h2>
-          <span class="muted small">${latestTs ? link("last_measured", t.measured, `${esc(t.measured)} ${esc(this._relative(latestTs))}`) : esc(t.noData)}</span>
-          ${person.can_manage && !editing ? `<button class="icon-btn edit" data-action="edit-profile" data-person="${esc(person.id)}" title="${esc(t.editProfile)}" aria-label="${esc(t.editProfile)}">✎</button>` : ""}</div>
-        ${editing ? this._renderProfileEditor(person) : ""}
+          <span class="muted small">${latestTs ? link("last_measured", t.measured, `${esc(t.measured)} ${esc(this._relative(latestTs))}`) : esc(t.noData)}</span></div>
         <div class="hero">${link("weight", t.weight, `<span class="value num">${this._kg(s.latest_weight, { unit: false })}</span><span class="unit"> kg</span>`)}
           ${s.change_last !== null && s.change_last !== undefined ? `<span class="muted small num">${link("change_last", t.weight, this._kg(s.change_last, { signed: true }))}</span>` : ""}</div>
         <div class="stats">
@@ -795,11 +793,13 @@ class WeightTrackerPanel extends HTMLElement {
     ];
     const defaults = { height: person.height ?? null, goal_weight: person.goal ?? null, birth_date: person.birth_date || null };
     return `
-      <div class="form editor" id="${esc(formId)}">
-        <h3>${esc(t.editProfile)}</h3>
+      <div class="card">
+        <h2 class="who"><span class="dot" style="background:${this._color(person.color_index)}"></span>${esc(person.name)}</h2>
         <div class="hint" style="margin-top:4px">${esc(t.profileHint)}</div>
-        ${this._formFields(formId, fields, defaults)}
-        ${this._formActions(formId, `<button class="btn" type="button" data-action="cancel-profile" data-form="${esc(formId)}">${esc(t.cancel)}</button>`)}
+        <div class="form" id="${esc(formId)}">
+          ${this._formFields(formId, fields, defaults)}
+          ${this._formActions(formId)}
+        </div>
       </div>`;
   }
 
@@ -1277,7 +1277,6 @@ class WeightTrackerPanel extends HTMLElement {
           person_id: formId.slice("profile-form-".length),
           profile: { height: num(m.height), goal_weight: num(m.goal_weight), birth_date: m.birth_date || null },
         });
-        this._editProfile = null;
         this._toast(this._t.saved);
       } else if (formId === "add-form") {
         await this._hass.callService("weight_tracker", "add_measurement", {
@@ -1560,13 +1559,6 @@ class WeightTrackerPanel extends HTMLElement {
     const { action } = el.dataset;
     if (action === "more-info") {
       this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId: el.dataset.entity }, bubbles: true, composed: true }));
-    } else if (action === "edit-profile") {
-      this._editProfile = el.dataset.person;
-      this._render();
-    } else if (action === "cancel-profile") {
-      this._clearForm(el.dataset.form);
-      this._editProfile = null;
-      this._render();
     } else if (action === "save-form") {
       this._saveForm(el.dataset.form);
     } else if (action === "tab") {
