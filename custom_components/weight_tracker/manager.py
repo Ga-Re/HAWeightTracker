@@ -43,7 +43,10 @@ from .clothes import DEFAULT_CLOTHES_KG, learned_clothes, offset_samples
 from .growth import curves, percentile, z_score
 from .body import Composition, age_from_birth_month, body_fat_class, body_fat_range, from_impedance
 from .notifications import (
+    clothes_answer,
+    clothes_question,
     pet_warning_message,
+    test_answer,
     reminder_message,
     test_message,
     weigh_message,
@@ -54,6 +57,9 @@ from .const import (
     CONF_BIRTH_DATE,
     CONF_BIRTH_MONTH,
     CLOTHES_ACTION_PREFIX,
+    NO_CLOTHES_ACTION_PREFIX,
+    NOTIFICATION_TAG_PREFIX,
+    TEST_ACTION,
     CONF_BODY_FAT_ENTITY,
     CONF_CLOTHES,
     CONF_CLOTHES_KG,
@@ -637,6 +643,12 @@ class WeightTrackerManager:
         service = self.persons.get(person_id, {}).get(CONF_NOTIFY_SERVICE)
         if not service:
             return
+        self._async_send_to(service, title, message, data)
+
+    @callback
+    def _async_send_to(
+        self, service: str, title: str, message: str, data: dict[str, Any] | None = None
+    ) -> None:
         if not self.hass.services.has_service("notify", service):
             _LOGGER.warning("Notify service notify.%s does not exist", service)
             return
@@ -650,7 +662,9 @@ class WeightTrackerManager:
     def _notify_weighing(self, measurement: Measurement) -> None:
         person_id = measurement.person_id
         person = self.persons.get(person_id or "")
-        if person is None or not person.get(CONF_NOTIFY_WEIGH):
+        # With "account for clothes" every weighing asks, even if the plain
+        # "after weighing" message is switched off.
+        if person is None or not (person.get(CONF_NOTIFY_WEIGH) or person.get(CONF_CLOTHES)):
             return
         assigned, trends = self._person_history(person_id)
         if not assigned or assigned[-1] is not measurement:
@@ -663,10 +677,16 @@ class WeightTrackerManager:
             trends[-1],
             stats.change_7d if stats else None,
         )
-        data = None
+        data: dict[str, Any] = {"tag": f"{NOTIFICATION_TAG_PREFIX}{measurement.id}"}
         if person.get(CONF_CLOTHES):
-            label = "👕 Mit Kleidung" if self._german() else "👕 With clothes"
-            data = {"actions": [{"action": f"{CLOTHES_ACTION_PREFIX}{measurement.id}", "title": label}]}
+            # Actionable notification (companion app): two buttons, the answer
+            # comes back as event "mobile_app_notification_action".
+            question, with_label, without_label = clothes_question(self._german())
+            message = f"{message}\n{question}"
+            data["actions"] = [
+                {"action": f"{CLOTHES_ACTION_PREFIX}{measurement.id}", "title": with_label},
+                {"action": f"{NO_CLOTHES_ACTION_PREFIX}{measurement.id}", "title": without_label},
+            ]
         self._async_send(person_id, title, message, data)
 
     @callback
@@ -727,10 +747,12 @@ class WeightTrackerManager:
 
     @callback
     def async_send_test(self, service: str) -> None:
-        """Send a test notification to a notify service."""
-        title, message = test_message(self._german())
-        self.hass.async_create_task(
-            self.hass.services.async_call("notify", service, {"title": title, "message": message})
+        """Send a test notification with a button; tapping it sends a reply."""
+        title, message, button = test_message(self._german())
+        self._test_service = service
+        self._async_send_to(
+            service, title, message,
+            {"tag": f"{NOTIFICATION_TAG_PREFIX}test", "actions": [{"action": TEST_ACTION, "title": button}]},
         )
 
     # ----------------------------------------------------------- pet weighing
@@ -1053,13 +1075,29 @@ class WeightTrackerManager:
 
     @callback
     def _async_notification_action(self, event: Event) -> None:
-        """Button "with clothes" in the notification after weighing."""
+        """A button in one of our notifications was tapped (companion app)."""
         action = str(event.data.get("action", ""))
-        if not action.startswith(CLOTHES_ACTION_PREFIX):
+        if action == TEST_ACTION:
+            if service := getattr(self, "_test_service", None):
+                self._async_send_to(
+                    service, *test_answer(self._german()),
+                    {"tag": f"{NOTIFICATION_TAG_PREFIX}test"},
+                )
             return
-        measurement = self.get_measurement(action.removeprefix(CLOTHES_ACTION_PREFIX))
-        if measurement is not None and measurement.status == STATUS_ASSIGNED:
-            self.async_set_clothes(measurement, True)
+        for prefix, with_clothes in ((CLOTHES_ACTION_PREFIX, True), (NO_CLOTHES_ACTION_PREFIX, False)):
+            if not action.startswith(prefix):
+                continue
+            measurement = self.get_measurement(action.removeprefix(prefix))
+            if measurement is None or measurement.status != STATUS_ASSIGNED or not measurement.person_id:
+                return  # e.g. a different scale, or the measurement was deleted
+            self.async_set_clothes(measurement, with_clothes)
+            # Replace the question with a confirmation (same tag).
+            self._async_send(
+                measurement.person_id,
+                *clothes_answer(self._german(), with_clothes, measurement.effective, measurement.weight),
+                {"tag": f"{NOTIFICATION_TAG_PREFIX}{measurement.id}"},
+            )
+            return
 
     @callback
     def async_add_waist(self, person_id: str, cm: float, ts: datetime) -> WaistMeasurement:

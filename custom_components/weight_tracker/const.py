@@ -47,7 +47,11 @@ CONF_NOTIFY_PET_WARNINGS = "notify_pet_warnings"
 # Clothes: each person can switch it on, mark measurements and set a start value
 CONF_CLOTHES = "clothes"
 CONF_CLOTHES_KG = "clothes_kg"
+# Actionable notifications (companion app): ids of the buttons
 CLOTHES_ACTION_PREFIX = "WEIGHT_TRACKER_CLOTHES_"
+NO_CLOTHES_ACTION_PREFIX = "WEIGHT_TRACKER_NOCLOTHES_"
+TEST_ACTION = "WEIGHT_TRACKER_TEST"
+NOTIFICATION_TAG_PREFIX = "weight_tracker_"
 PET_EVENT_CATEGORIES = ("vet", "vaccination", "food", "medication", "other")
 CONF_SEX = "sex"
 SEXES = ("male", "female")

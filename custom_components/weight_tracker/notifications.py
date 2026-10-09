@@ -70,8 +70,34 @@ def reminder_message(german: bool, days: int) -> tuple[str, str]:
     return "⚖️ Time to weigh in", f"Your last measurement was {days} days ago."
 
 
-def test_message(german: bool) -> tuple[str, str]:
-    """Message of the test button."""
+def clothes_question(german: bool) -> tuple[str, str, str]:
+    """(question appended to the message, label "with", label "without")."""
     if german:
-        return "⚖️ Weight Tracker", "Benachrichtigungen funktionieren 👍"
-    return "⚖️ Weight Tracker", "Notifications are working 👍"
+        return "Mit oder ohne Kleidung gewogen?", "👕 Mit Kleidung", "Ohne Kleidung"
+    return "Weighed with or without clothes?", "👕 With clothes", "Without clothes"
+
+
+def clothes_answer(german: bool, with_clothes: bool, counted: float, measured: float) -> tuple[str, str]:
+    """Confirmation that replaces the question after a button was tapped."""
+    title = f"⚖️ {_num(counted, german)} kg"
+    if german:
+        if with_clothes:
+            return title, f"✓ Mit Kleidung gespeichert – gemessen {_num(measured, german)} kg, zählt als {_num(counted, german)} kg."
+        return title, "✓ Ohne Kleidung gespeichert."
+    if with_clothes:
+        return title, f"✓ Saved with clothes – measured {_num(measured, german)} kg, counts as {_num(counted, german)} kg."
+    return title, "✓ Saved without clothes."
+
+
+def test_message(german: bool) -> tuple[str, str, str]:
+    """(title, text, button label) of the test notification."""
+    if german:
+        return "⚖️ Weight Tracker", "Benachrichtigungen funktionieren 👍 Tippe zum Prüfen der Knöpfe auf „Knopf testen“ (iPhone: Nachricht lange drücken).", "✓ Knopf testen"
+    return "⚖️ Weight Tracker", "Notifications are working 👍 Tap “Test button” to check the buttons (iPhone: long-press the notification).", "✓ Test button"
+
+
+def test_answer(german: bool) -> tuple[str, str]:
+    """Reply when the test button was tapped: the whole round trip works."""
+    if german:
+        return "⚖️ Weight Tracker", "✓ Knöpfe funktionieren – Home Assistant hat deine Antwort erhalten."
+    return "⚖️ Weight Tracker", "✓ Buttons work – Home Assistant received your answer."

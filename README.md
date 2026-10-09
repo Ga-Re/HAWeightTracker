@@ -94,10 +94,19 @@ chart_days: 90      # optional, 0 = ohne Verlauf
 
 Eine Waage kann Kleidung nicht erkennen. Darum markiert jede Person selbst, wenn sie sich mit Kleidung gewogen hat, und die Integration lernt daraus:
 - **Einschalten** unter *Meine Daten → Kachel „Kleidung“* (Stift ✎), dort lässt sich auch der Startwert setzen (Standard 0,8 kg).
-- **Markieren** per 👕 in der Messliste, mit dem Häkchen „Mit Kleidung“ beim Eintragen oder mit dem Knopf **👕 Mit Kleidung** in der Nachricht nach dem Wiegen (Home-Assistant-App).
+- **Markieren** per 👕 in der Messliste, mit dem Häkchen „Mit Kleidung“ beim Eintragen oder direkt in der Nachricht nach dem Wiegen (siehe unten).
 - **Abziehen:** Markierte Messungen zählen in Trend, Statistik, Prognose und Sensoren ohne Kleidung. Der gemessene Wert bleibt sichtbar (👕 in der Liste und im Tooltip).
 - **Lernen:** Jede markierte Messung wird mit den Messungen ohne Kleidung aus den Stunden davor und danach verglichen (bis 36 Stunden Abstand). Aus diesen Unterschieden ergibt sich dein Kleidungsgewicht (Median der letzten 12). Bei wenigen Markierungen zählt der Startwert noch mit, sodass einzelne Ausreißer den Wert kaum verschieben.
 - Haustier-Messungen sind nicht betroffen, weil man bei beiden Wiegungen gleich angezogen ist.
+
+### Frage nach dem Wiegen (Knöpfe in der Nachricht)
+
+Ist „Kleidung berücksichtigen“ an und hat der Admin ein Gerät eingetragen, fragt die Home-Assistant-App nach **jedem** Wiegen „Mit oder ohne Kleidung gewogen?“, auch wenn die normale Nachricht nach dem Wiegen aus ist. Die Nachricht hat zwei Knöpfe ([Actionable Notifications](https://companion.home-assistant.io/docs/notifications/actionable-notifications/)):
+- **👕 Mit Kleidung** markiert die Messung, **Ohne Kleidung** nimmt eine Markierung wieder weg.
+- Danach ersetzt eine Bestätigung die Frage, z. B. „✓ Mit Kleidung gespeichert – gemessen 86,1 kg, zählt als 85,3 kg“.
+- **iPhone/iPad:** Die Knöpfe erscheinen erst, wenn du die Nachricht **lange drückst** oder nach unten ziehst (auf dem Sperrbildschirm: nach links wischen → *Anzeigen*). **Android:** Nachricht aufklappen.
+- Die Knöpfe gibt es nur bei `notify.mobile_app_…`-Diensten. Ist die App beim Tippen komplett beendet, kann die Antwort verloren gehen. Dann einfach im Panel 👕 setzen.
+- Mit der **Testnachricht** lässt sich alles prüfen: Sie hat einen Knopf „✓ Knopf testen“. Kommt nach dem Tippen „Knöpfe funktionieren“ zurück, klappt der ganze Weg.
 
 ## Benachrichtigungen
 
@@ -105,7 +114,8 @@ Ein Admin legt im Personen-Editor (*Einstellungen → Personen*) fest, an welche
 - **Nach dem Wiegen:** Gewicht, Veränderung seit der letzten Messung und Trend der letzten 7 Tage.
 - **Warnungen zu Haustieren:** wenn ein Tier ungewöhnlich schnell zu- oder abnimmt.
 - **Erinnerung:** nach einer selbst gewählten Zahl von Tagen ohne Messung, jeweils um 18 Uhr.
-- **Testnachricht** an das eingerichtete Gerät.
+- **Testnachricht** an das eingerichtete Gerät, mit einem Knopf zum Prüfen der Antwort.
+- **Kleidungsfrage** nach jedem Wiegen, wenn „Kleidung berücksichtigen“ an ist (siehe oben).
 
 ## Werte als HA-Sensoren
 
