@@ -99,7 +99,7 @@ const TEXT = {
     accView: "darf ansehen",
     accOwner: "ist diese Person",
     sensors: "Sensoren in HA",
-    sensorsHint: "⚠️ Sensoren sind in Home Assistant für alle Benutzer sichtbar. Nur für Automationen einschalten.",
+    sensorsHint: "⚠️ Sensoren sind in Home Assistant für alle Benutzer sichtbar – auch wenn die Person im Panel nicht freigegeben ist.",
     saved: "Gespeichert",
     me: "Ich",
     petWarning: {
@@ -245,23 +245,26 @@ const TEXT = {
     startedAt: "Start",
     editData: "Angaben ändern",
     editTile: (label) => `${label} bearbeiten`,
-    achievements: "Erfolge",
-    noAchievements: "Noch keine Erfolge – jede Messung bringt dich näher an den ersten.",
-    streak: (n) => `🔥 ${n} ${n === 1 ? "Tag" : "Tage"} in Folge gewogen`,
-    nextStep: (kg, step) => `Noch ${kg} bis ${step}`,
-    badge: {
-      change: (v, abs, unit) => `${v > 0 ? "+" : "−"}${abs} ${unit}`,
-      goal: () => "Ziel erreicht",
-      streak: (v) => `${v} Tage in Folge`,
-      count: (v) => `${v} Messungen`,
-    },
     notifications: "Benachrichtigungen",
-    notificationsHint: "Nur du bekommst diese Nachrichten – auf das Gerät, das du hier auswählst.",
+    notificationsHint: "Hier entscheidest du, welche Nachrichten du bekommst.",
+    notifyTarget: (device) => `Nachrichten gehen an: ${device}`,
+    notifyNoDevice: "Für dich ist noch kein Gerät eingerichtet – ein Admin kann das unter Einstellungen → Personen festlegen.",
+    notifyDeviceAdminHint: "Wohin die Nachrichten dieser Person gehen. Welche Nachrichten sie bekommt, entscheidet sie selbst unter „Meine Daten“.",
+    sensorSettings: "Sensoren in Home Assistant",
+    sensorSettingsHint: "Wähle pro Person, Haustier und Kind, welche Werte als Sensor in Home Assistant angelegt werden – z. B. für Automationen oder eigene Dashboards.",
+    sensorAll: "Alle",
+    sensorNone: "Keine",
+    sensorNeeds: { height: "braucht Größe", goal: "braucht Zielgewicht" },
+    sensorLabels: {
+      weight: "Gewicht", trend: "Trend", change_last: "Veränderung letzte Messung", change_7d: "Veränderung 7 Tage",
+      change_30d: "Veränderung 30 Tage", change_total: "Veränderung gesamt", rate: "Tempo pro Woche", bmi: "BMI",
+      goal_distance: "Abstand zum Ziel", goal_eta: "Ziel voraussichtlich", last_measured: "Letzte Messung",
+      body_fat: "Körperfett", muscle_mass: "Muskelmasse", body_water: "Körperwasser", bone_mass: "Knochenmasse", bmr: "Grundumsatz",
+    },
     notifyDevice: "Gerät",
     notifyDeviceHint: "Die Home-Assistant-App auf deinem Handy (notify-Dienst).",
     notifyNone: "— keine Benachrichtigungen —",
     notifyWeigh: "Nach dem Wiegen: Gewicht und Veränderung",
-    notifyMilestones: "Erfolge und Serien",
     reminderDays: "Erinnern nach … Tagen ohne Messung",
     reminderHint: "0 = keine Erinnerung. Erinnert wird um 18 Uhr.",
     days: "Tage",
@@ -367,7 +370,7 @@ const TEXT = {
     accView: "may view",
     accOwner: "is this person",
     sensors: "Sensors in HA",
-    sensorsHint: "⚠️ Sensors are visible to all Home Assistant users. Only enable them for automations.",
+    sensorsHint: "⚠️ Sensors are visible to all Home Assistant users – even if the person is not shared with them in the panel.",
     saved: "Saved",
     me: "Me",
     petWarning: {
@@ -513,23 +516,26 @@ const TEXT = {
     startedAt: "Start",
     editData: "Edit details",
     editTile: (label) => `Edit ${label}`,
-    achievements: "Achievements",
-    noAchievements: "No achievements yet – every measurement brings you closer to the first.",
-    streak: (n) => `🔥 Weighed in ${n} ${n === 1 ? "day" : "days"} in a row`,
-    nextStep: (kg, step) => `${kg} to go until ${step}`,
-    badge: {
-      change: (v, abs, unit) => `${v > 0 ? "+" : "−"}${abs} ${unit}`,
-      goal: () => "Goal reached",
-      streak: (v) => `${v} days in a row`,
-      count: (v) => `${v} measurements`,
-    },
     notifications: "Notifications",
-    notificationsHint: "Only you get these messages – on the device you choose here.",
+    notificationsHint: "Here you decide which messages you get.",
+    notifyTarget: (device) => `Messages go to: ${device}`,
+    notifyNoDevice: "No device is set up for you yet – an admin can choose one under Settings → Persons.",
+    notifyDeviceAdminHint: "Where this person's messages go. Which messages they get, they decide themselves under “My details”.",
+    sensorSettings: "Sensors in Home Assistant",
+    sensorSettingsHint: "Choose per person, pet and child which values become sensors in Home Assistant – e.g. for automations or your own dashboards.",
+    sensorAll: "All",
+    sensorNone: "None",
+    sensorNeeds: { height: "needs height", goal: "needs goal weight" },
+    sensorLabels: {
+      weight: "Weight", trend: "Trend", change_last: "Change since last", change_7d: "Change 7 days",
+      change_30d: "Change 30 days", change_total: "Total change", rate: "Rate per week", bmi: "BMI",
+      goal_distance: "Distance to goal", goal_eta: "Goal expected", last_measured: "Last measurement",
+      body_fat: "Body fat", muscle_mass: "Muscle mass", body_water: "Body water", bone_mass: "Bone mass", bmr: "Basal metabolic rate",
+    },
     notifyDevice: "Device",
     notifyDeviceHint: "The Home Assistant app on your phone (notify service).",
     notifyNone: "— no notifications —",
     notifyWeigh: "After weighing: weight and change",
-    notifyMilestones: "Achievements and streaks",
     reminderDays: "Remind me after … days without a measurement",
     reminderHint: "0 = no reminder. Reminders are sent at 6 pm.",
     days: "days",
@@ -713,7 +719,8 @@ const STYLE = `
   .session { border-left: 4px solid var(--primary-color, #03a9f4); display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
   .session .what { flex: 1 1 260px; }
   .session .count { font-variant-numeric: tabular-nums; font-weight: 500; }
-  .mini { display: block; width: 100%; height: 96px; margin-top: 12px; }
+  .mini { display: block; width: 100%; height: 96px; margin-top: 12px; touch-action: pan-y; }
+  .mini-wrap { position: relative; }
   .mini text { fill: var(--wt-muted); font-size: 10px; font-family: inherit; }
   .pet-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
   .profile-hero { display: flex; align-items: center; gap: 16px; }
@@ -754,9 +761,6 @@ const STYLE = `
   .waist-list { margin-top: 10px; font-size: 13px; }
   .waist-list div { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px solid var(--wt-grid); padding: 4px 0; }
   .body-line { font-size: 13px; color: var(--wt-muted); margin-top: 10px; }
-  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 16px; background: rgba(127,127,127,.12); font-size: 13px; }
-  .badge small { color: var(--wt-muted); }
   .avatar.pet { background: rgba(127,127,127,.14) !important; font-size: 28px; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
   .tile { background: var(--wt-card); border: 1px solid var(--wt-border); border-radius: var(--wt-radius); padding: 14px 16px; min-width: 0; }
@@ -976,7 +980,10 @@ class WeightTrackerPanel extends HTMLElement {
     root.addEventListener("change", (ev) => this._onChange(ev));
     root.addEventListener("submit", (ev) => this._onSubmit(ev));
     root.addEventListener("pointermove", (ev) => this._onPointer(ev));
-    root.addEventListener("pointerleave", () => this._hideHover(), true);
+    root.addEventListener("pointerleave", () => {
+      this._hideHover();
+      this._hideMiniHover();
+    }, true);
     this._resizeObserver = new ResizeObserver(() => {
       const el = root.getElementById("chart");
       if (el && Math.abs(el.clientWidth - this._chartWidth) > 2) this._renderChart();
@@ -1533,13 +1540,17 @@ class WeightTrackerPanel extends HTMLElement {
     const x = (ts) => padL + ((ts - t0) / Math.max(t1 - t0, 1)) * (W - padL - padR);
     const y = (v) => padT + (1 - (v - lo) / (hi - lo)) * (H - padT - padB);
     const trend = pts.map((m, i) => `${i ? "L" : "M"}${x(m.ts).toFixed(1)},${y(m.trend ?? m.weight).toFixed(1)}`).join("");
-    return `<svg class="mini" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(this._t.history)}">
+    this._miniData = this._miniData || {};
+    this._miniData[`pet-${pet.id}`] = { W, H, padT, padB, color, points: pts.map((m) => ({ px: x(m.ts), py: y(m.weight), m })) };
+    return `<div class="mini-wrap"><svg class="mini" data-mini="pet-${esc(pet.id)}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(this._t.history)}">
       <text x="0" y="${padT + 8}">${esc(this._kg(hi, { unit: false }))}</text>
       <text x="0" y="${H - padB}">${esc(this._kg(lo, { unit: false }))}</text>
       ${pts.map((m) => `<circle cx="${x(m.ts).toFixed(1)}" cy="${y(m.weight).toFixed(1)}" r="3" fill="${color}" fill-opacity="0.35"/>`).join("")}
       <path d="${trend}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
       ${(pet.events || []).filter((e) => e.ts >= t0 && e.ts <= t1).map((e) => `<line x1="${x(e.ts).toFixed(1)}" x2="${x(e.ts).toFixed(1)}" y1="${padT}" y2="${H - padB}" stroke="var(--wt-muted)" stroke-dasharray="2 2"><title>${esc(this._date(e.ts))}: ${esc(e.text)}</title></line>`).join("")}
-    </svg>`;
+      <g class="mini-hover"></g>
+      <rect x="0" y="0" width="${W}" height="${H}" fill="transparent"/>
+    </svg><div class="tooltip mini-tip"></div></div>`;
   }
 
   _renderPetList() {
@@ -1666,30 +1677,7 @@ class WeightTrackerPanel extends HTMLElement {
         <div class="card" data-preview="health-${esc(person.id)}">${this._myDataHealth(facts)}</div>
         <div class="card" data-preview="goal-${esc(person.id)}">${this._myDataGoal(person, facts)}</div>
       </div>
-      <div class="two">
-        ${this._renderAchievements(person)}
-        ${person.can_manage ? this._renderNotifySettings(person) : ""}
-      </div>`;
-  }
-
-  _renderAchievements(person) {
-    const t = this._t;
-    const icons = { change: "🏅", goal: "🎯", streak: "🔥", count: "📊" };
-    const list = (person.achievements || []).slice().sort((a, b) => String(b.ts || "").localeCompare(String(a.ts || "")));
-    const progress = person.progress || {};
-    const fmt = (v) => this._kg(Math.abs(v), { unit: false }).replace(/,0$/, "");
-    const hasNext = progress.next_step !== null && progress.next_step !== undefined && progress.next_remaining > 0;
-    const next = hasNext ? t.nextStep(this._kg(progress.next_remaining), t.badge.change(progress.next_step, fmt(progress.next_step), this._unitLabel)) : "";
-    return `
-      <div class="card">
-        <h2>🏆 ${esc(t.achievements)}</h2>
-        ${progress.streak ? `<div style="margin-top:8px">${esc(t.streak(progress.streak))}</div>` : ""}
-        ${next ? `<div class="hint" style="margin-top:4px">${esc(next)}</div>` : ""}
-        ${list.length ? `<div class="badges">${list.map((a) => `
-          <span class="badge" title="${a.ts ? esc(this._date(Date.parse(a.ts))) : ""}">${icons[a.kind] || "⭐"} ${esc(t.badge[a.kind] ? t.badge[a.kind](a.value, fmt(a.value), this._unitLabel) : a.id)}
-            ${a.ts ? `<small>${esc(this._date(Date.parse(a.ts), { day: "2-digit", month: "2-digit", year: "2-digit" }))}</small>` : ""}</span>`).join("")}</div>`
-          : `<div class="hint" style="margin-top:8px">${esc(t.noAchievements)}</div>`}
-      </div>`;
+      ${person.can_manage ? this._renderNotifySettings(person) : ""}`;
   }
 
   _notifyServices() {
@@ -1700,25 +1688,29 @@ class WeightTrackerPanel extends HTMLElement {
       .map((name) => ({ value: name, label: name.replace(/^mobile_app_/, "📱 ").replace(/_/g, " ") }));
   }
 
+  _serviceLabel(name) {
+    return name ? name.replace(/^mobile_app_/, "📱 ").replace(/_/g, " ") : "";
+  }
+
   _renderNotifySettings(person) {
     const t = this._t;
     const formId = `notify-form-${person.id}`;
     const n = person.notify || {};
+    // The device is chosen by an admin; persons only decide what they get.
     const fields = [
-      this._def("select", "notify_service", t.notifyDevice, { options: this._notifyServices(), emptyLabel: t.notifyNone, helper: t.notifyDeviceHint, wide: true }),
       this._def("boolean", "notify_weigh", t.notifyWeigh, { wide: true }),
-      this._def("boolean", "notify_milestones", t.notifyMilestones, { wide: true }),
       ...((this._entry.pets || []).some((p) => p.kind !== "child") ? [this._def("boolean", "notify_pet_warnings", t.notifyPetWarnings, { wide: true })] : []),
       this._def("number", "reminder_days", t.reminderDays, { min: 0, max: 60, step: 1, unit: t.days, helper: t.reminderHint, wide: true }),
     ];
-    const defaults = { notify_service: n.service || "", notify_weigh: Boolean(n.weigh), notify_milestones: Boolean(n.milestones), notify_pet_warnings: Boolean(n.pet_warnings), reminder_days: n.reminder_days || 0 };
+    const defaults = { notify_weigh: Boolean(n.weigh), notify_pet_warnings: Boolean(n.pet_warnings), reminder_days: n.reminder_days || 0 };
     return `
       <div class="card">
         <h2>🔔 ${esc(t.notifications)}</h2>
         <div class="hint" style="margin-top:4px">${esc(t.notificationsHint)}</div>
+        <div style="margin-top:8px">${n.service ? esc(t.notifyTarget(this._serviceLabel(n.service))) : `<span class="hint">${esc(t.notifyNoDevice)}</span>`}</div>
         <div class="form" id="${esc(formId)}">
           ${this._formFields(formId, fields, defaults)}
-          ${this._formActions(formId, `<button class="btn" type="button" data-action="notify-test" data-person="${esc(person.id)}" data-form="${esc(formId)}">${esc(t.sendTest)}</button>`)}
+          ${this._formActions(formId, n.service ? `<button class="btn" type="button" data-action="notify-test" data-person="${esc(person.id)}" data-form="${esc(formId)}">${esc(t.sendTest)}</button>` : "")}
         </div>
       </div>`;
   }
@@ -2176,10 +2168,8 @@ class WeightTrackerPanel extends HTMLElement {
           <thead><tr><th>${esc(t.user)}</th>${persons.map((p) => `<th><span class="who"><span class="dot" style="background:${this._color(p.color_index)}"></span>${esc(p.name)}</span></th>`).join("")}</tr></thead>
           <tbody>
             ${users.map((u) => `<tr><td>${esc(u.name)} ${u.is_admin ? `<span class="tag">· ${esc(t.admin)}</span>` : ""}</td>${persons.map((p) => `<td>${cell(u, p)}</td>`).join("")}</tr>`).join("")}
-            <tr><td>${esc(t.sensors)}</td>${persons.map((p) => `<td><input type="checkbox" data-action="sensors" data-person="${esc(p.id)}" ${p.create_sensors ? "checked" : ""} aria-label="${esc(`${t.sensors} – ${p.name}`)}"></td>`).join("")}</tr>
           </tbody>
         </table></div>
-        <div class="muted small" style="margin-top:8px">${esc(t.sensorsHint)}</div>
       </div>`;
   }
 
@@ -2428,7 +2418,7 @@ class WeightTrackerPanel extends HTMLElement {
   }
 
   _renderSettings() {
-    return `${this._renderScaleSettings()}${this._renderPersonsSettings()}${this._renderPetsSettings("child")}${this._renderPetsSettings("pet")}${this._entry.persons.length ? this._renderAccess() : ""}`;
+    return `${this._renderScaleSettings()}${this._renderPersonsSettings()}${this._renderPetsSettings("child")}${this._renderPetsSettings("pet")}${this._entry.persons.length ? this._renderAccess() : ""}${this._renderSensorSettings()}`;
   }
 
   _renderScaleSettings() {
@@ -2478,7 +2468,7 @@ class WeightTrackerPanel extends HTMLElement {
         p.goal ? `${t.goal} ${this._kg(p.goal)}` : null,
         p.user_id ? `👤 ${userName(p.user_id) || "?"}` : null,
         t.count(counts[p.id] || 0),
-        p.create_sensors ? (this._sensorCount(p) ? t.sensorsFound(this._sensorCount(p)) : t.sensorsMissing) : null,
+        (p.sensors || []).length ? (this._sensorCount(p) ? t.sensorsFound(this._sensorCount(p)) : t.sensorsMissing) : null,
       ].filter(Boolean);
       return `
         <div class="person-row">
@@ -2512,7 +2502,7 @@ class WeightTrackerPanel extends HTMLElement {
       person_entity: p.person_entity || null,
       user_id: p.user_id || null,
       viewers: p.viewers || [],
-      create_sensors: Boolean(p.create_sensors),
+      notify_service: (p.notify && p.notify.service) || "",
     };
     // Build the model first so the viewer list can exclude the chosen user.
     if (!this._dirty.has(formId) || !this._models[formId]) this._models[formId] = { ...defaults };
@@ -2538,7 +2528,7 @@ class WeightTrackerPanel extends HTMLElement {
         },
       }),
       this._def("multi", "viewers", t.viewers, { options: viewerOptions, helper: t.viewersHint, wide: true }),
-      this._def("boolean", "create_sensors", t.createSensors, { helper: t.sensorsHint, wide: true }),
+      this._def("select", "notify_service", t.notifyDevice, { options: this._notifyServices(), emptyLabel: t.notifyNone, helper: t.notifyDeviceAdminHint, wide: true }),
     ];
     const count = this._entry.measurements.filter((m) => m.person_id === id).length;
     const extra = `
@@ -2551,6 +2541,74 @@ class WeightTrackerPanel extends HTMLElement {
         ${this._formFields(formId, fields, defaults)}
         ${this._formActions(formId, extra)}
       </div>`;
+  }
+
+  _sensorKeys(kind) {
+    const base = ["weight", "trend", "change_last", "change_7d", "change_30d", "change_total", "rate"];
+    if (kind !== "person") return [...base, "goal_distance", "goal_eta", "last_measured"];
+    const cfg = this._entry.settings || {};
+    const body = cfg.impedance_entity ? ["body_fat", "muscle_mass", "body_water", "bone_mass", "bmr"] : cfg.body_fat_entity ? ["body_fat"] : [];
+    return [...base, "bmi", "goal_distance", "goal_eta", "last_measured", ...body];
+  }
+
+  _renderSensorSettings() {
+    const t = this._t;
+    const subjects = [
+      ...this._entry.persons.map((p) => ({ kind: "person", s: p, icon: this._avatar(p, 28) })),
+      ...(this._entry.pets || []).map((p) => ({ kind: "pet", s: p, icon: `<span style="font-size:20px">${this._emoji(p)}</span>` })),
+    ];
+    if (!subjects.length) return "";
+    const rows = subjects.map(({ kind, s, icon }) => {
+      const chosen = new Set(s.sensors || []);
+      const keys = this._sensorKeys(kind);
+      const needs = (key) => key === "bmi" && !s.height ? t.sensorNeeds.height
+        : (key === "goal_distance" || key === "goal_eta") && !s.goal ? t.sensorNeeds.goal : "";
+      const found = this._sensorCount(s);
+      return `
+        <div class="person-row" style="align-items:flex-start">
+          ${icon}
+          <div class="info">
+            <b>${esc(s.name)}</b>
+            ${chosen.size ? `<div class="hint">${esc(found ? t.sensorsFound(found) : t.sensorsMissing)}</div>` : ""}
+            <div class="checks" style="margin-top:8px">${keys.map((key) => `
+              <label class="check" title="${esc(needs(key))}"><input type="checkbox" data-action="sensor-toggle" data-kind="${kind}" data-id="${esc(s.id)}" data-key="${key}" ${chosen.has(key) ? "checked" : ""}>
+                ${esc(t.sensorLabels[key])}${needs(key) && chosen.has(key) ? ` <span class="hint">(${esc(needs(key))})</span>` : ""}</label>`).join("")}</div>
+          </div>
+          <div class="chips" style="flex:none">
+            <button class="chip" data-action="sensor-all" data-kind="${kind}" data-id="${esc(s.id)}">${esc(t.sensorAll)}</button>
+            <button class="chip" data-action="sensor-none" data-kind="${kind}" data-id="${esc(s.id)}">${esc(t.sensorNone)}</button>
+          </div>
+        </div>`;
+    }).join("");
+    return `
+      <div class="card">
+        <h2>📈 ${esc(t.sensorSettings)}</h2>
+        <div class="hint" style="margin-top:4px">${esc(t.sensorSettingsHint)}</div>
+        <div class="hint" style="margin-top:4px">${esc(t.sensorsHint)}</div>
+        <div style="margin-top:8px">${rows}</div>
+      </div>`;
+  }
+
+  _subjectById(kind, id) {
+    return kind === "person" ? this._entry.persons.find((p) => p.id === id) : (this._entry.pets || []).find((p) => p.id === id);
+  }
+
+  async _saveSensors(kind, id, sensors) {
+    try {
+      await this._ws({ type: "weight_tracker/set_sensors", kind, id, sensors });
+      this._toast(this._t.saved);
+    } catch (err) {
+      this._toast(`${this._t.error}: ${this._errorText(err)}`);
+      this._render();
+    }
+  }
+
+  _toggleSensor(kind, id, key, on) {
+    const subject = this._subjectById(kind, id);
+    if (!subject) return;
+    const set = new Set(subject.sensors || []);
+    if (on) set.add(key); else set.delete(key);
+    this._saveSensors(kind, id, [...set]);
   }
 
   _renderPetsSettings(kind = "pet") {
@@ -2572,7 +2630,7 @@ class WeightTrackerPanel extends HTMLElement {
         age !== null ? t.years(age) : null,
         p.goal ? `${t.goal} ${this._kg(p.goal)}` : null,
         t.count(counts[p.id] || 0),
-        p.create_sensors ? (sensors ? t.sensorsFound(sensors) : t.sensorsMissing) : null,
+        (p.sensors || []).length ? (sensors ? t.sensorsFound(sensors) : t.sensorsMissing) : null,
       ].filter(Boolean);
       return `
         <div class="person-row">
@@ -2601,18 +2659,16 @@ class WeightTrackerPanel extends HTMLElement {
       this._def("select", "sex", t.sex, { required: true, options: Object.entries(t.sexNames).map(([value, label]) => ({ value, label })), helper: t.childSexHint }),
       this._def("fulldate", "birth_date", t.childBirthDate, { required: true, wide: true }),
       this._def("number", "start_weight", t.childStartWeight, { required: true, min: 0.2, max: 80, step: 0.1, unit: "kg", helper: t.petStartHint }),
-      this._def("boolean", "create_sensors", t.createSensors, { helper: t.sensorsHint, wide: true }),
     ] : [
       this._def("text", "name", t.name, { required: true }),
       this._def("select", "species", t.species, { required: true, options: Object.entries(t.speciesNames).map(([value, label]) => ({ value, label: `${this._speciesEmoji(value)} ${label}` })) }),
       this._def("number", "start_weight", t.petStartWeight, { required: true, min: 0.2, max: 80, step: 0.1, unit: "kg", helper: t.petStartHint }),
       this._def("number", "goal_weight", t.goalWeight, { min: 0.2, max: 80, step: 0.1, unit: "kg" }),
       this._def("birthmonth", "birth_month", t.birthDate, { helper: t.birthMonthHint, wide: true }),
-      this._def("boolean", "create_sensors", t.createSensors, { helper: t.sensorsHint, wide: true }),
     ];
     const defaults = {
       name: p.name || "", species: p.species || "cat", start_weight: p.start_weight ?? null,
-      goal_weight: p.goal ?? null, birth_month: p.birth_month || null, create_sensors: Boolean(p.create_sensors),
+      goal_weight: p.goal ?? null, birth_month: p.birth_month || null,
       kind, sex: p.sex || "", birth_date: p.birth_date || null,
     };
     const count = (this._entry.pet_measurements || []).filter((m) => m.pet_id === id).length;
@@ -2685,7 +2741,7 @@ class WeightTrackerPanel extends HTMLElement {
             person_entity: m.person_entity || null,
             user_id: m.user_id || null,
             viewers: m.viewers || [],
-            create_sensors: Boolean(m.create_sensors),
+            notify_service: m.notify_service || null,
           },
         });
         this._editPerson = null;
@@ -2704,7 +2760,6 @@ class WeightTrackerPanel extends HTMLElement {
             start_weight: num(m.start_weight),
             goal_weight: num(m.goal_weight),
             birth_month: m.birth_month || null,
-            create_sensors: Boolean(m.create_sensors),
           },
         });
         this._editPet = null;
@@ -2714,9 +2769,7 @@ class WeightTrackerPanel extends HTMLElement {
           type: "weight_tracker/update_profile",
           person_id: formId.slice("notify-form-".length),
           profile: {
-            notify_service: m.notify_service || null,
             notify_weigh: Boolean(m.notify_weigh),
-            notify_milestones: Boolean(m.notify_milestones),
             notify_pet_warnings: Boolean(m.notify_pet_warnings),
             reminder_days: Math.max(0, Math.round(Number(m.reminder_days) || 0)),
           },
@@ -3023,7 +3076,14 @@ class WeightTrackerPanel extends HTMLElement {
 
   _onPointer(ev) {
     const path = ev.composedPath();
-    const svg = path.find((n) => n.tagName === "svg");
+    const mini = path.find((n) => n.tagName === "svg" && n.dataset && n.dataset.mini);
+    if (mini) {
+      this._hideHover();
+      return this._onMiniPointer(ev, mini);
+    }
+    this._hideMiniHover();
+    // Only the big person chart (it lives in #chart).
+    const svg = path.find((n) => n.tagName === "svg" && n.parentNode && n.parentNode.id === "chart");
     if (!svg || !this._chartPoints.length || !this._chartBox) return this._hideHover();
     const rect = svg.getBoundingClientRect();
     const scale = this._chartBox.width / rect.width;
@@ -3059,6 +3119,46 @@ class WeightTrackerPanel extends HTMLElement {
     tip.style.top = `${Math.max(0, Math.min(cssY - tipH / 2, rect.height - tipH))}px`;
   }
 
+  // Hover on a pet's small chart: marker + tooltip in that card.
+  _onMiniPointer(ev, svg) {
+    const key = svg.dataset.mini;
+    const data = (this._miniData || {})[key];
+    const wrap = svg.parentNode;
+    const tip = wrap && wrap.querySelector(".mini-tip");
+    if (!data || !tip) return;
+    const rect = svg.getBoundingClientRect();
+    // viewBox is scaled uniformly ("meet") and centered
+    const scale = Math.min(rect.width / data.W, rect.height / data.H);
+    const offX = (rect.width - data.W * scale) / 2, offY = (rect.height - data.H * scale) / 2;
+    const mx = (ev.clientX - rect.left - offX) / scale;
+    let best = null, bestD = Infinity;
+    for (const p of data.points) {
+      const d = Math.abs(p.px - mx);
+      if (d < bestD) { bestD = d; best = p; }
+    }
+    if (!best || bestD > 40) return this._hideMiniHover();
+    const t = this._t;
+    svg.querySelector(".mini-hover").innerHTML = `
+      <line x1="${best.px.toFixed(1)}" x2="${best.px.toFixed(1)}" y1="${data.padT}" y2="${data.H - data.padB}" stroke="var(--wt-muted)" stroke-dasharray="3 3"/>
+      <circle cx="${best.px.toFixed(1)}" cy="${best.py.toFixed(1)}" r="5" fill="${data.color}" stroke="var(--wt-card)" stroke-width="2"/>`;
+    tip.innerHTML = `<div class="muted small">${esc(this._dateTime(best.m.ts))}</div>
+      <div>${esc(t.measurement)}: <b class="num">${this._kg(best.m.weight, { digits: 2 })}</b></div>
+      ${best.m.trend !== null && best.m.trend !== undefined ? `<div>${esc(t.trend)}: <span class="num">${this._kg(best.m.trend, { digits: 2 })}</span></div>` : ""}
+      ${best.m.by ? `<div class="muted small">${esc(t.carriedBy)}: ${esc(best.m.by)}</div>` : ""}
+      ${best.m.note ? `<div class="note">📝 ${esc(best.m.note)}</div>` : ""}`;
+    tip.style.display = "block";
+    const cssX = offX + best.px * scale, cssY = offY + best.py * scale;
+    let left = cssX + 12;
+    if (left + tip.offsetWidth > rect.width) left = cssX - tip.offsetWidth - 12;
+    tip.style.left = `${Math.max(0, left)}px`;
+    tip.style.top = `${Math.max(0, cssY - tip.offsetHeight / 2)}px`;
+  }
+
+  _hideMiniHover() {
+    for (const g of this.shadowRoot.querySelectorAll(".mini-hover")) g.innerHTML = "";
+    for (const tip of this.shadowRoot.querySelectorAll(".mini-tip")) tip.style.display = "none";
+  }
+
   _hideHover() {
     const hover = this.shadowRoot.getElementById("hover");
     const tip = this.shadowRoot.getElementById("tooltip");
@@ -3072,6 +3172,10 @@ class WeightTrackerPanel extends HTMLElement {
     const el = ev.composedPath().find((n) => n.dataset && n.dataset.action);
     if (!el || el.tagName === "SELECT") return;
     const { action } = el.dataset;
+    if (action === "sensor-all" || action === "sensor-none") {
+      this._saveSensors(el.dataset.kind, el.dataset.id, action === "sensor-all" ? this._sensorKeys(el.dataset.kind) : []);
+      return;
+    }
     if (action === "pet-notes") {
       this._petNotesOpen = this._petNotesOpen === el.dataset.pet ? null : el.dataset.pet;
       this._render();
@@ -3123,12 +3227,7 @@ class WeightTrackerPanel extends HTMLElement {
       return;
     }
     if (action === "notify-test") {
-      const model = this._models[el.dataset.form] || {};
-      if (!model.notify_service) {
-        this._toast(this._t.notifyNone);
-        return;
-      }
-      this._ws({ type: "weight_tracker/notify_test", person_id: el.dataset.person, service: model.notify_service })
+      this._ws({ type: "weight_tracker/notify_test", person_id: el.dataset.person })
         .then(() => this._toast(this._t.testSent))
         .catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
     } else if (action === "pet-start") {
@@ -3237,8 +3336,8 @@ class WeightTrackerPanel extends HTMLElement {
       else if (owner === uid) owner = null;
       if (el.value === "view") viewers.push(uid);
       this._setAccess(person.id, { user_id: owner, viewers });
-    } else if (el.dataset.action === "sensors") {
-      this._setAccess(el.dataset.person, { create_sensors: el.checked });
+    } else if (el.dataset.action === "sensor-toggle") {
+      this._toggleSensor(el.dataset.kind, el.dataset.id, el.dataset.key, el.checked);
     } else if (el.dataset.action === "unit") {
       this._unitPref = el.value;
       try {

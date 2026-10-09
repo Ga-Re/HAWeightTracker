@@ -41,16 +41,7 @@ from homeassistant.util.unit_conversion import MassConverter
 from .analytics import PersonStats, Point, compute_stats, trend_series
 from .growth import curves, percentile, z_score
 from .body import Composition, age_from_birth_month, body_fat_class, body_fat_range, from_impedance
-from .milestones import (
-    Milestone,
-    achieved,
-    current_streak,
-    direction,
-    is_new_low,
-    next_change_step,
-)
 from .notifications import (
-    milestone_message,
     pet_warning_message,
     reminder_message,
     test_message,
@@ -69,7 +60,6 @@ from .const import (
     CONF_KIND,
     CONF_MAX_WEIGHT,
     CONF_MIN_WEIGHT,
-    CONF_NOTIFY_MILESTONES,
     CONF_NOTIFY_PET_WARNINGS,
     CONF_NOTIFY_SERVICE,
     CONF_NOTIFY_WEIGH,
@@ -293,8 +283,6 @@ class WeightTrackerManager:
         self.pet_events: list[PetEvent] = []
         # person id -> estimated body composition (for the panel and sensors)
         self.body: dict[str, dict[str, Any]] = {}
-        # person id -> milestone id -> ISO time it was reached
-        self.achievements: dict[str, dict[str, str]] = {}
         # person id -> ISO time of the last reminder
         self._reminders: dict[str, str] = {}
         self._pet_session_unsub: CALLBACK_TYPE | None = None
@@ -371,15 +359,13 @@ class WeightTrackerManager:
         self.waist = sorted(
             (WaistMeasurement.from_dict(w) for w in data.get("waist", [])), key=lambda w: w.ts
         )
-        self.achievements = data.get("achievements", {})
         self._pet_warning_sent = data.get("pet_warning_sent", {})
         self.pet_events = sorted(
             (PetEvent.from_dict(e) for e in data.get("pet_events", [])), key=lambda e: e.ts
         )
         self._reminders = data.get("reminders", {})
         self._recalculate()
-        # Record what was already reached / known before, without notifying.
-        self._check_milestones(notify=False)
+        # Warnings that already existed before are not sent again.
         self._check_pet_warnings(notify=False)
         self._update_notification()
         self.active = True
@@ -644,59 +630,14 @@ class WeightTrackerManager:
         if not assigned or assigned[-1] is not measurement:
             return  # only for the newest measurement
         stats = self.stats.get(person_id)
-        sign = direction(assigned[0].weight, person.get(CONF_GOAL_WEIGHT))
         title, message = weigh_message(
             self._german(),
             measurement.weight,
             stats.change_last if stats else None,
             trends[-1],
             stats.change_7d if stats else None,
-            is_new_low(trends, sign),
         )
         self._async_send(person_id, title, message)
-
-    def person_milestones(self, person_id: str) -> list[Milestone]:
-        """Milestones the history of a person reaches right now."""
-        person = self.persons.get(person_id, {})
-        assigned, trends = self._person_history(person_id)
-        days = [dt_util.as_local(m.ts).date() for m in assigned]
-        return achieved([m.weight for m in assigned], trends, days, person.get(CONF_GOAL_WEIGHT))
-
-    def person_progress(self, person_id: str) -> dict[str, Any]:
-        """Current streak and the next weight milestone, for the panel."""
-        person = self.persons.get(person_id, {})
-        assigned, trends = self._person_history(person_id)
-        days = [dt_util.as_local(m.ts).date() for m in assigned]
-        step = next_change_step([m.weight for m in assigned], trends, person.get(CONF_GOAL_WEIGHT))
-        return {
-            "streak": current_streak(days, dt_util.now().date()),
-            "next_step": step[0] if step else None,
-            "next_remaining": step[1] if step else None,
-        }
-
-    @callback
-    def _check_milestones(self, notify: bool) -> None:
-        """Remember newly reached milestones and tell the person (if wanted)."""
-        changed = False
-        for person_id, person in self.persons.items():
-            reached = self.person_milestones(person_id)
-            known = self.achievements.get(person_id)
-            if known is None:
-                # First run for this person: take over silently.
-                self.achievements[person_id] = {m.id: dt_util.utcnow().isoformat() for m in reached}
-                changed = True
-                continue
-            new = [m for m in reached if m.id not in known]
-            for milestone in new:
-                known[milestone.id] = dt_util.utcnow().isoformat()
-                changed = True
-            if notify and new and person.get(CONF_NOTIFY_MILESTONES):
-                assigned, _ = self._person_history(person_id)
-                sign = direction(assigned[0].weight, person.get(CONF_GOAL_WEIGHT)) if assigned else -1
-                for milestone in new:
-                    self._async_send(person_id, *milestone_message(self._german(), milestone, sign))
-        if changed:
-            self._save()
 
     @callback
     def _check_pet_warnings(self, notify: bool) -> None:
@@ -1021,8 +962,8 @@ class WeightTrackerManager:
     ) -> tuple[int, int]:
         """Import old measurements (e.g. CSV from another app). Returns (added, skipped).
 
-        Duplicates (same minute and weight) are skipped. No achievement
-        notifications: importing years of data must not flood anybody.
+        Duplicates (same minute and weight) are skipped. No warning
+        notifications: importing old data must not flood anybody.
         """
         if pet_id is not None:
             existing = {
@@ -1056,7 +997,7 @@ class WeightTrackerManager:
                 )
         self.measurements.sort(key=lambda m: m.ts)
         self.pet_measurements.sort(key=lambda m: m.ts)
-        self._async_changed(notify_milestones=False)
+        self._async_changed(notify=False)
         return added, skipped
 
     @callback
@@ -1108,10 +1049,9 @@ class WeightTrackerManager:
         self._notify()
 
     @callback
-    def _async_changed(self, notify_milestones: bool = True) -> None:
+    def _async_changed(self, notify: bool = True) -> None:
         self._recalculate()
-        self._check_milestones(notify=notify_milestones)
-        self._check_pet_warnings(notify=notify_milestones)
+        self._check_pet_warnings(notify=notify)
         self._save()
         self._notify()
         self._update_notification()
@@ -1238,7 +1178,6 @@ class WeightTrackerManager:
             "measurements": [m.as_dict() for m in self.measurements],
             "pet_measurements": [m.as_dict() for m in self.pet_measurements],
             "waist": [w.as_dict() for w in self.waist],
-            "achievements": self.achievements,
             "pet_warning_sent": self._pet_warning_sent,
             "pet_events": [e.as_dict() for e in self.pet_events],
             "reminders": self._reminders,

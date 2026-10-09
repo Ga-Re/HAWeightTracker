@@ -140,8 +140,13 @@ def async_setup_services(hass: HomeAssistant) -> None:
             timestamp = timestamp.replace(tzinfo=dt_util.get_default_time_zone())
         # Pets belong to the household: every user may add their weight.
         if (pet_id := manager.find_pet(call.data[ATTR_PERSON])) is not None:
+            # "weighed by": the person linked to the calling user, if any
+            by = next(
+                (pid for pid, p in manager.persons.items() if user and p.get("user_id") == user.id),
+                None,
+            )
             added = manager.async_add_pet_measurement(
-                pet_id, call.data[ATTR_WEIGHT], dt_util.as_utc(timestamp)
+                pet_id, call.data[ATTR_WEIGHT], dt_util.as_utc(timestamp), by
             )
         else:
             person_id = _person(manager, user, call.data[ATTR_PERSON])

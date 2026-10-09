@@ -39,6 +39,7 @@ from .settings import (
     apply_profile,
     build_pet,
     keep_personal_settings,
+    valid_sensor_keys,
     SETTINGS_SCHEMA,
     build_person,
     person_name_error,
@@ -47,11 +48,10 @@ from .settings import (
 from .const import (
     CONF_BIRTH_MONTH,
     CONF_BODY_FAT_ENTITY,
-    CONF_CREATE_SENSORS,
+    CONF_SENSORS,
     CONF_GOAL_WEIGHT,
     CONF_HEIGHT,
     CONF_IMPEDANCE_ENTITY,
-    CONF_NOTIFY_MILESTONES,
     CONF_NOTIFY_PET_WARNINGS,
     CONF_NOTIFY_SERVICE,
     CONF_NOTIFY_WEIGH,
@@ -120,6 +120,7 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_set_note)
     websocket_api.async_register_command(hass, ws_import)
     websocket_api.async_register_command(hass, ws_pet_event)
+    websocket_api.async_register_command(hass, ws_set_sensors)
     file_hash = await hass.async_add_executor_job(_panel_file_hash)
     hass.data[DATA_PANEL_HASH] = file_hash
     if file_hash is None:
@@ -268,24 +269,17 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                 "entities": sensor_ids.get(person_id, {}),
                 "stats": {k: _jsonable(v) for k, v in asdict(stats).items()} if stats else {},
             }
-            achievements = manager.achievements.get(person_id, {})
-            data["achievements"] = [
-                {"id": m.id, "kind": m.kind, "value": m.value, "ts": achievements.get(m.id)}
-                for m in manager.person_milestones(person_id)
-            ]
-            data["progress"] = manager.person_progress(person_id)
             if data["can_manage"]:
                 data["notify"] = {
                     "service": person.get(CONF_NOTIFY_SERVICE),
                     "weigh": person.get(CONF_NOTIFY_WEIGH, False),
-                    "milestones": person.get(CONF_NOTIFY_MILESTONES, False),
                     "pet_warnings": person.get(CONF_NOTIFY_PET_WARNINGS, False),
                     "reminder_days": person.get(CONF_REMINDER_DAYS, 0),
                 }
             if admin:
                 data["user_id"] = person.get(CONF_USER_ID)
                 data["viewers"] = person.get(CONF_VIEWERS, [])
-                data["create_sensors"] = person.get(CONF_CREATE_SENSORS, False)
+                data["sensors"] = person.get(CONF_SENSORS, [])
                 data["person_entity"] = person.get(CONF_PERSON_ENTITY)
             persons.append(data)
 
@@ -359,11 +353,12 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                 "stats": {k: _jsonable(v) for k, v in asdict(stats).items()} if stats else {},
             }
             if admin:
-                pet_data["create_sensors"] = pet.get(CONF_CREATE_SENSORS, False)
+                pet_data["sensors"] = pet.get(CONF_SENSORS, [])
             pets.append(pet_data)
         pet_measurements = []
         for m in manager.pet_measurements:
             carrier = manager.persons.get(m.by_person_id) if m.by_person_id else None
+            # Who weighed the pet is always shown (only the name, never their weight).
             pet_measurements.append(
                 {
                     "id": m.id,
@@ -374,7 +369,7 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                     "trend": manager.trend_by_id.get(m.id),
                     "note": m.note,
                     # who carried the pet, only if that person is visible
-                    "by": carrier[CONF_NAME] if carrier and can_view(user, carrier) else None,
+                    "by": carrier[CONF_NAME] if carrier else None,
                     "can_edit": admin or bool(carrier and can_manage(user, carrier)),
                 }
             )
@@ -446,7 +441,6 @@ def ws_subscribe(
         vol.Required("person_id"): str,
         vol.Optional("user_id"): vol.Any(None, str),
         vol.Optional("viewers"): [str],
-        vol.Optional("create_sensors"): bool,
     }
 )
 @websocket_api.require_admin
@@ -478,8 +472,6 @@ async def ws_set_access(
         person[CONF_VIEWERS] = sorted(
             {u for u in msg["viewers"] if u in known_users and u != person.get(CONF_USER_ID)}
         )
-    if "create_sensors" in msg:
-        person[CONF_CREATE_SENSORS] = msg["create_sensors"]
 
     # Triggers a reload of the entry, which pushes fresh data to all panels.
     hass.config_entries.async_update_entry(entry, options=options)
@@ -562,6 +554,10 @@ async def ws_save_person(
     ):
         connection.send_error(msg["id"], error, error)
         return
+    service = data.get(CONF_NOTIFY_SERVICE)
+    if service and not hass.services.has_service("notify", service):
+        connection.send_error(msg["id"], "unknown_service", "Unknown notify service")
+        return
     known_users = {u.id for u in await async_assignable_users(hass)}
     if index is None:
         person_id = uuid4().hex[:8]
@@ -630,10 +626,6 @@ def ws_update_profile(
         profile = PROFILE_SCHEMA(msg["profile"])
     except vol.Invalid as err:
         connection.send_error(msg["id"], websocket_api.ERR_INVALID_FORMAT, str(err))
-        return
-    service = profile.get(CONF_NOTIFY_SERVICE)
-    if service and not hass.services.has_service("notify", service):
-        connection.send_error(msg["id"], "unknown_service", "Unknown notify service")
         return
     apply_profile(person, profile)
     hass.config_entries.async_update_entry(entry, options=options)
@@ -790,7 +782,10 @@ def ws_save_pet(
         pet_id = uuid4().hex[:8]
         pets.append(build_pet(data, pet_id))
     else:
+        sensors = pets[index].get(CONF_SENSORS)
         pets[index] = build_pet(data, pet_id)
+        if sensors is not None:
+            pets[index][CONF_SENSORS] = sensors
     hass.config_entries.async_update_entry(entry, options=options)
     connection.send_result(msg["id"], {"pet_id": pet_id})
 
@@ -829,7 +824,7 @@ def ws_delete_pet(
         vol.Required("type"): f"{DOMAIN}/notify_test",
         vol.Required("entry_id"): str,
         vol.Required("person_id"): str,
-        vol.Required("service"): vol.Match(r"^[a-z0-9_]+$"),
+        vol.Optional("service"): vol.Match(r"^[a-z0-9_]+$"),
     }
 )
 @callback
@@ -843,10 +838,13 @@ def ws_notify_test(
     if person is None or not can_manage(connection.user, person):
         connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Person not found")
         return
-    if not hass.services.has_service("notify", msg["service"]):
+    # Only admins choose devices; everybody else tests the one set for them.
+    service = msg.get("service") if is_unrestricted(connection.user) else None
+    service = service or person.get(CONF_NOTIFY_SERVICE)
+    if not service or not hass.services.has_service("notify", service):
         connection.send_error(msg["id"], "unknown_service", "Unknown notify service")
         return
-    manager.async_send_test(msg["service"])
+    manager.async_send_test(service)
     connection.send_result(msg["id"])
 
 
@@ -990,4 +988,33 @@ def ws_pet_event(
     elif not manager.async_delete_pet_event(msg.get("event_id", "")):
         connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Not found")
         return
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/set_sensors",
+        vol.Required("entry_id"): str,
+        vol.Required("kind"): vol.In(["person", "pet"]),
+        vol.Required("id"): str,
+        vol.Required("sensors"): [str],
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_set_sensors(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Choose which sensors exist for a person, pet or child (admins only)."""
+    if (entry := _admin_entry(hass, connection, msg)) is None:
+        return
+    allowed = set(valid_sensor_keys(msg["kind"]))
+    options = deepcopy(dict(entry.options))
+    key, id_key = (CONF_PERSONS, CONF_PERSON_ID) if msg["kind"] == "person" else (CONF_PETS, CONF_PET_ID)
+    subject = next((s for s in options.get(key, []) if s[id_key] == msg["id"]), None)
+    if subject is None:
+        connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Not found")
+        return
+    subject[CONF_SENSORS] = [k for k in valid_sensor_keys(msg["kind"]) if k in set(msg["sensors"]) & allowed]
+    hass.config_entries.async_update_entry(entry, options=options)
     connection.send_result(msg["id"])

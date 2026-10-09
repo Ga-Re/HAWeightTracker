@@ -1,11 +1,10 @@
-"""Texts of the personal notifications (after weighing, milestones, reminders).
+"""Texts of the personal notifications (after weighing, pet warnings, reminders).
 
 Pure Python without Home Assistant imports so it can be unit tested.
 """
 
 from __future__ import annotations
 
-from .milestones import KIND_CHANGE, KIND_COUNT, KIND_GOAL, KIND_STREAK, Milestone
 
 
 def _num(value: float, german: bool, digits: int = 1, signed: bool = False) -> str:
@@ -24,7 +23,6 @@ def weigh_message(
     change_last: float | None,
     trend: float | None,
     change_7d: float | None,
-    new_best: bool,
 ) -> tuple[str, str]:
     """Title and text sent to a person right after their measurement."""
     title = f"⚖️ {_num(weight, german)} kg"
@@ -45,38 +43,7 @@ def weigh_message(
         )
         parts.append(f"Trend {_num(trend, german)} kg{week}")
     message = " · ".join(parts) or ("Messung gespeichert." if german else "Measurement saved.")
-    if new_best:
-        message += " 🎉 " + ("Neuer Bestwert!" if german else "New best!")
     return title, message
-
-
-def milestone_message(german: bool, milestone: Milestone, goal_sign: int) -> tuple[str, str]:
-    """Title and text for a newly reached milestone."""
-    title = "🏆 " + ("Geschafft!" if german else "Milestone reached!")
-    value = milestone.value
-    if milestone.kind == KIND_CHANGE:
-        amount = _num(abs(value), german, digits=1).rstrip("0").rstrip(",.")
-        if german:
-            text = f"Du hast {amount} kg {'zugenommen' if goal_sign > 0 else 'abgenommen'}."
-        else:
-            text = f"You have {'gained' if goal_sign > 0 else 'lost'} {amount} kg."
-    elif milestone.kind == KIND_GOAL:
-        text = (
-            f"Zielgewicht {_num(value, german)} kg erreicht – herzlichen Glückwunsch!"
-            if german
-            else f"Goal weight {_num(value, german)} kg reached – congratulations!"
-        )
-    elif milestone.kind == KIND_STREAK:
-        text = (
-            f"{int(value)} Tage in Folge gewogen."
-            if german
-            else f"Weighed in {int(value)} days in a row."
-        )
-    elif milestone.kind == KIND_COUNT:
-        text = f"{int(value)}. Messung." if german else f"{int(value)} measurements."
-    else:
-        text = milestone.id
-    return title, text
 
 
 def pet_warning_message(german: bool, name: str, code: str, percent: float, species: str) -> tuple[str, str]:

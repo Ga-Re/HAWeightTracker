@@ -17,7 +17,7 @@ Auf dem Home Assistant muss danach genau diese Struktur liegen. Wichtig ist der 
 ```
 /config/custom_components/weight_tracker/
 ├── __init__.py, access.py, analytics.py, button.py, config_flow.py, const.py,
-│   body.py, detector.py, entity.py, growth.py, manager.py, milestones.py, notifications.py,
+│   body.py, detector.py, entity.py, growth.py, manager.py, notifications.py,
 │   panel.py, pets.py,
 │   sensor.py, services.py, settings.py
 ├── manifest.json, icons.json, services.yaml
@@ -71,7 +71,7 @@ Das Panel passt sich dem hellen oder dunklen Theme an, funktioniert auf dem Hand
 
 - **Prognose im Graph:** Mit Zielgewicht verlängert eine gestrichelte Linie den Trend bis zum voraussichtlichen Datum, eine Linie markiert „Heute“. Ein- und ausschaltbar über *📈 Prognose*.
 - **Kalender** (unter *Meine Daten*): ein Jahr auf einen Blick, ein Kästchen pro Tag. Blau: Trend in Richtung Ziel, Rot: weg vom Ziel, Grau: kaum Veränderung, leer: nicht gewogen. Dazu Messtage und längste Serie.
-- **CSV-Export und -Import** (unter *Messungen*): Export aller sichtbaren Messungen als CSV. Der Import übernimmt alte Daten aus anderen Apps (Withings, Zepp/Mi Fit, Garmin oder eigene Tabellen). Spalten, Trennzeichen, Datumsformat, Pfund und Körperfett (in % oder kg) werden erkannt. Vor dem Import zeigt eine Vorschau, was übernommen wird, Duplikate werden übersprungen. Ein Import löst keine Erfolgs-Benachrichtigungen aus.
+- **CSV-Export und -Import** (unter *Messungen*): Export aller sichtbaren Messungen als CSV. Der Import übernimmt alte Daten aus anderen Apps (Withings, Zepp/Mi Fit, Garmin oder eigene Tabellen). Spalten, Trennzeichen, Datumsformat, Pfund und Körperfett (in % oder kg) werden erkannt. Vor dem Import zeigt eine Vorschau, was übernommen wird, Duplikate werden übersprungen. Ein Import löst keine Benachrichtigungen aus.
 - **Dashboard-Karte:** In jedem Dashboard gibt es in der Kartenauswahl die Karte **Weight Tracker**. Sie zeigt Gewicht, Trend, Ziel und Verlauf von dir selbst, einer anderen Person oder einem Haustier, jeweils nur soweit freigegeben. Eine manuelle Ressource ist nicht nötig. Ein Klick öffnet das Panel.
 
 ```yaml
@@ -86,18 +86,20 @@ chart_days: 90      # optional, 0 = ohne Verlauf
 - **Körperzusammensetzung (nur wenn die Waage sie liefert):** Unter *Einstellungen → Waage* lassen sich optional ein **Impedanz-Sensor** (z. B. Xiaomi Body Composition Scale) oder ein **Körperfett-Sensor** auswählen. Ist ein Wert beim Wiegen frisch (höchstens 2 Minuten alt), wird er mit der Messung gespeichert.
   - Aus der Impedanz werden Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz geschätzt (Xiaomi-Formel wie in openScale/bodymiscale). Das sind Richtwerte, keine medizinische Messung. Dafür braucht es Geschlecht, Geburtsmonat und Größe, fehlende Angaben nennt das Panel.
   - Ohne diese Sensoren erscheint nirgends etwas zur Körperzusammensetzung.
-  - Mit *Sensoren in HA* gibt es zusätzlich die Sensoren Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz.
+  - Unter *Einstellungen → Sensoren* lassen sich dafür zusätzlich die Sensoren Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz anlegen.
 - **Notizen zu Messungen** („Urlaub“, „krank“, „neues Training“): beim Eintragen oder über 📝 in der Messliste. Im Graph sind Messungen mit Notiz umrandet, der Tooltip zeigt die Notiz.
 
-## Benachrichtigungen & Erfolge
+## Benachrichtigungen
 
-Jede Person entscheidet unter **Meine Daten → Benachrichtigungen** selbst, ob und welche Nachrichten sie bekommt. Die Nachrichten gehen nur an das Gerät, das sie dort auswählt (ein `notify`-Dienst, z. B. die Home-Assistant-App auf ihrem Handy):
-- **Nach dem Wiegen:** Gewicht, Veränderung seit der letzten Messung und Trend der letzten 7 Tage. Bei einem neuen Bestwert kommt ein 🎉 dazu.
-- **Erfolge und Serien:** z. B. „Du hast 5 kg abgenommen“, „Zielgewicht erreicht“, „14 Tage in Folge gewogen“, „100. Messung“.
+Ein Admin legt im Personen-Editor (*Einstellungen → Personen*) fest, an welches **Gerät** die Nachrichten einer Person gehen, also einen `notify`-Dienst wie die Home-Assistant-App auf ihrem Handy. **Welche** Nachrichten sie bekommt, entscheidet jede Person selbst unter *Meine Daten → Benachrichtigungen*:
+- **Nach dem Wiegen:** Gewicht, Veränderung seit der letzten Messung und Trend der letzten 7 Tage.
+- **Warnungen zu Haustieren:** wenn ein Tier ungewöhnlich schnell zu- oder abnimmt.
 - **Erinnerung:** nach einer selbst gewählten Zahl von Tagen ohne Messung, jeweils um 18 Uhr.
-- **Testnachricht** zum Ausprobieren.
+- **Testnachricht** an das eingerichtete Gerät.
 
-Erfolge zählen über den Trend, damit Tagesschwankungen kein Abzeichen auslösen. Sie erscheinen unter *Meine Daten* als Abzeichen, zusammen mit der aktuellen Serie und dem nächsten Ziel („noch 1,2 kg bis −7,5 kg“). Bereits erreichte Erfolge werden beim Update still übernommen, es gibt also keine Nachrichtenflut.
+## Sensoren in Home Assistant
+
+Unter *Einstellungen → Sensoren* wählst du pro Person, Haustier und Kind einzeln aus, welche Werte als Sensor angelegt werden: Gewicht, Trend, Veränderungen, Tempo, BMI, Abstand zum Ziel, Zieldatum, letzte Messung und, falls die Waage es liefert, Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz. Mit *Alle* bzw. *Keine* geht es schneller. Wer vor 2.0 „Sensoren in HA“ eingeschaltet hatte, behält automatisch alle Sensoren.
 
 ## Haustiere wiegen
 
@@ -106,7 +108,7 @@ Haustiere werden per **Differenzmessung** gewogen: einmal allein auf die Waage, 
 - **Per Knopf:** In der Übersicht hat jedes Haustier einen Knopf **„Mimi wiegen“**. Danach werden die nächsten zwei Messungen innerhalb von 3 Minuten gepaart, die Reihenfolge ist egal. Dieselbe Funktion gibt es als Taste `button.mimi_weigh` (z. B. für ein NFC-Tag an der Waage) und als Aktion `weight_tracker.weigh_pet`.
 - **Automatisch:** Wiegst du dich zweimal innerhalb von 3 Minuten und passt der Unterschied zu einem deiner Haustiere, fragt das Panel: *„War das eine Haustier-Messung?“*. Du bestätigst oder tippst *„Nein, das war ich“*. Zwei verschiedene Personen hintereinander oder eine Jacke (+1 kg) lösen keinen Vorschlag aus.
 - **Haustiere anlegen** (Admins): Einstellungen → Haustiere, mit Name, Tierart, ungefährem Gewicht, optionalem Ziel, Geburtsmonat und Sensoren.
-- **Sichtbarkeit:** Haustiere gehören zum Haushalt. Alle Benutzer sehen sie und dürfen sie wiegen. Wer ein Tier getragen hat, sieht man nur, wenn man diese Person sehen darf.
+- **Sichtbarkeit:** Haustiere gehören zum Haushalt. Alle Benutzer sehen sie und dürfen sie wiegen. Bei jeder Tiermessung steht, wer sie gewogen hat (nur der Name, nie das Gewicht dieser Person).
 - Haustier-Messungen lassen sich unter *Messungen* einem anderen Tier zuordnen oder löschen (Admins und die Person, die das Tier getragen hat). Über *Messung eintragen* kannst du ein Gewicht auch von Hand eintragen.
 
 Genauigkeit: Viele Personenwaagen messen auf 0,1 kg genau, die Differenz kann also um etwa ±0,2 kg schwanken. Der Trend gleicht das über mehrere Messungen aus.
@@ -144,7 +146,7 @@ So ist die Privatsphäre abgesichert:
 - Die Benachrichtigung über offene Messungen enthält keine Gewichte, weil Benachrichtigungen in Home Assistant alle Benutzer sehen.
 
 **Wichtig – Grenzen von Home Assistant:**
-- **Sensoren sind für alle Benutzer sichtbar.** Home Assistant kennt keine Rechte pro Entität. Personen-Sensoren sind deshalb standardmäßig **aus** und lassen sich pro Person in der Freigabe-Tabelle unter *Sensoren in HA* einschalten. Das ist nur nötig, wenn du die Werte für Automationen brauchst.
+- **Sensoren sind für alle Benutzer sichtbar.** Home Assistant kennt keine Rechte pro Entität. Es gibt deshalb standardmäßig **keine** Personen-Sensoren. Unter *Einstellungen → Sensoren* lassen sie sich einzeln anlegen, wenn du die Werte für Automationen brauchst.
 - **Der Sensor deiner Waage selbst** (aus der Integration der Waage) zeigt allen Benutzern den letzten Rohwert, allerdings ohne Namen. Das kann diese Integration nicht verhindern.
 - Admins sehen in Home Assistant grundsätzlich alles. Gib deiner Partnerin bzw. dir selbst deshalb ein normales Benutzerkonto, wenn die Trennung in beide Richtungen gelten soll.
 
@@ -164,7 +166,7 @@ Wurde falsch zugeordnet, stellst du es in der Messliste des Panels richtig. Die 
 
 ## Entitäten
 
-Personen-Sensoren werden nur angelegt, wenn *Sensoren in HA* für die Person eingeschaltet ist (siehe oben, sie sind dann für alle Benutzer sichtbar). Die Entitäts-IDs sind unabhängig von der Sprache (Beispiel: Person „Anna“, Waage „Waage“).
+Es gibt nur die Sensoren, die unter *Einstellungen → Sensoren* ausgewählt sind (sie sind dann für alle Benutzer sichtbar). Die Entitäts-IDs sind unabhängig von der Sprache (Beispiel: Person „Anna“, Waage „Waage“).
 
 | Entität | Bedeutung |
 |---|---|

@@ -13,7 +13,7 @@ from homeassistant.helpers import (
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.typing import ConfigType
 
-from .const import CONF_CREATE_SENSORS, DOMAIN, SIGNAL_UPDATED
+from .const import CONF_SENSORS, DOMAIN, SIGNAL_UPDATED
 from .settings import migrate_options
 from .entity import hub_device_info
 from .manager import WeightTrackerManager
@@ -51,7 +51,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: WeightTrackerConfigEntry
     valid = {(DOMAIN, entry.entry_id)} | {
         (DOMAIN, f"{entry.entry_id}_{person_id}")
         for person_id, person in manager.persons.items()
-        if person.get(CONF_CREATE_SENSORS)
+        if person.get(CONF_SENSORS)
     } | {(DOMAIN, f"{entry.entry_id}_pet_{pet_id}") for pet_id in manager.pets}
     for device in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
         if not device.identifiers & valid:

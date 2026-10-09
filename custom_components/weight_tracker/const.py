@@ -29,7 +29,6 @@ CONF_BIRTH_MONTH = "birth_month"  # "YYYY-MM"
 # Personal notifications (each person decides for themselves)
 CONF_NOTIFY_SERVICE = "notify_service"  # name of a notify.* service
 CONF_NOTIFY_WEIGH = "notify_weigh"
-CONF_NOTIFY_MILESTONES = "notify_milestones"
 CONF_REMINDER_DAYS = "reminder_days"  # 0 = off
 CONF_NOTIFY_PET_WARNINGS = "notify_pet_warnings"
 PET_EVENT_CATEGORIES = ("vet", "vaccination", "food", "medication", "other")
@@ -51,7 +50,18 @@ CONF_BIRTH_DATE = "birth_date"  # children: "YYYY-MM-DD"
 # Access control
 CONF_USER_ID = "user_id"
 CONF_VIEWERS = "viewers"
-CONF_CREATE_SENSORS = "create_sensors"
+CONF_CREATE_SENSORS = "create_sensors"  # before 2.0: all or nothing
+# Sensors chosen per person / pet / child (Settings → Sensors)
+CONF_SENSORS = "sensors"
+PERSON_SENSOR_KEYS = (
+    "weight", "trend", "change_last", "change_7d", "change_30d", "change_total",
+    "rate", "bmi", "goal_distance", "goal_eta", "last_measured",
+)
+BODY_SENSOR_KEYS = ("body_fat", "muscle_mass", "body_water", "bone_mass", "bmr")
+PET_SENSOR_KEYS = (
+    "weight", "trend", "change_last", "change_7d", "change_30d", "change_total",
+    "rate", "goal_distance", "goal_eta", "last_measured",
+)
 
 DEFAULT_NAME = "Waage"
 DEFAULT_MIN_WEIGHT = 30.0

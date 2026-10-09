@@ -26,7 +26,6 @@ from .const import (
     CONF_KIND,
     CONF_MAX_WEIGHT,
     CONF_MIN_WEIGHT,
-    CONF_NOTIFY_MILESTONES,
     CONF_NOTIFY_PET_WARNINGS,
     CONF_NOTIFY_SERVICE,
     CONF_NOTIFY_WEIGH,
@@ -36,6 +35,7 @@ from .const import (
     CONF_PET_ID,
     CONF_PETS,
     CONF_REMINDER_DAYS,
+    CONF_SENSORS,
     CONF_SEX,
     CONF_SOURCE,
     CONF_SPECIES,
@@ -48,7 +48,10 @@ from .const import (
     DEFAULT_MAX_WEIGHT,
     DEFAULT_MIN_WEIGHT,
     DEFAULT_TOLERANCE,
+    BODY_SENSOR_KEYS,
     DISCARD_OPTION,
+    PERSON_SENSOR_KEYS,
+    PET_SENSOR_KEYS,
     KIND_CHILD,
     KIND_PET,
     LEGACY_BIRTH_DATE,
@@ -94,9 +97,7 @@ PROFILE_SCHEMA = vol.Schema(
         vol.Optional(CONF_HEIGHT): _optional_number(50, 250),
         vol.Optional(CONF_GOAL_WEIGHT): _optional_number(1, 300),
         vol.Optional(CONF_BIRTH_MONTH): _birth_month,
-        vol.Optional(CONF_NOTIFY_SERVICE): vol.Any(None, "", vol.All(cv.string, vol.Match(r"^[a-z0-9_]+$"))),
         vol.Optional(CONF_NOTIFY_WEIGH): cv.boolean,
-        vol.Optional(CONF_NOTIFY_MILESTONES): cv.boolean,
         vol.Optional(CONF_NOTIFY_PET_WARNINGS): cv.boolean,
         vol.Optional(CONF_REMINDER_DAYS): vol.All(vol.Coerce(int), vol.Range(min=0, max=60)),
         vol.Optional(CONF_SEX): vol.Any(None, "", vol.In(SEXES)),
@@ -107,9 +108,7 @@ PROFILE_KEYS = (
     CONF_HEIGHT,
     CONF_GOAL_WEIGHT,
     CONF_BIRTH_MONTH,
-    CONF_NOTIFY_SERVICE,
     CONF_NOTIFY_WEIGH,
-    CONF_NOTIFY_MILESTONES,
     CONF_NOTIFY_PET_WARNINGS,
     CONF_REMINDER_DAYS,
     CONF_SEX,
@@ -143,8 +142,9 @@ PERSON_SCHEMA = vol.Schema(
             None, "", cv.entity_domain(["person", "device_tracker"])
         ),
         vol.Optional(CONF_USER_ID): vol.Any(None, "", cv.string),
+        # Only admins choose the device; persons choose which messages they want.
+        vol.Optional(CONF_NOTIFY_SERVICE): vol.Any(None, "", vol.All(cv.string, vol.Match(r"^[a-z0-9_]+$"))),
         vol.Optional(CONF_VIEWERS, default=list): [cv.string],
-        vol.Optional(CONF_CREATE_SENSORS, default=False): cv.boolean,
     }
 )
 
@@ -194,6 +194,8 @@ def build_person(
         person[CONF_SEX] = data[CONF_SEX]
     if data.get(CONF_PERSON_ENTITY):
         person[CONF_PERSON_ENTITY] = data[CONF_PERSON_ENTITY]
+    if data.get(CONF_NOTIFY_SERVICE):
+        person[CONF_NOTIFY_SERVICE] = data[CONF_NOTIFY_SERVICE]
 
     def known(user_id: str) -> bool:
         return known_users is None or user_id in known_users
@@ -206,13 +208,14 @@ def build_person(
     person[CONF_VIEWERS] = sorted(
         {u for u in data.get(CONF_VIEWERS) or [] if known(u) and u != owner}
     )
-    person[CONF_CREATE_SENSORS] = bool(data.get(CONF_CREATE_SENSORS, False))
     return person
 
 
 def keep_personal_settings(new: dict[str, Any], old: dict[str, Any]) -> dict[str, Any]:
-    """Settings a person made for themselves survive an admin edit of the person."""
-    for key in (CONF_NOTIFY_SERVICE, CONF_NOTIFY_WEIGH, CONF_NOTIFY_MILESTONES, CONF_NOTIFY_PET_WARNINGS, CONF_REMINDER_DAYS):
+    """Settings a person made for themselves (and the sensor choice) survive an admin edit."""
+    if CONF_SENSORS in old:
+        new[CONF_SENSORS] = old[CONF_SENSORS]
+    for key in (CONF_NOTIFY_WEIGH, CONF_NOTIFY_PET_WARNINGS, CONF_REMINDER_DAYS):
         if key in old and key not in new:
             new[key] = old[key]
     return new
@@ -250,7 +253,6 @@ PET_SCHEMA = vol.Schema(
         vol.Required(CONF_START_WEIGHT): _number(0.2, 80),
         vol.Optional(CONF_GOAL_WEIGHT): _optional_number(0.2, 80),
         vol.Optional(CONF_BIRTH_MONTH): _birth_month,
-        vol.Optional(CONF_CREATE_SENSORS, default=False): cv.boolean,
     }
 )
 
@@ -262,7 +264,6 @@ def build_pet(data: dict[str, Any], pet_id: str) -> dict[str, Any]:
         CONF_NAME: data[CONF_NAME].strip(),
         CONF_SPECIES: data.get(CONF_SPECIES) or "other",
         CONF_START_WEIGHT: float(data[CONF_START_WEIGHT]),
-        CONF_CREATE_SENSORS: bool(data.get(CONF_CREATE_SENSORS, False)),
     }
     if data.get(CONF_GOAL_WEIGHT) not in (None, ""):
         pet[CONF_GOAL_WEIGHT] = float(data[CONF_GOAL_WEIGHT])
@@ -293,4 +294,18 @@ def migrate_options(options: dict[str, Any]) -> dict[str, Any] | None:
     if CONF_PETS not in new:
         new[CONF_PETS] = []
         changed = True
+    # 2.0: "create sensors" (all or nothing) -> individual sensors
+    new[CONF_PETS] = [dict(p) for p in new[CONF_PETS]]
+    for subject, keys in [(p, PERSON_SENSOR_KEYS + BODY_SENSOR_KEYS) for p in new[CONF_PERSONS]] + [
+        (p, PET_SENSOR_KEYS) for p in new[CONF_PETS]
+    ]:
+        if CONF_CREATE_SENSORS in subject:
+            enabled = subject.pop(CONF_CREATE_SENSORS)
+            subject.setdefault(CONF_SENSORS, list(keys) if enabled else [])
+            changed = True
     return new if changed else None
+
+
+def valid_sensor_keys(kind: str) -> tuple[str, ...]:
+    """Sensor keys that exist for persons or pets/children."""
+    return PERSON_SENSOR_KEYS + BODY_SENSOR_KEYS if kind == "person" else PET_SENSOR_KEYS

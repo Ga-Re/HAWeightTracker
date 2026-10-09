@@ -24,7 +24,7 @@ from . import WeightTrackerConfigEntry
 from .analytics import PersonStats
 from .const import (
     CONF_BODY_FAT_ENTITY,
-    CONF_CREATE_SENSORS,
+    CONF_SENSORS,
     CONF_GOAL_WEIGHT,
     CONF_HEIGHT,
     CONF_IMPEDANCE_ENTITY,
@@ -176,12 +176,12 @@ async def async_setup_entry(
     entities: list[SensorEntity] = [PendingSensor(manager)]
     # Entity states are readable by every Home Assistant user, so person
     # sensors only exist if the admin explicitly enabled them for that person.
+    # Only the sensors chosen under Settings → Sensors.
     entities.extend(
         PersonSensor(manager, person_id, description)
         for person_id, person in manager.persons.items()
-        if person.get(CONF_CREATE_SENSORS)
         for description in PERSON_SENSORS
-        if description.exists_fn(person)
+        if description.key in person.get(CONF_SENSORS, []) and description.exists_fn(person)
     )
     # Body composition only if the scale provides impedance or body fat.
     has_impedance = bool(manager.options.get(CONF_IMPEDANCE_ENTITY))
@@ -189,16 +189,17 @@ async def async_setup_entry(
     entities.extend(
         BodySensor(manager, person_id, description)
         for person_id, person in manager.persons.items()
-        if person.get(CONF_CREATE_SENSORS)
         for description in BODY_SENSORS
-        if has_impedance or (has_body_fat and not description.needs_impedance)
+        if description.key in person.get(CONF_SENSORS, [])
+        and (has_impedance or (has_body_fat and not description.needs_impedance))
     )
     entities.extend(
         PersonSensor(manager, None, description, pet_id=pet_id)
         for pet_id, pet in manager.pets.items()
-        if pet.get(CONF_CREATE_SENSORS)
         for description in PERSON_SENSORS
-        if description.key in PET_SENSOR_KEYS and description.exists_fn(pet)
+        if description.key in PET_SENSOR_KEYS
+        and description.key in pet.get(CONF_SENSORS, [])
+        and description.exists_fn(pet)
     )
 
     # Remove sensors that are no longer configured (e.g. goal removed).
