@@ -22,11 +22,15 @@ from .const import (
     CONF_HEIGHT,
     CONF_MAX_WEIGHT,
     CONF_MIN_WEIGHT,
+    CONF_NOTIFY_MILESTONES,
+    CONF_NOTIFY_SERVICE,
+    CONF_NOTIFY_WEIGH,
     CONF_PERSON_ENTITY,
     CONF_PERSON_ID,
     CONF_PERSONS,
     CONF_PET_ID,
     CONF_PETS,
+    CONF_REMINDER_DAYS,
     CONF_SOURCE,
     CONF_SPECIES,
     CONF_START_WEIGHT,
@@ -81,7 +85,21 @@ PROFILE_SCHEMA = vol.Schema(
         vol.Optional(CONF_HEIGHT): _optional_number(50, 250),
         vol.Optional(CONF_GOAL_WEIGHT): _optional_number(1, 300),
         vol.Optional(CONF_BIRTH_MONTH): _birth_month,
+        vol.Optional(CONF_NOTIFY_SERVICE): vol.Any(None, "", vol.All(cv.string, vol.Match(r"^[a-z0-9_]+$"))),
+        vol.Optional(CONF_NOTIFY_WEIGH): cv.boolean,
+        vol.Optional(CONF_NOTIFY_MILESTONES): cv.boolean,
+        vol.Optional(CONF_REMINDER_DAYS): vol.All(vol.Coerce(int), vol.Range(min=0, max=60)),
     }
+)
+
+PROFILE_KEYS = (
+    CONF_HEIGHT,
+    CONF_GOAL_WEIGHT,
+    CONF_BIRTH_MONTH,
+    CONF_NOTIFY_SERVICE,
+    CONF_NOTIFY_WEIGH,
+    CONF_NOTIFY_MILESTONES,
+    CONF_REMINDER_DAYS,
 )
 
 
@@ -174,9 +192,17 @@ def build_person(
     return person
 
 
+def keep_personal_settings(new: dict[str, Any], old: dict[str, Any]) -> dict[str, Any]:
+    """Settings a person made for themselves survive an admin edit of the person."""
+    for key in (CONF_NOTIFY_SERVICE, CONF_NOTIFY_WEIGH, CONF_NOTIFY_MILESTONES, CONF_REMINDER_DAYS):
+        if key in old and key not in new:
+            new[key] = old[key]
+    return new
+
+
 def apply_profile(person: dict[str, Any], profile: dict[str, Any]) -> None:
     """Apply validated profile changes; None removes a value."""
-    for key in (CONF_HEIGHT, CONF_GOAL_WEIGHT, CONF_BIRTH_MONTH):
+    for key in PROFILE_KEYS:
         if key not in profile:
             continue
         if profile[key] in (None, ""):

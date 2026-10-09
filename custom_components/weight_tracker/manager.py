@@ -39,6 +39,15 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util.unit_conversion import MassConverter
 
 from .analytics import PersonStats, Point, compute_stats, trend_series
+from .milestones import (
+    Milestone,
+    achieved,
+    current_streak,
+    direction,
+    is_new_low,
+    next_change_step,
+)
+from .notifications import milestone_message, reminder_message, test_message, weigh_message
 from .pets import closest_pet, match_pet, split_pair
 from .const import (
     CONF_AMBIGUITY_MARGIN,
@@ -47,11 +56,15 @@ from .const import (
     CONF_HEIGHT,
     CONF_MAX_WEIGHT,
     CONF_MIN_WEIGHT,
+    CONF_NOTIFY_MILESTONES,
+    CONF_NOTIFY_SERVICE,
+    CONF_NOTIFY_WEIGH,
     CONF_PERSON_ENTITY,
     CONF_PERSON_ID,
     CONF_PERSONS,
     CONF_PET_ID,
     CONF_PETS,
+    CONF_REMINDER_DAYS,
     CONF_SOURCE,
     CONF_START_WEIGHT,
     CONF_TOLERANCE,
@@ -67,6 +80,7 @@ from .const import (
     METHOD_PET_AUTO,
     METHOD_PET_SESSION,
     PET_WINDOW,
+    REMINDER_HOUR,
     SAME_WEIGHT_EPSILON,
     SIGNAL_UPDATED,
     STATUS_ASSIGNED,
@@ -190,6 +204,10 @@ class WeightTrackerManager:
         self.pet_measurements: list[PetMeasurement] = []
         self.pet_stats: dict[str, PersonStats] = {}
         self.pet_session: PetSession | None = None
+        # person id -> milestone id -> ISO time it was reached
+        self.achievements: dict[str, dict[str, str]] = {}
+        # person id -> ISO time of the last reminder
+        self._reminders: dict[str, str] = {}
         self._pet_session_unsub: CALLBACK_TYPE | None = None
         self.last_detection: Detection | None = None
         self._store: Store[dict[str, Any]] = Store(
@@ -261,7 +279,11 @@ class WeightTrackerManager:
             (PetMeasurement.from_dict(m) for m in data.get("pet_measurements", [])),
             key=lambda m: m.ts,
         )
+        self.achievements = data.get("achievements", {})
+        self._reminders = data.get("reminders", {})
         self._recalculate()
+        # Record what was already reached before, without notifying.
+        self._check_milestones(notify=False)
         self._update_notification()
         self.active = True
 
@@ -274,6 +296,11 @@ class WeightTrackerManager:
         self._unsubs.append(
             async_track_time_change(
                 self.hass, self._async_refresh, hour=0, minute=0, second=10
+            )
+        )
+        self._unsubs.append(
+            async_track_time_change(
+                self.hass, self._async_send_reminders, hour=REMINDER_HOUR, minute=0, second=0
             )
         )
 
@@ -454,7 +481,126 @@ class WeightTrackerManager:
         self.measurements.sort(key=lambda m: m.ts)
         self._async_changed()
         self._fire_event(measurement)
+        if measurement.person_id:
+            self._notify_weighing(measurement)
         return measurement
+
+    # --------------------------------------------------- personal notifications
+
+    def _person_history(self, person_id: str) -> tuple[list[Measurement], list[float]]:
+        """Assigned measurements of a person (oldest first) and their trend values."""
+        assigned = [
+            m for m in self.measurements
+            if m.person_id == person_id and m.status == STATUS_ASSIGNED
+        ]
+        return assigned, [self.trend_by_id.get(m.id, m.weight) for m in assigned]
+
+    def _german(self) -> bool:
+        return (self.hass.config.language or "").startswith("de")
+
+    @callback
+    def _async_send(self, person_id: str, title: str, message: str) -> None:
+        """Send a notification to the device the person chose for themselves."""
+        service = self.persons.get(person_id, {}).get(CONF_NOTIFY_SERVICE)
+        if not service:
+            return
+        if not self.hass.services.has_service("notify", service):
+            _LOGGER.warning("Notify service notify.%s does not exist", service)
+            return
+        self.hass.async_create_task(
+            self.hass.services.async_call(
+                "notify", service, {"title": title, "message": message}
+            )
+        )
+
+    @callback
+    def _notify_weighing(self, measurement: Measurement) -> None:
+        person_id = measurement.person_id
+        person = self.persons.get(person_id or "")
+        if person is None or not person.get(CONF_NOTIFY_WEIGH):
+            return
+        assigned, trends = self._person_history(person_id)
+        if not assigned or assigned[-1] is not measurement:
+            return  # only for the newest measurement
+        stats = self.stats.get(person_id)
+        sign = direction(assigned[0].weight, person.get(CONF_GOAL_WEIGHT))
+        title, message = weigh_message(
+            self._german(),
+            measurement.weight,
+            stats.change_last if stats else None,
+            trends[-1],
+            stats.change_7d if stats else None,
+            is_new_low(trends, sign),
+        )
+        self._async_send(person_id, title, message)
+
+    def person_milestones(self, person_id: str) -> list[Milestone]:
+        """Milestones the history of a person reaches right now."""
+        person = self.persons.get(person_id, {})
+        assigned, trends = self._person_history(person_id)
+        days = [dt_util.as_local(m.ts).date() for m in assigned]
+        return achieved([m.weight for m in assigned], trends, days, person.get(CONF_GOAL_WEIGHT))
+
+    def person_progress(self, person_id: str) -> dict[str, Any]:
+        """Current streak and the next weight milestone, for the panel."""
+        person = self.persons.get(person_id, {})
+        assigned, trends = self._person_history(person_id)
+        days = [dt_util.as_local(m.ts).date() for m in assigned]
+        step = next_change_step([m.weight for m in assigned], trends, person.get(CONF_GOAL_WEIGHT))
+        return {
+            "streak": current_streak(days, dt_util.now().date()),
+            "next_step": step[0] if step else None,
+            "next_remaining": step[1] if step else None,
+        }
+
+    @callback
+    def _check_milestones(self, notify: bool) -> None:
+        """Remember newly reached milestones and tell the person (if wanted)."""
+        changed = False
+        for person_id, person in self.persons.items():
+            reached = self.person_milestones(person_id)
+            known = self.achievements.get(person_id)
+            if known is None:
+                # First run for this person: take over silently.
+                self.achievements[person_id] = {m.id: dt_util.utcnow().isoformat() for m in reached}
+                changed = True
+                continue
+            new = [m for m in reached if m.id not in known]
+            for milestone in new:
+                known[milestone.id] = dt_util.utcnow().isoformat()
+                changed = True
+            if notify and new and person.get(CONF_NOTIFY_MILESTONES):
+                assigned, _ = self._person_history(person_id)
+                sign = direction(assigned[0].weight, person.get(CONF_GOAL_WEIGHT)) if assigned else -1
+                for milestone in new:
+                    self._async_send(person_id, *milestone_message(self._german(), milestone, sign))
+        if changed:
+            self._save()
+
+    @callback
+    def _async_send_reminders(self, _now: datetime) -> None:
+        """Daily: remind persons who have not weighed in for a while."""
+        now = dt_util.utcnow()
+        for person_id, person in self.persons.items():
+            days = int(person.get(CONF_REMINDER_DAYS) or 0)
+            stats = self.stats.get(person_id)
+            if not days or stats is None or stats.latest_ts is None:
+                continue
+            since = (now - stats.latest_ts).days
+            last = dt_util.parse_datetime(self._reminders.get(person_id, "") or "")
+            if since < days or (last is not None and (now - last).days < days):
+                continue
+            self._reminders[person_id] = now.isoformat()
+            self._async_send(person_id, *reminder_message(self._german(), since))
+        self._save()
+
+    @callback
+    def async_send_test(self, service: str) -> None:
+        """Send a test notification to a notify service."""
+        title, message = test_message(self._german())
+        self.hass.async_create_task(
+            self.hass.services.async_call("notify", service, {"title": title, "message": message})
+        )
 
     # ----------------------------------------------------------- pet weighing
 
@@ -660,11 +806,14 @@ class WeightTrackerManager:
     @callback
     def async_assign(self, measurement: Measurement, person_id: str | None) -> None:
         """Assign a measurement to a person, or discard it (person_id None)."""
+        was_pending = measurement.status == STATUS_PENDING
         measurement.person_id = person_id
         measurement.status = STATUS_ASSIGNED if person_id else STATUS_DISCARDED
         measurement.method = METHOD_MANUAL
         self._async_changed()
         self._fire_event(measurement)
+        if was_pending and person_id:
+            self._notify_weighing(measurement)
 
     @callback
     def async_unassign(self, measurement: Measurement) -> None:
@@ -730,6 +879,7 @@ class WeightTrackerManager:
     @callback
     def _async_changed(self) -> None:
         self._recalculate()
+        self._check_milestones(notify=True)
         self._save()
         self._notify()
         self._update_notification()
@@ -771,6 +921,8 @@ class WeightTrackerManager:
         data: dict[str, Any] = {
             "measurements": [m.as_dict() for m in self.measurements],
             "pet_measurements": [m.as_dict() for m in self.pet_measurements],
+            "achievements": self.achievements,
+            "reminders": self._reminders,
         }
         if self._last_source:
             data["last_source"] = {

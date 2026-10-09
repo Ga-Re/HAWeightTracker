@@ -22,6 +22,12 @@ CONF_HEIGHT = "height"
 CONF_GOAL_WEIGHT = "goal_weight"
 CONF_PERSON_ENTITY = "person_entity"
 CONF_BIRTH_MONTH = "birth_month"  # "YYYY-MM"
+# Personal notifications (each person decides for themselves)
+CONF_NOTIFY_SERVICE = "notify_service"  # name of a notify.* service
+CONF_NOTIFY_WEIGH = "notify_weigh"
+CONF_NOTIFY_MILESTONES = "notify_milestones"
+CONF_REMINDER_DAYS = "reminder_days"  # 0 = off
+REMINDER_HOUR = 18
 LEGACY_BIRTH_DATE = "birth_date"  # before 1.5.0: "YYYY-MM-DD"
 
 # Pets

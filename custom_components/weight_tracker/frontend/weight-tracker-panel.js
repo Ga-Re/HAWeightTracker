@@ -172,6 +172,29 @@ const TEXT = {
     startedAt: "Start",
     editData: "Angaben ändern",
     editTile: (label) => `${label} bearbeiten`,
+    achievements: "Erfolge",
+    noAchievements: "Noch keine Erfolge – jede Messung bringt dich näher an den ersten.",
+    streak: (n) => `🔥 ${n} ${n === 1 ? "Tag" : "Tage"} in Folge gewogen`,
+    nextStep: (kg, step) => `Noch ${kg} bis ${step}`,
+    badge: {
+      change: (v, abs) => `${v > 0 ? "+" : "−"}${abs} kg`,
+      goal: () => "Ziel erreicht",
+      streak: (v) => `${v} Tage in Folge`,
+      count: (v) => `${v} Messungen`,
+    },
+    notifications: "Benachrichtigungen",
+    notificationsHint: "Nur du bekommst diese Nachrichten – auf das Gerät, das du hier auswählst.",
+    notifyDevice: "Gerät",
+    notifyDeviceHint: "Die Home-Assistant-App auf deinem Handy (notify-Dienst).",
+    notifyNone: "— keine Benachrichtigungen —",
+    notifyWeigh: "Nach dem Wiegen: Gewicht und Veränderung",
+    notifyMilestones: "Erfolge und Serien",
+    reminderDays: "Erinnern nach … Tagen ohne Messung",
+    reminderHint: "0 = keine Erinnerung. Erinnert wird um 18 Uhr.",
+    days: "Tage",
+    sendTest: "Testnachricht senden",
+    testSent: "Testnachricht gesendet",
+    unknownService: "Dieser Benachrichtigungsdienst existiert nicht.",
     cm: "cm",
     bmiZones: ["Untergewicht", "Normal", "Übergewicht", "Adipositas"],
     day: "Tag",
@@ -189,6 +212,7 @@ const TEXT = {
       name_exists: "Es gibt bereits eine Person mit diesem Namen.",
       invalid_name: "Ungültiger Name.",
       invalid_range: "Das minimale Gewicht muss kleiner als das maximale sein.",
+      unknown_service: "Dieser Benachrichtigungsdienst existiert nicht.",
     },
   },
   en: {
@@ -343,6 +367,29 @@ const TEXT = {
     startedAt: "Start",
     editData: "Edit details",
     editTile: (label) => `Edit ${label}`,
+    achievements: "Achievements",
+    noAchievements: "No achievements yet – every measurement brings you closer to the first.",
+    streak: (n) => `🔥 Weighed in ${n} ${n === 1 ? "day" : "days"} in a row`,
+    nextStep: (kg, step) => `${kg} to go until ${step}`,
+    badge: {
+      change: (v, abs) => `${v > 0 ? "+" : "−"}${abs} kg`,
+      goal: () => "Goal reached",
+      streak: (v) => `${v} days in a row`,
+      count: (v) => `${v} measurements`,
+    },
+    notifications: "Notifications",
+    notificationsHint: "Only you get these messages – on the device you choose here.",
+    notifyDevice: "Device",
+    notifyDeviceHint: "The Home Assistant app on your phone (notify service).",
+    notifyNone: "— no notifications —",
+    notifyWeigh: "After weighing: weight and change",
+    notifyMilestones: "Achievements and streaks",
+    reminderDays: "Remind me after … days without a measurement",
+    reminderHint: "0 = no reminder. Reminders are sent at 6 pm.",
+    days: "days",
+    sendTest: "Send test message",
+    testSent: "Test message sent",
+    unknownService: "This notify service does not exist.",
     cm: "cm",
     bmiZones: ["Underweight", "Normal", "Overweight", "Obese"],
     day: "Day",
@@ -360,6 +407,7 @@ const TEXT = {
       name_exists: "A person with this name already exists.",
       invalid_name: "Invalid name.",
       invalid_range: "The minimum weight must be lower than the maximum weight.",
+      unknown_service: "This notify service does not exist.",
     },
   },
 };
@@ -446,6 +494,9 @@ const STYLE = `
   .tile .pen:hover { background: rgba(127,127,127,.15); color: var(--primary-color, #03a9f4); }
   .tile .pen:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); }
   .tile .actions { margin-top: 12px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 16px; background: rgba(127,127,127,.12); font-size: 13px; }
+  .badge small { color: var(--wt-muted); }
   .avatar.pet { background: rgba(127,127,127,.14) !important; font-size: 28px; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
   .tile { background: var(--wt-card); border: 1px solid var(--wt-border); border-radius: var(--wt-radius); padding: 14px 16px; min-width: 0; }
@@ -1181,6 +1232,60 @@ class WeightTrackerPanel extends HTMLElement {
       <div class="two">
         <div class="card" data-preview="health-${esc(person.id)}">${this._myDataHealth(facts)}</div>
         <div class="card" data-preview="goal-${esc(person.id)}">${this._myDataGoal(person, facts)}</div>
+      </div>
+      <div class="two">
+        ${this._renderAchievements(person)}
+        ${person.can_manage ? this._renderNotifySettings(person) : ""}
+      </div>`;
+  }
+
+  _renderAchievements(person) {
+    const t = this._t;
+    const icons = { change: "🏅", goal: "🎯", streak: "🔥", count: "📊" };
+    const list = (person.achievements || []).slice().sort((a, b) => String(b.ts || "").localeCompare(String(a.ts || "")));
+    const progress = person.progress || {};
+    const fmt = (v) => this._kg(Math.abs(v), { unit: false }).replace(/,0$/, "");
+    const hasNext = progress.next_step !== null && progress.next_step !== undefined && progress.next_remaining > 0;
+    const next = hasNext ? t.nextStep(this._kg(progress.next_remaining), t.badge.change(progress.next_step, fmt(progress.next_step))) : "";
+    return `
+      <div class="card">
+        <h2>🏆 ${esc(t.achievements)}</h2>
+        ${progress.streak ? `<div style="margin-top:8px">${esc(t.streak(progress.streak))}</div>` : ""}
+        ${next ? `<div class="hint" style="margin-top:4px">${esc(next)}</div>` : ""}
+        ${list.length ? `<div class="badges">${list.map((a) => `
+          <span class="badge" title="${a.ts ? esc(this._date(Date.parse(a.ts))) : ""}">${icons[a.kind] || "⭐"} ${esc(t.badge[a.kind] ? t.badge[a.kind](a.value, fmt(a.value)) : a.id)}
+            ${a.ts ? `<small>${esc(this._date(Date.parse(a.ts), { day: "2-digit", month: "2-digit", year: "2-digit" }))}</small>` : ""}</span>`).join("")}</div>`
+          : `<div class="hint" style="margin-top:8px">${esc(t.noAchievements)}</div>`}
+      </div>`;
+  }
+
+  _notifyServices() {
+    const services = Object.keys((this._hass.services || {}).notify || {});
+    return services
+      .filter((name) => !["notify", "send_message", "persistent_notification"].includes(name))
+      .sort()
+      .map((name) => ({ value: name, label: name.replace(/^mobile_app_/, "📱 ").replace(/_/g, " ") }));
+  }
+
+  _renderNotifySettings(person) {
+    const t = this._t;
+    const formId = `notify-form-${person.id}`;
+    const n = person.notify || {};
+    const fields = [
+      this._def("select", "notify_service", t.notifyDevice, { options: this._notifyServices(), emptyLabel: t.notifyNone, helper: t.notifyDeviceHint, wide: true }),
+      this._def("boolean", "notify_weigh", t.notifyWeigh, { wide: true }),
+      this._def("boolean", "notify_milestones", t.notifyMilestones, { wide: true }),
+      this._def("number", "reminder_days", t.reminderDays, { min: 0, max: 60, step: 1, unit: t.days, helper: t.reminderHint, wide: true }),
+    ];
+    const defaults = { notify_service: n.service || "", notify_weigh: Boolean(n.weigh), notify_milestones: Boolean(n.milestones), reminder_days: n.reminder_days || 0 };
+    return `
+      <div class="card">
+        <h2>🔔 ${esc(t.notifications)}</h2>
+        <div class="hint" style="margin-top:4px">${esc(t.notificationsHint)}</div>
+        <div class="form" id="${esc(formId)}">
+          ${this._formFields(formId, fields, defaults)}
+          ${this._formActions(formId, `<button class="btn" type="button" data-action="notify-test" data-person="${esc(person.id)}" data-form="${esc(formId)}">${esc(t.sendTest)}</button>`)}
+        </div>
       </div>`;
   }
 
@@ -1574,7 +1679,7 @@ class WeightTrackerPanel extends HTMLElement {
           .map((st) => ({ value: st.entity_id, label: `${st.attributes.friendly_name || st.entity_id} (${st.entity_id})` }))
           .sort((a, b) => a.label.localeCompare(b.label));
       }
-      control = `<select>${def.required ? "" : `<option value="">${esc(t.none)}</option>`}${options.map((o) => `<option value="${esc(o.value)}" ${o.value === value ? "selected" : ""}>${esc(o.label)}</option>`).join("")}</select>`;
+      control = `<select>${def.required ? "" : `<option value="">${esc(def.emptyLabel || t.none)}</option>`}${options.map((o) => `<option value="${esc(o.value)}" ${o.value === value ? "selected" : ""}>${esc(o.label)}</option>`).join("")}</select>`;
     } else if (def.kind === "number") {
       // text instead of type=number: accepts "75,5" and "75.5" in every browser
       const shown = value === null || value === undefined ? "" : String(value).replace(".", this._lang.startsWith("de") ? "," : ".");
@@ -1885,6 +1990,18 @@ class WeightTrackerPanel extends HTMLElement {
           },
         });
         this._editPet = null;
+        this._toast(this._t.saved);
+      } else if (formId.startsWith("notify-form-")) {
+        await this._ws({
+          type: "weight_tracker/update_profile",
+          person_id: formId.slice("notify-form-".length),
+          profile: {
+            notify_service: m.notify_service || null,
+            notify_weigh: Boolean(m.notify_weigh),
+            notify_milestones: Boolean(m.notify_milestones),
+            reminder_days: Math.max(0, Math.round(Number(m.reminder_days) || 0)),
+          },
+        });
         this._toast(this._t.saved);
       } else if (formId.startsWith("profile-form-")) {
         const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v));
@@ -2198,7 +2315,16 @@ class WeightTrackerPanel extends HTMLElement {
     const el = ev.composedPath().find((n) => n.dataset && n.dataset.action);
     if (!el || el.tagName === "SELECT") return;
     const { action } = el.dataset;
-    if (action === "pet-start") {
+    if (action === "notify-test") {
+      const model = this._models[el.dataset.form] || {};
+      if (!model.notify_service) {
+        this._toast(this._t.notifyNone);
+        return;
+      }
+      this._ws({ type: "weight_tracker/notify_test", person_id: el.dataset.person, service: model.notify_service })
+        .then(() => this._toast(this._t.testSent))
+        .catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
+    } else if (action === "pet-start") {
       this._ws({ type: "weight_tracker/pet_session", action: "start", pet_id: el.dataset.pet || null }).catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
     } else if (action === "pet-cancel") {
       this._ws({ type: "weight_tracker/pet_session", action: "cancel" }).catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));

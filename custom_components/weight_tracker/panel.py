@@ -37,6 +37,7 @@ from .settings import (
     SETTING_DEFAULTS,
     apply_profile,
     build_pet,
+    keep_personal_settings,
     SETTINGS_SCHEMA,
     build_person,
     person_name_error,
@@ -47,11 +48,15 @@ from .const import (
     CONF_CREATE_SENSORS,
     CONF_GOAL_WEIGHT,
     CONF_HEIGHT,
+    CONF_NOTIFY_MILESTONES,
+    CONF_NOTIFY_SERVICE,
+    CONF_NOTIFY_WEIGH,
     CONF_PERSON_ENTITY,
     CONF_PERSON_ID,
     CONF_PERSONS,
     CONF_PET_ID,
     CONF_PETS,
+    CONF_REMINDER_DAYS,
     CONF_SOURCE,
     CONF_SPECIES,
     CONF_START_WEIGHT,
@@ -99,6 +104,7 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_pet_measurement)
     websocket_api.async_register_command(hass, ws_save_pet)
     websocket_api.async_register_command(hass, ws_delete_pet)
+    websocket_api.async_register_command(hass, ws_notify_test)
     file_hash = await hass.async_add_executor_job(_panel_file_hash)
     hass.data[DATA_PANEL_HASH] = file_hash
     if file_hash is None:
@@ -236,6 +242,19 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                 "entities": sensor_ids.get(person_id, {}),
                 "stats": {k: _jsonable(v) for k, v in asdict(stats).items()} if stats else {},
             }
+            achievements = manager.achievements.get(person_id, {})
+            data["achievements"] = [
+                {"id": m.id, "kind": m.kind, "value": m.value, "ts": achievements.get(m.id)}
+                for m in manager.person_milestones(person_id)
+            ]
+            data["progress"] = manager.person_progress(person_id)
+            if data["can_manage"]:
+                data["notify"] = {
+                    "service": person.get(CONF_NOTIFY_SERVICE),
+                    "weigh": person.get(CONF_NOTIFY_WEIGH, False),
+                    "milestones": person.get(CONF_NOTIFY_MILESTONES, False),
+                    "reminder_days": person.get(CONF_REMINDER_DAYS, 0),
+                }
             if admin:
                 data["user_id"] = person.get(CONF_USER_ID)
                 data["viewers"] = person.get(CONF_VIEWERS, [])
@@ -503,7 +522,9 @@ async def ws_save_person(
         person_id = uuid4().hex[:8]
         persons.append(build_person(data, person_id, known_users))
     else:
-        persons[index] = build_person(data, person_id, known_users)
+        persons[index] = keep_personal_settings(
+            build_person(data, person_id, known_users), persons[index]
+        )
     hass.config_entries.async_update_entry(entry, options=options)
     connection.send_result(msg["id"], {"person_id": person_id})
 
@@ -564,6 +585,10 @@ def ws_update_profile(
         profile = PROFILE_SCHEMA(msg["profile"])
     except vol.Invalid as err:
         connection.send_error(msg["id"], websocket_api.ERR_INVALID_FORMAT, str(err))
+        return
+    service = profile.get(CONF_NOTIFY_SERVICE)
+    if service and not hass.services.has_service("notify", service):
+        connection.send_error(msg["id"], "unknown_service", "Unknown notify service")
         return
     apply_profile(person, profile)
     hass.config_entries.async_update_entry(entry, options=options)
@@ -752,3 +777,29 @@ def ws_delete_pet(
     options[CONF_PETS] = remaining
     hass.config_entries.async_update_entry(entry, options=options)
     connection.send_result(msg["id"], {"deleted_measurements": deleted})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/notify_test",
+        vol.Required("entry_id"): str,
+        vol.Required("person_id"): str,
+        vol.Required("service"): vol.Match(r"^[a-z0-9_]+$"),
+    }
+)
+@callback
+def ws_notify_test(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Send a test notification (to set up one's own notifications)."""
+    if (manager := _entry_manager(hass, connection, msg)) is None:
+        return
+    person = manager.persons.get(msg["person_id"])
+    if person is None or not can_manage(connection.user, person):
+        connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Person not found")
+        return
+    if not hass.services.has_service("notify", msg["service"]):
+        connection.send_error(msg["id"], "unknown_service", "Unknown notify service")
+        return
+    manager.async_send_test(msg["service"])
+    connection.send_result(msg["id"])

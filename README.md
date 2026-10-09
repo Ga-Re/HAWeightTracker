@@ -17,7 +17,8 @@ Auf dem Home Assistant muss danach genau diese Struktur liegen. Wichtig ist der 
 ```
 /config/custom_components/weight_tracker/
 ├── __init__.py, access.py, analytics.py, button.py, config_flow.py, const.py,
-│   detector.py, entity.py, manager.py, panel.py, pets.py, sensor.py, services.py, settings.py
+│   detector.py, entity.py, manager.py, milestones.py, notifications.py, panel.py, pets.py,
+│   sensor.py, services.py, settings.py
 ├── manifest.json, icons.json, services.yaml
 ├── brand/
 │   ├── icon.png
@@ -63,6 +64,16 @@ Vor jedem Namen steht das **Bild der Home-Assistant-Person**. Es stammt von der 
 Die Formulare nutzen die Eingabefelder von Home Assistant selbst. Waagen-Sensor und Anwesenheit sind durchsuchbare Entitätsauswahlen mit Filter: Gewichtssensoren bzw. nur `person.*`-Entitäten. Speichern lädt die Integration kurz neu, das Panel aktualisiert sich dabei von selbst. Der Knopf *Konfigurieren* unter Geräte & Dienste verweist nur noch auf das Panel.
 
 Das Panel passt sich dem hellen oder dunklen Theme an, funktioniert auf dem Handy und lädt nichts aus dem Internet. Die Daten kommen live über die WebSocket-Verbindung von Home Assistant.
+
+## Benachrichtigungen & Erfolge
+
+Jede Person entscheidet unter **Meine Daten → Benachrichtigungen** selbst, ob und welche Nachrichten sie bekommt. Die Nachrichten gehen nur an das Gerät, das sie dort auswählt (ein `notify`-Dienst, z. B. die Home-Assistant-App auf ihrem Handy):
+- **Nach dem Wiegen:** Gewicht, Veränderung seit der letzten Messung und Trend der letzten 7 Tage. Bei einem neuen Bestwert kommt ein 🎉 dazu.
+- **Erfolge und Serien:** z. B. „Du hast 5 kg abgenommen“, „Zielgewicht erreicht“, „14 Tage in Folge gewogen“, „100. Messung“.
+- **Erinnerung:** nach einer selbst gewählten Zahl von Tagen ohne Messung, jeweils um 18 Uhr.
+- **Testnachricht** zum Ausprobieren.
+
+Erfolge zählen über den Trend, damit Tagesschwankungen kein Abzeichen auslösen. Sie erscheinen unter *Meine Daten* als Abzeichen, zusammen mit der aktuellen Serie und dem nächsten Ziel („noch 1,2 kg bis −7,5 kg“). Bereits erreichte Erfolge werden beim Update still übernommen, es gibt also keine Nachrichtenflut.
 
 ## Haustiere wiegen
 
