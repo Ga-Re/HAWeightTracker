@@ -134,6 +134,12 @@ const TEXT = {
     myData: "Meine Daten",
     profileHint: "Diese Angaben kannst du selbst ändern.",
     birthDate: "Geburtsdatum",
+    day: "Tag",
+    month2: "Monat",
+    year: "Jahr",
+    invalidDate: (label) => `„${label}“ ist kein gültiges Datum.`,
+    sensorsFound: (n) => `📈 ${n} Sensoren in HA`,
+    sensorsMissing: "⚠️ Sensoren aktiviert, aber in HA nicht gefunden",
     birthDateHint: "Optional, für das Alter. Die BMI-Einstufung gilt nur für Erwachsene.",
     years: (n) => `${n} Jahre`,
     showDetails: (label) => `${label}: Verlauf anzeigen`,
@@ -259,6 +265,12 @@ const TEXT = {
     myData: "My details",
     profileHint: "You can change these details yourself.",
     birthDate: "Date of birth",
+    day: "Day",
+    month2: "Month",
+    year: "Year",
+    invalidDate: (label) => `“${label}” is not a valid date.`,
+    sensorsFound: (n) => `📈 ${n} sensors in HA`,
+    sensorsMissing: "⚠️ Sensors enabled but not found in HA",
     birthDateHint: "Optional, for the age. The BMI classification applies to adults only.",
     years: (n) => `${n} years`,
     showDetails: (label) => `${label}: show history`,
@@ -329,6 +341,9 @@ const STYLE = `
   .editor { border: 1px solid var(--wt-border); border-radius: 12px; padding: 16px; margin: 8px 0; }
   .editor h3 { font-size: 15px; font-weight: 500; margin: 0; display: flex; align-items: center; gap: 8px; }
   .field { min-width: 0; }
+  .bd-label { font-size: 12px; color: var(--wt-muted); margin-bottom: 4px; }
+  .bd-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1.2fr); gap: 8px; }
+  .bd-row label { display: grid; gap: 4px; font-size: 12px; color: var(--wt-muted); min-width: 0; }
   .link {
     background: none; border: none; padding: 0 2px; margin: 0 -2px; font: inherit; color: inherit;
     cursor: pointer; border-radius: 4px; text-align: inherit;
@@ -767,8 +782,33 @@ class WeightTrackerPanel extends HTMLElement {
       </div>`;
   }
 
+  // Entity id of a person's sensor: from the server, or found via HA's own
+  // frontend registry (platform + translation key + device identifier).
+  _entityFor(person, key) {
+    const fromServer = person.entities && person.entities[key];
+    if (fromServer) return fromServer;
+    const entities = this._hass && this._hass.entities;
+    const devices = (this._hass && this._hass.devices) || {};
+    if (!entities) return null;
+    const identifier = `${this._entry.entry_id}_${person.id}`;
+    for (const entry of Object.values(entities)) {
+      if (entry.platform !== "weight_tracker" || entry.translation_key !== key || !entry.device_id) continue;
+      const device = devices[entry.device_id];
+      const ids = (device && device.identifiers) || [];
+      if (ids.some(([domain, id]) => domain === "weight_tracker" && id === identifier) && this._hass.states[entry.entity_id]) {
+        return entry.entity_id;
+      }
+    }
+    return null;
+  }
+
+  _sensorCount(person) {
+    const keys = ["weight", "trend", "change_last", "change_7d", "change_30d", "change_total", "rate", "bmi", "goal_distance", "goal_eta", "last_measured"];
+    return keys.filter((k) => this._entityFor(person, k)).length;
+  }
+
   _link(person, key, label, html) {
-    const entityId = person.entities && person.entities[key];
+    const entityId = this._entityFor(person, key);
     if (!entityId) return html;
     return `<button class="link" data-action="more-info" data-entity="${esc(entityId)}" title="${esc(this._t.showDetails(label))}">${html}</button>`;
   }
@@ -789,7 +829,7 @@ class WeightTrackerPanel extends HTMLElement {
     const fields = [
       this._def("number", "height", t.height, { min: 50, max: 250, step: 1, unit: "cm", helper: t.heightHint }),
       this._def("number", "goal_weight", t.goalWeight, { min: 1, max: 300, step: 0.1, unit: "kg", helper: t.goalWeightHint }),
-      this._def("date", "birth_date", t.birthDate, { helper: t.birthDateHint }),
+      this._def("birthdate", "birth_date", t.birthDate, { helper: t.birthDateHint }),
     ];
     const defaults = { height: person.height ?? null, goal_weight: person.goal ?? null, birth_date: person.birth_date || null };
     return `
@@ -953,6 +993,8 @@ class WeightTrackerPanel extends HTMLElement {
     if (kind === "boolean") def.selector = { boolean: {} };
     if (kind === "datetime") def.selector = { datetime: {} };
     if (kind === "date") def.selector = { date: {} };
+    // "birthdate": three fields (day, month, year) instead of a calendar
+    // where you would have to click back month by month.
     return def;
   }
 
@@ -970,12 +1012,13 @@ class WeightTrackerPanel extends HTMLElement {
       const def = (this._forms[formId] || []).find((f) => f.name === host.dataset.field);
       if (!def) continue;
       const value = this._models[formId][def.name];
-      host.appendChild(this._haReady ? this._haField(formId, def, value) : this._nativeField(formId, def, value));
+      if (def.kind === "birthdate") host.appendChild(this._birthDateField(formId, def, value));
+      else host.appendChild(this._haReady ? this._haField(formId, def, value) : this._nativeField(formId, def, value));
     }
   }
 
   _setValue(formId, def, value) {
-    this._models[formId][def.name] = value;
+    (this._models[formId] = this._models[formId] || {})[def.name] = value;
     this._dirty.add(formId);
     if (def.onChange) def.onChange(value);
   }
@@ -993,6 +1036,52 @@ class WeightTrackerPanel extends HTMLElement {
       this._setValue(formId, def, ev.detail.value);
     });
     return el;
+  }
+
+  _birthDateField(formId, def, value) {
+    const t = this._t;
+    const model = this._models[formId];
+    const partsKey = `${def.name}:parts`;
+    if (!model[partsKey]) {
+      const [y, m, d] = String(value || "").split("-");
+      model[partsKey] = { d: d ? String(Number(d)) : "", m: m ? String(Number(m)) : "", y: y ? Number(y) : null };
+    }
+    const parts = model[partsKey];
+    const update = (key, v) => {
+      parts[key] = v === undefined || v === null ? (key === "y" ? null : "") : v;
+      const { d, m, y } = parts;
+      let result;
+      if (!d && !m && !y) result = null;
+      else if (!d || !m || !y) result = "invalid";
+      else {
+        const date = new Date(Number(y), Number(m) - 1, Number(d));
+        const valid = date.getFullYear() === Number(y) && date.getMonth() === Number(m) - 1 && date.getDate() === Number(d);
+        const pad = (n) => String(n).padStart(2, "0");
+        result = valid && Number(y) >= 1900 && date <= new Date() ? `${y}-${pad(m)}-${pad(d)}` : "invalid";
+      }
+      this._setValue(formId, def, result);
+    };
+    const monthName = (i) => new Intl.DateTimeFormat(this._lang, { month: "long" }).format(new Date(2000, i, 1));
+    const days = Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }));
+    const months = Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: monthName(i) }));
+    const thisYear = new Date().getFullYear();
+    const sub = [
+      ["d", this._def("select", `${def.name}-d`, t.day, { options: days }), parts.d],
+      ["m", this._def("select", `${def.name}-m`, t.month2, { options: months }), parts.m],
+      ["y", this._def("number", `${def.name}-y`, t.year, { min: 1900, max: thisYear, step: 1 }), parts.y],
+    ];
+    const box = document.createElement("div");
+    box.innerHTML = `<div class="bd-label">${esc(def.label)}</div><div class="bd-row"></div>${def.helper ? `<div class="hint" style="margin-top:4px">${esc(def.helper)}</div>` : ""}`;
+    const row = box.querySelector(".bd-row");
+    for (const [key, subDef] of sub) {
+      // Sub fields write into the parts, not directly into the model.
+      const proxyForm = `${formId}::${key}`;
+      this._models[proxyForm] = { [subDef.name]: value };
+      subDef.onChange = (v) => update(key, v);
+      const el = this._haReady ? this._haField(proxyForm, subDef, sub.find((x) => x[0] === key)[2] || undefined) : this._nativeField(proxyForm, subDef, sub.find((x) => x[0] === key)[2]);
+      row.appendChild(el);
+    }
+    return box;
   }
 
   _entityMatches(st, filter) {
@@ -1076,6 +1165,7 @@ class WeightTrackerPanel extends HTMLElement {
       const empty = value === null || value === undefined || value === "" || (typeof value === "string" && !value.trim());
       if (def.required && empty) return t.required(def.label);
       if (def.kind === "number" && !empty && Number.isNaN(Number(value))) return t.invalidNumber(def.label);
+      if (def.kind === "birthdate" && value === "invalid") return t.invalidDate(def.label);
     }
     return null;
   }
@@ -1139,6 +1229,7 @@ class WeightTrackerPanel extends HTMLElement {
         p.goal ? `${t.goal} ${this._kg(p.goal)}` : null,
         p.user_id ? `👤 ${userName(p.user_id) || "?"}` : null,
         t.count(counts[p.id] || 0),
+        p.create_sensors ? (this._sensorCount(p) ? t.sensorsFound(this._sensorCount(p)) : t.sensorsMissing) : null,
       ].filter(Boolean);
       return `
         <div class="person-row">
@@ -1184,7 +1275,7 @@ class WeightTrackerPanel extends HTMLElement {
       this._def("number", "start_weight", t.startWeight, { required: true, min: 1, max: 300, step: 0.1, unit: "kg", helper: t.startWeightHint }),
       this._def("number", "height", t.height, { min: 50, max: 250, step: 1, unit: "cm", helper: t.heightHint }),
       this._def("number", "goal_weight", t.goalWeight, { min: 1, max: 300, step: 0.1, unit: "kg", helper: t.goalWeightHint }),
-      this._def("date", "birth_date", t.birthDate, { helper: t.birthDateHint }),
+      this._def("birthdate", "birth_date", t.birthDate, { helper: t.birthDateHint }),
       this._def("entity", "person_entity", t.presence, { filter: { domain: "person" }, helper: t.presenceHint }),
       this._def("select", "user_id", t.linkedUser, {
         options: users.map((u) => ({ value: u.id, label: u.is_admin ? `${u.name} (${t.admin})` : u.name })),
