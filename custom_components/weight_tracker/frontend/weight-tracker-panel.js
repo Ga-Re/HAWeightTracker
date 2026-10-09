@@ -41,7 +41,7 @@ const TEXT = {
     noData: "Noch keine Messung",
     measured: "gemessen",
     history: "Verlauf",
-    absolute: "kg",
+    absolute: "Gewicht",
     relative: "Veränderung",
     chartEmpty: "Im gewählten Zeitraum gibt es keine Messungen.",
     forecast: "Prognose",
@@ -102,6 +102,33 @@ const TEXT = {
     sensorsHint: "⚠️ Sensoren sind in Home Assistant für alle Benutzer sichtbar. Nur für Automationen einschalten.",
     saved: "Gespeichert",
     me: "Ich",
+    petWarning: {
+      fast_loss: (p) => `Nimmt schnell ab: ${p} % pro Woche`,
+      fast_gain: (p) => `Nimmt schnell zu: ${p} % pro Woche`,
+      loss_30d: (p) => `Hat in 30 Tagen ${p} % abgenommen`,
+      gain_30d: (p) => `Hat in 30 Tagen ${p} % zugenommen`,
+    },
+    petWarningHint: "Ungewöhnlich schnelle Veränderungen können ein Warnzeichen sein – sprich am besten mit deiner Tierarztpraxis.",
+    notifyPetWarnings: "Warnungen zu Haustieren (ungewöhnlich schnelle Gewichtsänderung)",
+    petNotes: "Notizen",
+    petNotesHint: "Tierarzt, Impfungen, Futterumstellung, Medikamente …",
+    eventCategories: { vet: "🩺 Tierarzt", vaccination: "💉 Impfung", food: "🍽️ Futter", medication: "💊 Medikament", other: "📝 Sonstiges" },
+    addNote: "Hinzufügen",
+    notePlaceholderPet: "z. B. Zahnkontrolle, neues Trockenfutter",
+    children: "Kinder",
+    childrenHint: "Kinder und Babys wiegst du wie Haustiere: einmal allein, einmal mit dem Kind auf dem Arm. Statt eines Zielgewichts zeigt das Panel die Perzentile (WHO bis 2 Jahre, danach CDC).",
+    addChild: "Kind hinzufügen",
+    newChild: "Neues Kind",
+    deleteChild: "Kind löschen",
+    childBirthDate: "Geburtsdatum",
+    childSexHint: "Für die Perzentilen (Mädchen und Jungen haben eigene Kurven).",
+    childStartWeight: "Aktuelles Gewicht (ungefähr)",
+    childAge: (months) => months < 1 ? `${Math.max(0, Math.round(months * 4.35))} Wochen` : months < 24 ? `${Math.floor(months)} ${Math.floor(months) === 1 ? "Monat" : "Monate"}` : `${Math.floor(months / 12)} Jahre`,
+    percentile: (p) => `${p}. Perzentile`,
+    percentileClass: { low: "unter der 3. Perzentile – bitte kinderärztlich abklären", high: "über der 97. Perzentile – bitte kinderärztlich abklären", normal: "im Normalbereich (3.–97. Perzentile)" },
+    growthMissing: "Für die Perzentilen fehlen Geschlecht oder Geburtsdatum.",
+    growthLegend: "Bänder: 3.–97. und 15.–85. Perzentile, gestrichelt: Median",
+    unit: "Einheit",
     tabOverview: "Übersicht",
     tabMeasurements: "Messungen",
     tabSettings: "Einstellungen",
@@ -223,7 +250,7 @@ const TEXT = {
     streak: (n) => `🔥 ${n} ${n === 1 ? "Tag" : "Tage"} in Folge gewogen`,
     nextStep: (kg, step) => `Noch ${kg} bis ${step}`,
     badge: {
-      change: (v, abs) => `${v > 0 ? "+" : "−"}${abs} kg`,
+      change: (v, abs, unit) => `${v > 0 ? "+" : "−"}${abs} ${unit}`,
       goal: () => "Ziel erreicht",
       streak: (v) => `${v} Tage in Folge`,
       count: (v) => `${v} Messungen`,
@@ -282,7 +309,7 @@ const TEXT = {
     noData: "No measurement yet",
     measured: "measured",
     history: "History",
-    absolute: "kg",
+    absolute: "Weight",
     relative: "Change",
     chartEmpty: "No measurements in the selected range.",
     forecast: "Forecast",
@@ -343,6 +370,33 @@ const TEXT = {
     sensorsHint: "⚠️ Sensors are visible to all Home Assistant users. Only enable them for automations.",
     saved: "Saved",
     me: "Me",
+    petWarning: {
+      fast_loss: (p) => `Losing weight fast: ${p} % per week`,
+      fast_gain: (p) => `Gaining weight fast: ${p} % per week`,
+      loss_30d: (p) => `Lost ${p} % in 30 days`,
+      gain_30d: (p) => `Gained ${p} % in 30 days`,
+    },
+    petWarningHint: "Unusually fast changes can be a warning sign – best talk to your vet.",
+    notifyPetWarnings: "Pet warnings (unusually fast weight change)",
+    petNotes: "Notes",
+    petNotesHint: "Vet visits, vaccinations, food changes, medication …",
+    eventCategories: { vet: "🩺 Vet", vaccination: "💉 Vaccination", food: "🍽️ Food", medication: "💊 Medication", other: "📝 Other" },
+    addNote: "Add",
+    notePlaceholderPet: "e.g. dental check, new dry food",
+    children: "Children",
+    childrenHint: "You weigh children and babies like pets: once alone, once holding the child. Instead of a goal the panel shows the percentile (WHO up to 2 years, then CDC).",
+    addChild: "Add child",
+    newChild: "New child",
+    deleteChild: "Delete child",
+    childBirthDate: "Date of birth",
+    childSexHint: "For the percentiles (girls and boys have their own curves).",
+    childStartWeight: "Current weight (approximately)",
+    childAge: (months) => months < 1 ? `${Math.max(0, Math.round(months * 4.35))} weeks` : months < 24 ? `${Math.floor(months)} ${Math.floor(months) === 1 ? "month" : "months"}` : `${Math.floor(months / 12)} years`,
+    percentile: (p) => `${p}th percentile`,
+    percentileClass: { low: "below the 3rd percentile – please check with your paediatrician", high: "above the 97th percentile – please check with your paediatrician", normal: "in the normal range (3rd–97th percentile)" },
+    growthMissing: "Sex or date of birth is missing for the percentiles.",
+    growthLegend: "Bands: 3rd–97th and 15th–85th percentile, dashed: median",
+    unit: "Unit",
     tabOverview: "Overview",
     tabMeasurements: "Measurements",
     tabSettings: "Settings",
@@ -464,7 +518,7 @@ const TEXT = {
     streak: (n) => `🔥 Weighed in ${n} ${n === 1 ? "day" : "days"} in a row`,
     nextStep: (kg, step) => `${kg} to go until ${step}`,
     badge: {
-      change: (v, abs) => `${v > 0 ? "+" : "−"}${abs} kg`,
+      change: (v, abs, unit) => `${v > 0 ? "+" : "−"}${abs} ${unit}`,
       goal: () => "Goal reached",
       streak: (v) => `${v} days in a row`,
       count: (v) => `${v} measurements`,
@@ -675,6 +729,19 @@ const STYLE = `
   .tile .pen:hover { background: rgba(127,127,127,.15); color: var(--primary-color, #03a9f4); }
   .tile .pen:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); }
   .tile .actions { margin-top: 12px; }
+  .warn-box { margin-top: 12px; padding: 10px 12px; border-radius: 10px; border-left: 4px solid var(--warning-color, #ffa600); background: rgba(255,166,0,.1); font-size: 13px; }
+  .warn-box b { display: block; margin-bottom: 2px; }
+  .events { margin-top: 12px; border-top: 1px solid var(--wt-grid); padding-top: 8px; font-size: 13px; }
+  .events .ev { display: flex; gap: 8px; align-items: baseline; padding: 4px 0; }
+  .events .ev .when { color: var(--wt-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .events .ev .what { flex: 1; }
+  .events .add { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .events .add select, .events .add input { font: inherit; font-size: 13px; padding: 4px 8px; min-height: 34px; border-radius: 8px; border: 1px solid var(--wt-border); background: var(--wt-card); color: var(--primary-text-color); }
+  .events .add input[type=text] { flex: 1 1 160px; }
+  .growth { display: block; width: 100%; height: 190px; margin-top: 12px; }
+  .growth text { fill: var(--wt-muted); font-size: 10px; font-family: inherit; }
+  .unit-select { background: transparent; color: inherit; border: 1px solid currentColor; border-radius: 8px; padding: 2px 6px; font: inherit; font-size: 13px; margin-left: 8px; }
+  .unit-select option { color: #000; }
   .cal { display: block; width: 100%; height: auto; margin-top: 12px; }
   .cal text { fill: var(--wt-muted); font-size: 9px; font-family: inherit; }
   .legend-row { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--wt-muted); margin-top: 8px; }
@@ -818,6 +885,11 @@ class WeightTrackerPanel extends HTMLElement {
     this._entryId = null;
     this._range = 90;
     this._mode = "abs";
+    try {
+      this._unitPref = localStorage.getItem("wt-unit");
+    } catch (err) {
+      this._unitPref = null;
+    }
     this._forecast = true;
     this._hidden = new Set();
     this._listPerson = "all";
@@ -888,7 +960,7 @@ class WeightTrackerPanel extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>${STYLE}</style>
       <div class="layout">
-        <div class="toolbar"><span id="menu"></span><div class="title"></div><span id="scale"></span></div>
+        <div class="toolbar"><span id="menu"></span><div class="title"></div><span id="scale"></span><span id="unit"></span></div>
         <div class="tabs" id="tabs" role="tablist"></div>
         <div class="scroller"><div class="content" id="content"><div class="message">${esc(this._t.loading)}</div></div></div>
       </div>`;
@@ -1005,6 +1077,20 @@ class WeightTrackerPanel extends HTMLElement {
     return `<span class="avatar" style="${box};font-size:${Math.round(size * 0.45)}px;background:${color}" aria-hidden="true">${esc(person.name.slice(0, 1).toUpperCase())}</span>`;
   }
 
+  _childMonths(child) {
+    if (!child || !child.birth_date) return null;
+    const born = new Date(`${child.birth_date}T00:00:00`);
+    return (Date.now() - born.getTime()) / (30.4375 * DAY);
+  }
+
+  _emoji(subject) {
+    if (subject && subject.kind === "child") {
+      const months = this._childMonths(subject);
+      return months !== null && months >= 24 ? "🧒" : "👶";
+    }
+    return this._speciesEmoji(subject && subject.species);
+  }
+
   _speciesEmoji(species) {
     return { cat: "🐱", dog: "🐶", rabbit: "🐰", guinea_pig: "🐹" }[species] || "🐾";
   }
@@ -1018,13 +1104,50 @@ class WeightTrackerPanel extends HTMLElement {
     return person ? this._color(person.color_index) : "var(--wt-muted)";
   }
 
-  _kg(value, { signed = false, unit = true, digits = 1 } = {}) {
+  // Display unit: kg, lb or st (per device; default from the HA unit system).
+  get _unit() {
+    if (this._unitPref) return this._unitPref;
+    const mass = this._hass && this._hass.config && this._hass.config.unit_system && this._hass.config.unit_system.mass;
+    return mass === "lb" ? "lb" : "kg";
+  }
+
+  get _factor() {
+    return this._unit === "kg" ? 1 : 2.20462262;
+  }
+
+  get _unitLabel() {
+    return this._unit === "kg" ? "kg" : "lb";
+  }
+
+  _num(value, { signed = false, digits = 1 } = {}) {
     if (value === null || value === undefined || Number.isNaN(value)) return "–";
     const fmt = new Intl.NumberFormat(this._lang, { minimumFractionDigits: digits, maximumFractionDigits: digits });
     let text = fmt.format(Math.abs(value));
     if (signed) text = (value > 0.0499 ? "+" : value < -0.0499 ? "−" : "±") + text;
     else if (value < 0) text = "−" + text;
-    return unit ? `${text} kg` : text;
+    return text;
+  }
+
+  // Formats a weight given in kg in the chosen display unit.
+  _kg(value, { signed = false, unit = true, digits = 1 } = {}) {
+    if (value === null || value === undefined || Number.isNaN(value)) return "–";
+    const converted = value * this._factor;
+    if (unit && !signed && this._unit === "st" && Math.abs(converted) >= 14) {
+      const pounds = Math.abs(converted);
+      const stones = Math.floor(pounds / 14);
+      return `${value < 0 ? "−" : ""}${stones} st ${this._num(pounds - stones * 14, { digits: 0 })} lb`;
+    }
+    const text = this._num(converted, { signed, digits });
+    return unit ? `${text} ${this._unitLabel}` : text;
+  }
+
+  // Big weight number + unit for the cards.
+  _hero(value, digits = 1) {
+    if (this._unit === "st" && value !== null && value !== undefined && value * this._factor >= 14) {
+      const pounds = value * this._factor, stones = Math.floor(pounds / 14);
+      return `<span class="value num">${stones}</span><span class="unit"> st </span><span class="value num">${this._num(pounds - stones * 14, { digits: 0 })}</span><span class="unit"> lb</span>`;
+    }
+    return `<span class="value num">${this._kg(value, { unit: false, digits })}</span><span class="unit"> ${this._unitLabel}</span>`;
   }
 
   _date(ts, opts = { day: "2-digit", month: "2-digit", year: "numeric" }) {
@@ -1055,6 +1178,8 @@ class WeightTrackerPanel extends HTMLElement {
     if (!this._data) return;
     const t = this._t;
     const entries = this._data.entries;
+    const unitSlot = this.shadowRoot.getElementById("unit");
+    if (unitSlot) unitSlot.innerHTML = `<select class="unit-select" data-action="unit" aria-label="${esc(t.unit)}">${["kg", "lb", "st"].map((u) => `<option value="${u}" ${u === this._unit ? "selected" : ""}>${u}</option>`).join("")}</select>`;
     const scaleSlot = this.shadowRoot.getElementById("scale");
     scaleSlot.innerHTML = entries.length > 1
       ? `<select data-action="scale">${entries.map((e) => `<option value="${esc(e.entry_id)}" ${e === this._entry ? "selected" : ""}>${esc(e.title)}</option>`).join("")}</select>`
@@ -1132,12 +1257,12 @@ class WeightTrackerPanel extends HTMLElement {
       const others = pets.filter((p) => p.id !== pet.id);
       return `
         <div class="card pending" role="region" aria-label="${esc(t.petSuggestion)}">
-          <h2>${this._speciesEmoji(pet.species)} ${esc(t.petSuggestion)}</h2>
+          <h2>${this._emoji(pet)} ${esc(t.petSuggestion)}</h2>
           <div class="pending-row">
             <div class="what"><b class="num">${esc(t.petSuggestionText(pet.name, this._kg(m.pet_weight), person ? person.name : "?"))}</b>
               <span class="muted small">· ${esc(this._dateTime(m.ts))}</span></div>
             <button class="btn primary" data-action="pet-confirm" data-id="${esc(m.id)}" data-pet="${esc(pet.id)}">${esc(t.petYes(pet.name))}</button>
-            ${others.map((o) => `<button class="btn" data-action="pet-confirm" data-id="${esc(m.id)}" data-pet="${esc(o.id)}">${this._speciesEmoji(o.species)} ${esc(o.name)}</button>`).join("")}
+            ${others.map((o) => `<button class="btn" data-action="pet-confirm" data-id="${esc(m.id)}" data-pet="${esc(o.id)}">${this._emoji(o)} ${esc(o.name)}</button>`).join("")}
             <button class="btn quiet" data-action="pet-reject" data-id="${esc(m.id)}">${esc(t.petNo)}</button>
           </div>
         </div>`;
@@ -1195,7 +1320,7 @@ class WeightTrackerPanel extends HTMLElement {
         <div class="person-head">${this._avatar(person, 36)}
           <h2>${esc(person.name)}${age !== null ? ` <span class="muted small" style="font-weight:400">· ${esc(t.years(age))}</span>` : ""}</h2>
           <span class="muted small">${latestTs ? link("last_measured", t.measured, `${esc(t.measured)} ${esc(this._relative(latestTs))}`) : esc(t.noData)}</span></div>
-        <div class="hero">${link("weight", t.weight, `<span class="value num">${this._kg(s.latest_weight, { unit: false })}</span><span class="unit"> kg</span>`)}
+        <div class="hero">${link("weight", t.weight, this._hero(s.latest_weight))}
           ${s.change_last !== null && s.change_last !== undefined ? `<span class="muted small num">${link("change_last", t.weight, this._kg(s.change_last, { signed: true }))}</span>` : ""}</div>
         <div class="stats">
           ${stat("trend", t.trend, this._kg(s.trend))}
@@ -1220,7 +1345,7 @@ class WeightTrackerPanel extends HTMLElement {
     return `
       <div class="card session" role="status">
         <div class="what">
-          <h2>${pet ? this._speciesEmoji(pet.species) : "🐾"} ${esc(t.petSessionTitle(pet ? pet.name : ""))}</h2>
+          <h2>${pet ? this._emoji(pet) : "🐾"} ${esc(t.petSessionTitle(pet ? pet.name : ""))}</h2>
           <div class="hint" style="margin-top:4px">${esc(t.petSessionHint(pet ? pet.name : ""))}</div>
         </div>
         <div><span class="count">${esc(t.petSessionStep(session.readings))}</span> · <span class="muted" data-countdown>${esc(this._countdownText())}</span></div>
@@ -1251,11 +1376,84 @@ class WeightTrackerPanel extends HTMLElement {
 
   _renderPets() {
     const t = this._t;
-    const pets = this._entry.pets || [];
-    if (!pets.length) return "";
+    const all = this._entry.pets || [];
+    const pets = all.filter((p) => p.kind !== "child");
+    const children = all.filter((p) => p.kind === "child");
     return `
-      <div class="section-title">🐾 ${esc(t.pets)}</div>
-      <div class="persons">${pets.map((pet) => this._renderPetCard(pet)).join("")}</div>`;
+      ${children.length ? `<div class="section-title">👶 ${esc(t.children)}</div>
+        <div class="persons">${children.map((child) => this._renderChildCard(child)).join("")}</div>` : ""}
+      ${pets.length ? `<div class="section-title">🐾 ${esc(t.pets)}</div>
+        <div class="persons">${pets.map((pet) => this._renderPetCard(pet)).join("")}</div>` : ""}`;
+  }
+
+  _renderChildCard(child) {
+    const t = this._t;
+    const s = child.stats || {};
+    const g = child.growth;
+    const months = this._childMonths(child);
+    const latestTs = s.latest_ts ? Date.parse(s.latest_ts) : null;
+    const link = (key, label, html) => this._link(child, key, label, html);
+    let growthHtml = `<div class="hint" style="margin-top:12px">${esc(t.growthMissing)}</div>`;
+    if (g) {
+      const pct = g.percentile;
+      const cls = pct === null || pct === undefined ? null : pct < 3 ? "low" : pct > 97 ? "high" : "normal";
+      growthHtml = `
+        ${pct !== null && pct !== undefined ? `<div style="margin-top:10px"><b>${esc(t.percentile(Math.round(pct)))}</b> <span class="muted small">· ${esc(t.percentileClass[cls])}</span></div>` : ""}
+        ${this._growthChart(child)}
+        <div class="hint">${esc(t.growthLegend)}</div>`;
+    }
+    const session = this._entry.pet_session;
+    return `
+      <div class="card person-card">
+        <div class="person-head"><span class="avatar pet" style="width:36px;height:36px;font-size:20px">${this._emoji(child)}</span>
+          <h2>${esc(child.name)}${months !== null ? ` <span class="muted small" style="font-weight:400">· ${esc(t.childAge(months))}</span>` : ""}</h2>
+          <span class="muted small">${latestTs ? link("last_measured", t.measured, `${esc(t.measured)} ${esc(this._relative(latestTs))}`) : ""}</span></div>
+        ${s.latest_weight !== null && s.latest_weight !== undefined
+          ? `<div class="hero">${link("weight", t.weight, this._hero(s.latest_weight, s.latest_weight < 10 ? 2 : 1))}
+              ${s.change_last !== null && s.change_last !== undefined ? `<span class="muted small num">${link("change_last", t.weight, this._kg(s.change_last, { signed: true, digits: 2 }))}</span>` : ""}</div>`
+          : `<div class="hint" style="margin:16px 0 4px">${esc(t.petNoData)}</div>`}
+        ${growthHtml}
+        <div class="pet-actions">
+          <button class="btn ${session ? "" : "primary"}" data-action="pet-start" data-pet="${esc(child.id)}" ${session ? "disabled" : ""}>${this._emoji(child)} ${esc(t.weighPet(child.name))}</button>
+        </div>
+      </div>`;
+  }
+
+  // Weight-for-age chart with percentile bands (3–97, 15–85) and the median.
+  _growthChart(child) {
+    const g = child.growth;
+    if (!g || !g.curves || g.curves.length < 2) return "";
+    const uf = this._factor;
+    const color = this._color(child.color_index);
+    const W = 320, H = 160, padL = 30, padR = 8, padT = 8, padB = 18;
+    const curves = g.curves.map((c) => [c[0], ...c.slice(1).map((v) => v * uf)]);
+    const pts = (g.points || []).map(([a, w]) => [a, w * uf]);
+    const a0 = curves[0][0], a1 = curves[curves.length - 1][0];
+    let lo = Math.min(...curves.map((c) => c[1]), ...pts.map((p) => p[1]));
+    let hi = Math.max(...curves.map((c) => c[5]), ...pts.map((p) => p[1]));
+    const pad = (hi - lo) * 0.05; lo -= pad; hi += pad;
+    const x = (a) => padL + ((a - a0) / Math.max(a1 - a0, 0.1)) * (W - padL - padR);
+    const y = (v) => padT + (1 - (v - lo) / (hi - lo)) * (H - padT - padB);
+    const band = (iLow, iHigh) => `M${curves.map((c) => `${x(c[0]).toFixed(1)},${y(c[iHigh]).toFixed(1)}`).join("L")}L${curves.slice().reverse().map((c) => `${x(c[0]).toFixed(1)},${y(c[iLow]).toFixed(1)}`).join("L")}Z`;
+    const median = curves.map((c, i) => `${i ? "L" : "M"}${x(c[0]).toFixed(1)},${y(c[3]).toFixed(1)}`).join("");
+    const line = pts.map((p, i) => `${i ? "L" : "M"}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join("");
+    const span = a1 - a0;
+    const yearsAxis = a1 > 30;
+    const stepM = yearsAxis ? (span > 120 ? 24 : 12) : span > 12 ? 3 : 1;
+    let ticks = "";
+    for (let a = Math.ceil(a0 / stepM) * stepM; a <= a1; a += stepM) {
+      ticks += `<text x="${x(a).toFixed(1)}" y="${H - 4}" text-anchor="middle">${yearsAxis ? `${a / 12} J` : `${a} M`}</text>`;
+    }
+    return `<svg class="growth" viewBox="0 0 ${W} ${H}" role="img">
+      <path d="${band(1, 5)}" fill="${color}" fill-opacity="0.10"/>
+      <path d="${band(2, 4)}" fill="${color}" fill-opacity="0.16"/>
+      <path d="${median}" fill="none" stroke="${color}" stroke-width="1" stroke-dasharray="4 3" opacity="0.7"/>
+      <text x="0" y="${padT + 8}">${esc(this._num(hi, { digits: 0 }))}</text>
+      <text x="0" y="${H - padB}">${esc(this._num(lo, { digits: 0 }))}</text>
+      ${ticks}
+      ${line ? `<path d="${line}" fill="none" stroke="${color}" stroke-width="2"/>` : ""}
+      ${pts.map((p) => `<circle cx="${x(p[0]).toFixed(1)}" cy="${y(p[1]).toFixed(1)}" r="3.5" fill="${color}" stroke="var(--wt-card)" stroke-width="1.5"/>`).join("")}
+    </svg>`;
   }
 
   _renderPetCard(pet) {
@@ -1280,11 +1478,11 @@ class WeightTrackerPanel extends HTMLElement {
     }
     return `
       <div class="card person-card">
-        <div class="person-head"><span class="avatar pet" style="width:36px;height:36px;font-size:20px">${this._speciesEmoji(pet.species)}</span>
+        <div class="person-head"><span class="avatar pet" style="width:36px;height:36px;font-size:20px">${this._emoji(pet)}</span>
           <h2>${esc(pet.name)}${age !== null ? ` <span class="muted small" style="font-weight:400">· ${esc(t.years(age))}</span>` : ""}</h2>
           <span class="muted small">${latestTs ? link("last_measured", t.measured, `${esc(t.measured)} ${esc(this._relative(latestTs))}`) : ""}</span></div>
         ${s.latest_weight !== null && s.latest_weight !== undefined ? `
-          <div class="hero">${link("weight", t.weight, `<span class="value num">${this._kg(s.latest_weight, { unit: false, digits: s.latest_weight < 10 ? 2 : 1 })}</span><span class="unit"> kg</span>`)}
+          <div class="hero">${link("weight", t.weight, this._hero(s.latest_weight, s.latest_weight < 10 ? 2 : 1))}
             ${s.change_last !== null && s.change_last !== undefined ? `<span class="muted small num">${link("change_last", t.weight, this._kg(s.change_last, { signed: true, digits: 2 }))}</span>` : ""}</div>
           <div class="stats">
             ${stat("trend", t.trend, this._kg(s.trend, { digits: 2 }))}
@@ -1293,9 +1491,32 @@ class WeightTrackerPanel extends HTMLElement {
           </div>
           ${this._miniChart(pet, color)}` : `<div class="hint" style="margin:16px 0 4px">${esc(t.petNoData)}</div>`}
         ${goalHtml}
+        ${pet.warning ? `<div class="warn-box" role="alert"><b>⚠️ ${esc(t.petWarning[pet.warning.code](this._num(pet.warning.percent, { signed: true })))}</b>${esc(t.petWarningHint)}</div>` : ""}
+        ${this._renderPetEvents(pet)}
         <div class="pet-actions">
           <button class="btn ${session ? "" : "primary"}" data-action="pet-start" data-pet="${esc(pet.id)}" ${session ? "disabled" : ""}>🐾 ${esc(t.weighPet(pet.name))}</button>
         </div>
+      </div>`;
+  }
+
+  _renderPetEvents(pet) {
+    const t = this._t;
+    const events = (pet.events || []).slice().reverse();
+    const open = this._petNotesOpen === pet.id;
+    const line = (e) => `<div class="ev"><span class="when">${esc(this._date(e.ts))}</span><span class="what">${esc(t.eventCategories[e.category] || e.category)}: ${esc(e.text)}</span>
+      ${open ? `<button class="icon-btn" data-action="pet-event-delete" data-id="${esc(e.id)}" title="${esc(t.deleteLabel)}" aria-label="${esc(t.deleteLabel)}">✕</button>` : ""}</div>`;
+    const today = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    return `
+      <div class="events">
+        ${open ? events.map(line).join("") : events.slice(0, 1).map(line).join("")}
+        ${open ? `<div class="add">
+            <select id="pet-note-cat-${esc(pet.id)}" aria-label="${esc(t.petNotes)}">${Object.entries(t.eventCategories).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join("")}</select>
+            <input type="date" id="pet-note-date-${esc(pet.id)}" value="${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}" aria-label="${esc(t.date)}">
+            <input type="text" id="pet-note-text-${esc(pet.id)}" maxlength="300" placeholder="${esc(t.notePlaceholderPet)}" aria-label="${esc(t.note)}">
+            <button class="btn primary" data-action="pet-event-add" data-pet="${esc(pet.id)}">${esc(t.addNote)}</button>
+          </div>` : ""}
+        <button class="btn quiet" style="margin-top:6px" data-action="pet-notes" data-pet="${esc(pet.id)}">📋 ${esc(t.petNotes)}${events.length ? ` (${events.length})` : ""}</button>
       </div>`;
   }
 
@@ -1317,6 +1538,7 @@ class WeightTrackerPanel extends HTMLElement {
       <text x="0" y="${H - padB}">${esc(this._kg(lo, { unit: false }))}</text>
       ${pts.map((m) => `<circle cx="${x(m.ts).toFixed(1)}" cy="${y(m.weight).toFixed(1)}" r="3" fill="${color}" fill-opacity="0.35"/>`).join("")}
       <path d="${trend}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      ${(pet.events || []).filter((e) => e.ts >= t0 && e.ts <= t1).map((e) => `<line x1="${x(e.ts).toFixed(1)}" x2="${x(e.ts).toFixed(1)}" y1="${padT}" y2="${H - padB}" stroke="var(--wt-muted)" stroke-dasharray="2 2"><title>${esc(this._date(e.ts))}: ${esc(e.text)}</title></line>`).join("")}
     </svg>`;
   }
 
@@ -1333,8 +1555,8 @@ class WeightTrackerPanel extends HTMLElement {
           <tbody>${rows.map((m) => {
             const pet = this._pet(m.pet_id);
             const petCell = m.can_edit
-              ? `<select class="inline" data-action="pet-reassign" data-id="${esc(m.id)}">${pets.map((p) => `<option value="${esc(p.id)}" ${p.id === m.pet_id ? "selected" : ""}>${this._speciesEmoji(p.species)} ${esc(p.name)}</option>`).join("")}</select>`
-              : `${pet ? `${this._speciesEmoji(pet.species)} ${esc(pet.name)}` : "–"}`;
+              ? `<select class="inline" data-action="pet-reassign" data-id="${esc(m.id)}">${pets.map((p) => `<option value="${esc(p.id)}" ${p.id === m.pet_id ? "selected" : ""}>${this._emoji(p)} ${esc(p.name)}</option>`).join("")}</select>`
+              : `${pet ? `${this._emoji(pet)} ${esc(pet.name)}` : "–"}`;
             return `<tr>
               <td class="num">${esc(this._dateTime(m.ts))}${m.note ? `<div class="note">📝 ${esc(m.note)}</div>` : ""}</td>
               <td class="r num"><b>${this._kg(m.weight, { unit: false, digits: 2 })}</b></td>
@@ -1457,14 +1679,14 @@ class WeightTrackerPanel extends HTMLElement {
     const progress = person.progress || {};
     const fmt = (v) => this._kg(Math.abs(v), { unit: false }).replace(/,0$/, "");
     const hasNext = progress.next_step !== null && progress.next_step !== undefined && progress.next_remaining > 0;
-    const next = hasNext ? t.nextStep(this._kg(progress.next_remaining), t.badge.change(progress.next_step, fmt(progress.next_step))) : "";
+    const next = hasNext ? t.nextStep(this._kg(progress.next_remaining), t.badge.change(progress.next_step, fmt(progress.next_step), this._unitLabel)) : "";
     return `
       <div class="card">
         <h2>🏆 ${esc(t.achievements)}</h2>
         ${progress.streak ? `<div style="margin-top:8px">${esc(t.streak(progress.streak))}</div>` : ""}
         ${next ? `<div class="hint" style="margin-top:4px">${esc(next)}</div>` : ""}
         ${list.length ? `<div class="badges">${list.map((a) => `
-          <span class="badge" title="${a.ts ? esc(this._date(Date.parse(a.ts))) : ""}">${icons[a.kind] || "⭐"} ${esc(t.badge[a.kind] ? t.badge[a.kind](a.value, fmt(a.value)) : a.id)}
+          <span class="badge" title="${a.ts ? esc(this._date(Date.parse(a.ts))) : ""}">${icons[a.kind] || "⭐"} ${esc(t.badge[a.kind] ? t.badge[a.kind](a.value, fmt(a.value), this._unitLabel) : a.id)}
             ${a.ts ? `<small>${esc(this._date(Date.parse(a.ts), { day: "2-digit", month: "2-digit", year: "2-digit" }))}</small>` : ""}</span>`).join("")}</div>`
           : `<div class="hint" style="margin-top:8px">${esc(t.noAchievements)}</div>`}
       </div>`;
@@ -1486,9 +1708,10 @@ class WeightTrackerPanel extends HTMLElement {
       this._def("select", "notify_service", t.notifyDevice, { options: this._notifyServices(), emptyLabel: t.notifyNone, helper: t.notifyDeviceHint, wide: true }),
       this._def("boolean", "notify_weigh", t.notifyWeigh, { wide: true }),
       this._def("boolean", "notify_milestones", t.notifyMilestones, { wide: true }),
+      ...((this._entry.pets || []).some((p) => p.kind !== "child") ? [this._def("boolean", "notify_pet_warnings", t.notifyPetWarnings, { wide: true })] : []),
       this._def("number", "reminder_days", t.reminderDays, { min: 0, max: 60, step: 1, unit: t.days, helper: t.reminderHint, wide: true }),
     ];
-    const defaults = { notify_service: n.service || "", notify_weigh: Boolean(n.weigh), notify_milestones: Boolean(n.milestones), reminder_days: n.reminder_days || 0 };
+    const defaults = { notify_service: n.service || "", notify_weigh: Boolean(n.weigh), notify_milestones: Boolean(n.milestones), notify_pet_warnings: Boolean(n.pet_warnings), reminder_days: n.reminder_days || 0 };
     return `
       <div class="card">
         <h2>🔔 ${esc(t.notifications)}</h2>
@@ -1524,7 +1747,7 @@ class WeightTrackerPanel extends HTMLElement {
       age: content(t.age, f.age !== null ? `${f.age} <small>${esc(t.years(f.age).replace(/^\d+\s*/, ""))}</small>` : "–", f.age === null ? esc(t.ageMissing) : ""),
       height: content(t.height, f.height ? `${this._kg(f.height, { unit: false, digits: 0 })} <small>cm</small>` : "–"),
       bmi: content(t.bmi, f.bmi ? this._kg(f.bmi, { unit: false }) : "–", f.bmi && (f.age === null || f.age >= 18) ? esc(t.bmiCat(f.bmi)) : ""),
-      goal: content(t.goal, f.goal ? `${this._kg(f.goal, { unit: false })} <small>kg</small>` : "–", remaining !== null ? esc(Math.abs(remaining) <= 0.2 ? t.goalReached : t.goalLeft(this._kg(Math.abs(remaining)))) : ""),
+      goal: content(t.goal, f.goal ? `${this._kg(f.goal, { unit: false })} <small>${this._unitLabel}</small>` : "–", remaining !== null ? esc(Math.abs(remaining) <= 0.2 ? t.goalReached : t.goalLeft(this._kg(Math.abs(remaining)))) : ""),
       sex: content(t.sex, f.sex ? esc(t.sexNames[f.sex]) : "–", f.sex ? "" : esc(t.sexHint)),
       waist: content(t.waist, f.waist ? `${this._kg(f.waist, { unit: false, digits: f.waist % 1 ? 1 : 0 })} <small>cm</small>` : "–",
         f.whtr ? `${esc(t.whtr)} ${this._kg(f.whtr, { unit: false, digits: 2 })} · ${esc(t.whtrClass[f.whtrClass])}` : ""),
@@ -1590,9 +1813,9 @@ class WeightTrackerPanel extends HTMLElement {
         ${body.missing && body.missing.length ? `<div class="hint" style="margin-top:4px">${esc(t.bodyMissing(body.missing.map((k) => t.bodyFields[k]).join(", ")))}</div>` : ""}
         <div class="tiles" style="margin-top:12px">
           ${tile("body_fat", t.bodyFat, `${this._kg(b.body_fat, { unit: false })} <small>%</small>`, esc(fatSub))}
-          ${tile("muscle_mass", t.muscle, b.muscle_mass !== null ? `${this._kg(b.muscle_mass, { unit: false })} <small>kg</small>` : null)}
+          ${tile("muscle_mass", t.muscle, b.muscle_mass !== null ? `${this._kg(b.muscle_mass, { unit: false })} <small>${this._unitLabel}</small>` : null)}
           ${tile("body_water", t.water, b.water !== null ? `${this._kg(b.water, { unit: false })} <small>%</small>` : null)}
-          ${tile("bone_mass", t.bone, b.bone_mass !== null ? `${this._kg(b.bone_mass, { unit: false })} <small>kg</small>` : null)}
+          ${tile("bone_mass", t.bone, b.bone_mass !== null ? `${this._kg(b.bone_mass, { unit: false })} <small>${this._unitLabel}</small>` : null)}
           ${tile("bmr", t.bmr, b.bmr !== null ? `${new Intl.NumberFormat(this._lang).format(b.bmr)} <small>kcal</small>` : null)}
         </div>
         ${this._sparkline((body.history || []).map(([ts, fat]) => [ts, fat]), this._color(person.color_index), "%")}
@@ -1804,7 +2027,7 @@ class WeightTrackerPanel extends HTMLElement {
     const t = this._t;
     const targets = [
       ...this._entry.persons.filter((p) => p.can_manage).map((p) => ({ value: `person:${p.id}`, label: p.name })),
-      ...(this._entry.pets || []).map((p) => ({ value: `pet:${p.id}`, label: `${this._speciesEmoji(p.species)} ${p.name}` })),
+      ...(this._entry.pets || []).map((p) => ({ value: `pet:${p.id}`, label: `${this._emoji(p)} ${p.name}` })),
     ];
     const imp = this._import;
     let preview = "";
@@ -1994,7 +2217,7 @@ class WeightTrackerPanel extends HTMLElement {
       const def = (this._forms[formId] || []).find((f) => f.name === host.dataset.field);
       if (!def) continue;
       const value = this._models[formId][def.name];
-      if (def.kind === "birthmonth") host.appendChild(this._birthMonthField(formId, def, value));
+      if (def.kind === "birthmonth" || def.kind === "fulldate") host.appendChild(this._birthMonthField(formId, def, value, def.kind === "fulldate"));
       else host.appendChild(this._haReady ? this._haField(formId, def, value) : this._nativeField(formId, def, value));
     }
   }
@@ -2005,7 +2228,26 @@ class WeightTrackerPanel extends HTMLElement {
     if (def.onChange) def.onChange(value);
   }
 
+  // Number fields in kg are shown and read in the chosen display unit.
+  _converted(def) {
+    if (def.kind !== "number" || def.unit !== "kg" || this._factor === 1) return null;
+    const f = this._factor;
+    const round = (v) => Math.round(v * 10) / 10;
+    return {
+      unit: "lb",
+      toDisplay: (v) => (v === null || v === undefined || v === "" ? v : round(Number(v) * f)),
+      fromDisplay: (v) => (typeof v === "number" && !Number.isNaN(v) ? v / f : v),
+      selector: { number: { ...def.selector.number, min: round(def.selector.number.min * f), max: round(def.selector.number.max * f), unit_of_measurement: "lb" } },
+    };
+  }
+
   _haField(formId, def, value) {
+    const conv = this._converted(def);
+    if (conv) {
+      value = conv.toDisplay(value);
+      const inner = def;
+      def = { ...def, selector: conv.selector, onChange: inner.onChange, _from: conv.fromDisplay };
+    }
     const el = document.createElement("ha-selector");
     el.hass = this._hass;
     el.selector = def.selector;
@@ -2018,18 +2260,18 @@ class WeightTrackerPanel extends HTMLElement {
       // <ha-selector> is controlled: it only shows what is in .value, so the
       // new value has to be handed back (otherwise e.g. a select stays empty).
       el.value = ev.detail.value;
-      this._setValue(formId, def, ev.detail.value);
+      this._setValue(formId, def, def._from ? def._from(ev.detail.value) : ev.detail.value);
     });
     return el;
   }
 
-  _birthMonthField(formId, def, value) {
+  _birthMonthField(formId, def, value, withDay = false) {
     const t = this._t;
     const model = this._models[formId];
     const partsKey = `${def.name}:parts`;
     if (!model[partsKey]) {
-      const match = /^(\d{4})-(\d{2})/.exec(value || "");
-      model[partsKey] = { m: match ? String(Number(match[2])) : "", y: match ? Number(match[1]) : null };
+      const match = /^(\d{4})-(\d{2})(?:-(\d{2}))?/.exec(value || "");
+      model[partsKey] = { d: match && match[3] ? String(Number(match[3])) : "", m: match ? String(Number(match[2])) : "", y: match ? Number(match[1]) : null };
     }
     const parts = model[partsKey];
     const box = document.createElement("div");
@@ -2039,11 +2281,15 @@ class WeightTrackerPanel extends HTMLElement {
     };
     const update = (key, v) => {
       parts[key] = v === undefined || v === null ? (key === "y" ? null : "") : v;
-      const { m, y } = parts;
+      const { d, m, y } = parts;
       let result;
-      if (!m && !y) result = null;
-      else if (!m || !y) result = "invalid";
-      else {
+      if (!m && !y && (!withDay || !d)) result = null;
+      else if (!m || !y || (withDay && !d)) result = "invalid";
+      else if (withDay) {
+        const date = new Date(Number(y), Number(m) - 1, Number(d));
+        const valid = date.getMonth() === Number(m) - 1 && date.getDate() === Number(d) && Number(y) >= 1990 && date <= new Date();
+        result = valid ? `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}` : "invalid";
+      } else {
         const now = new Date();
         const valid = Number(y) >= 1900 && (Number(y) < now.getFullYear() || (Number(y) === now.getFullYear() && Number(m) <= now.getMonth() + 1));
         result = valid ? `${y}-${String(m).padStart(2, "0")}` : "invalid";
@@ -2053,7 +2299,9 @@ class WeightTrackerPanel extends HTMLElement {
     };
     const monthName = (i) => new Intl.DateTimeFormat(this._lang, { month: "long" }).format(new Date(2000, i, 1));
     const months = Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: monthName(i) }));
+    const days = Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }));
     const sub = [
+      ...(withDay ? [["d", this._def("select", `${def.name}-d`, t.day, { options: days }), parts.d]] : []),
       ["m", this._def("select", `${def.name}-m`, t.month2, { options: months }), parts.m],
       ["y", this._def("number", `${def.name}-y`, t.year, { min: 1900, max: new Date().getFullYear(), step: 1 }), parts.y],
     ];
@@ -2064,6 +2312,10 @@ class WeightTrackerPanel extends HTMLElement {
       this._models[proxyForm] = {};
       subDef.onChange = (v) => update(key, v);
       row.appendChild(this._haReady ? this._haField(proxyForm, subDef, current || undefined) : this._nativeField(proxyForm, subDef, current));
+    }
+    if (withDay) {
+      row.style.gridTemplateColumns = "minmax(0, 0.8fr) minmax(0, 1.6fr) minmax(0, 1.1fr)";
+      return box;  // children: age is shown on their card
     }
     const age = document.createElement("div");
     age.className = "bd-age";
@@ -2086,6 +2338,11 @@ class WeightTrackerPanel extends HTMLElement {
   // Plain HTML fallback with the same behavior.
   _nativeField(formId, def, value) {
     const t = this._t;
+    const conv = this._converted(def);
+    if (conv) {
+      value = conv.toDisplay(value);
+      def = { ...def, unit: conv.unit, _from: conv.fromDisplay };
+    }
     const wrap = document.createElement("label");
     const helper = def.helper ? `<span class="hint">${esc(def.helper)}</span>` : "";
     const label = `${esc(def.label)}${def.required ? " *" : ""}`;
@@ -2136,7 +2393,8 @@ class WeightTrackerPanel extends HTMLElement {
       const raw = input.value;
       if (def.kind === "number") {
         const text = raw.trim().replace(",", ".");
-        set(text === "" ? null : /^-?\d+(\.\d+)?$/.test(text) ? parseFloat(text) : NaN);
+        const parsed = text === "" ? null : /^-?\d+(\.\d+)?$/.test(text) ? parseFloat(text) : NaN;
+        set(def._from && typeof parsed === "number" ? def._from(parsed) : parsed);
       } else if (def.kind === "datetime") {
         set(raw ? `${raw.replace("T", " ")}:00`.slice(0, 19) : null);
       } else {
@@ -2154,7 +2412,7 @@ class WeightTrackerPanel extends HTMLElement {
       const empty = value === null || value === undefined || value === "" || (typeof value === "string" && !value.trim());
       if (def.required && empty) return t.required(def.label);
       if (def.kind === "number" && !empty && Number.isNaN(Number(value))) return t.invalidNumber(def.label);
-      if (def.kind === "birthmonth" && value === "invalid") return t.invalidDate(def.label);
+      if ((def.kind === "birthmonth" || def.kind === "fulldate") && value === "invalid") return t.invalidDate(def.label);
     }
     return null;
   }
@@ -2170,7 +2428,7 @@ class WeightTrackerPanel extends HTMLElement {
   }
 
   _renderSettings() {
-    return `${this._renderScaleSettings()}${this._renderPersonsSettings()}${this._renderPetsSettings()}${this._entry.persons.length ? this._renderAccess() : ""}`;
+    return `${this._renderScaleSettings()}${this._renderPersonsSettings()}${this._renderPetsSettings("child")}${this._renderPetsSettings("pet")}${this._entry.persons.length ? this._renderAccess() : ""}`;
   }
 
   _renderScaleSettings() {
@@ -2295,17 +2553,21 @@ class WeightTrackerPanel extends HTMLElement {
       </div>`;
   }
 
-  _renderPetsSettings() {
+  _renderPetsSettings(kind = "pet") {
     const t = this._t;
-    const pets = this._entry.pets || [];
+    const child = kind === "child";
+    const pets = (this._entry.pets || []).filter((p) => (p.kind === "child") === child);
+    const newId = child ? "new-child" : "new";
     const counts = {};
     for (const m of this._entry.pet_measurements || []) counts[m.pet_id] = (counts[m.pet_id] || 0) + 1;
     const rows = pets.map((p) => {
       if (this._editPet === p.id) return this._renderPetEditor(p);
       const age = this._age(p.birth_month);
       const sensors = this._sensorCount(p);
+      const months = this._childMonths(p);
       const bits = [
-        t.speciesNames[p.species] || p.species,
+        child ? (p.sex ? t.sexNames[p.sex] : null) : t.speciesNames[p.species] || p.species,
+        child && months !== null ? t.childAge(months) : null,
         `≈ ${this._kg(p.start_weight)}`,
         age !== null ? t.years(age) : null,
         p.goal ? `${t.goal} ${this._kg(p.goal)}` : null,
@@ -2314,26 +2576,33 @@ class WeightTrackerPanel extends HTMLElement {
       ].filter(Boolean);
       return `
         <div class="person-row">
-          <span style="font-size:20px">${this._speciesEmoji(p.species)}</span>
+          <span style="font-size:20px">${this._emoji(p)}</span>
           <div class="info"><b>${esc(p.name)}</b><div class="hint">${esc(bits.join(" · "))}</div></div>
           <button class="btn" data-action="edit-pet" data-pet="${esc(p.id)}">${esc(t.edit)}</button>
         </div>`;
     }).join("");
     return `
       <div class="card">
-        <h2>🐾 ${esc(t.pets)}</h2>
-        <div class="hint" style="margin-top:4px">${esc(t.petsHint)}</div>
+        <h2>${child ? "👶" : "🐾"} ${esc(child ? t.children : t.pets)}</h2>
+        <div class="hint" style="margin-top:4px">${esc(child ? t.childrenHint : t.petsHint)}</div>
         <div style="margin-top:8px">${rows}</div>
-        ${this._editPet === "new" ? this._renderPetEditor(null) : `<div class="actions"><button class="btn primary" data-action="edit-pet" data-pet="new">＋ ${esc(t.addPet)}</button></div>`}
+        ${this._editPet === newId ? this._renderPetEditor(null, kind) : `<div class="actions"><button class="btn primary" data-action="edit-pet" data-pet="${newId}">＋ ${esc(child ? t.addChild : t.addPet)}</button></div>`}
       </div>`;
   }
 
-  _renderPetEditor(pet) {
+  _renderPetEditor(pet, kind = pet ? pet.kind || "pet" : "pet") {
     const t = this._t;
     const p = pet || {};
-    const id = pet ? pet.id : "new";
+    const child = kind === "child";
+    const id = pet ? pet.id : child ? "new-child" : "new";
     const formId = `pet-form-${id}`;
-    const fields = [
+    const fields = child ? [
+      this._def("text", "name", t.name, { required: true }),
+      this._def("select", "sex", t.sex, { required: true, options: Object.entries(t.sexNames).map(([value, label]) => ({ value, label })), helper: t.childSexHint }),
+      this._def("fulldate", "birth_date", t.childBirthDate, { required: true, wide: true }),
+      this._def("number", "start_weight", t.childStartWeight, { required: true, min: 0.2, max: 80, step: 0.1, unit: "kg", helper: t.petStartHint }),
+      this._def("boolean", "create_sensors", t.createSensors, { helper: t.sensorsHint, wide: true }),
+    ] : [
       this._def("text", "name", t.name, { required: true }),
       this._def("select", "species", t.species, { required: true, options: Object.entries(t.speciesNames).map(([value, label]) => ({ value, label: `${this._speciesEmoji(value)} ${label}` })) }),
       this._def("number", "start_weight", t.petStartWeight, { required: true, min: 0.2, max: 80, step: 0.1, unit: "kg", helper: t.petStartHint }),
@@ -2344,15 +2613,16 @@ class WeightTrackerPanel extends HTMLElement {
     const defaults = {
       name: p.name || "", species: p.species || "cat", start_weight: p.start_weight ?? null,
       goal_weight: p.goal ?? null, birth_month: p.birth_month || null, create_sensors: Boolean(p.create_sensors),
+      kind, sex: p.sex || "", birth_date: p.birth_date || null,
     };
     const count = (this._entry.pet_measurements || []).filter((m) => m.pet_id === id).length;
     const extra = `
       <button class="btn" type="button" data-action="cancel-edit" data-form="${esc(formId)}">${esc(t.cancel)}</button>
       <span class="spacer"></span>
-      ${pet ? `<button class="btn danger" type="button" data-action="delete-pet" data-pet="${esc(id)}" data-count="${count}">${esc(t.deletePet)}</button>` : ""}`;
+      ${pet ? `<button class="btn danger" type="button" data-action="delete-pet" data-pet="${esc(id)}" data-count="${count}">${esc(child ? t.deleteChild : t.deletePet)}</button>` : ""}`;
     return `
       <div class="form editor" id="${esc(formId)}">
-        <h3>${pet ? `${this._speciesEmoji(p.species)} ${esc(p.name)}` : esc(t.newPet)}</h3>
+        <h3>${pet ? `${this._emoji(p)} ${esc(p.name)}` : esc(child ? t.newChild : t.newPet)}</h3>
         ${this._formFields(formId, fields, defaults)}
         ${this._formActions(formId, extra)}
       </div>`;
@@ -2426,8 +2696,10 @@ class WeightTrackerPanel extends HTMLElement {
         await this._ws({
           type: "weight_tracker/save_pet",
           pet: {
-            pet_id: id === "new" ? null : id,
+            pet_id: id.startsWith("new") ? null : id,
             name: String(m.name).trim(),
+            kind: m.kind || "pet",
+            ...(m.kind === "child" ? { sex: m.sex || null, birth_date: m.birth_date && m.birth_date !== "invalid" ? m.birth_date : null } : {}),
             species: m.species || "other",
             start_weight: num(m.start_weight),
             goal_weight: num(m.goal_weight),
@@ -2445,6 +2717,7 @@ class WeightTrackerPanel extends HTMLElement {
             notify_service: m.notify_service || null,
             notify_weigh: Boolean(m.notify_weigh),
             notify_milestones: Boolean(m.notify_milestones),
+            notify_pet_warnings: Boolean(m.notify_pet_warnings),
             reminder_days: Math.max(0, Math.round(Number(m.reminder_days) || 0)),
           },
         });
@@ -2528,7 +2801,7 @@ class WeightTrackerPanel extends HTMLElement {
     const pets = this._entry.pets || [];
     const options = [
       ...own.map((p) => ({ value: p.id, label: p.name })),
-      ...pets.map((p) => ({ value: p.id, label: `${this._speciesEmoji(p.species)} ${p.name}` })),
+      ...pets.map((p) => ({ value: p.id, label: `${this._emoji(p)} ${p.name}` })),
     ];
     const fields = [
       this._def("select", "person", t.person, { required: true, options }),
@@ -2627,18 +2900,19 @@ class WeightTrackerPanel extends HTMLElement {
       tEnd = Math.min(tEnd, now + Math.max(now - t0, 14 * DAY));
     }
 
+    const uf = this._factor;  // chart works in the display unit
     let lo = Infinity, hi = -Infinity;
     for (const s of series) {
       for (const m of s.pts) {
         for (const v of [m.weight, m.trend]) {
           if (v === null || v === undefined) continue;
-          lo = Math.min(lo, v - s.base);
-          hi = Math.max(hi, v - s.base);
+          lo = Math.min(lo, (v - s.base) * uf);
+          hi = Math.max(hi, (v - s.base) * uf);
         }
       }
       if (this._mode === "abs" && s.person.goal !== null && s.person.goal !== undefined) {
-        lo = Math.min(lo, s.person.goal);
-        hi = Math.max(hi, s.person.goal);
+        lo = Math.min(lo, s.person.goal * uf);
+        hi = Math.max(hi, s.person.goal * uf);
       }
     }
     if (this._mode === "rel") { lo = Math.min(lo, 0); hi = Math.max(hi, 0); }
@@ -2659,7 +2933,7 @@ class WeightTrackerPanel extends HTMLElement {
       const yy = y(v).toFixed(1);
       const zero = this._mode === "rel" && Math.abs(v) < 1e-9;
       svg += `<line x1="${m.l}" x2="${width - m.r}" y1="${yy}" y2="${yy}" stroke="var(--wt-grid)" stroke-width="${zero ? 1.5 : 1}" ${zero ? "" : 'stroke-dasharray="2 4"'}/>`;
-      svg += `<text x="${m.l - 8}" y="${yy}" text-anchor="end" dominant-baseline="middle">${esc(this._kg(v, { unit: false, signed: this._mode === "rel" && v !== 0, digits: step < 1 ? 1 : 0 }))}</text>`;
+      svg += `<text x="${m.l - 8}" y="${yy}" text-anchor="end" dominant-baseline="middle">${esc(this._num(v, { signed: this._mode === "rel" && v !== 0, digits: step < 1 ? 1 : 0 }))}</text>`;
     }
     // x axis
     for (const tick of this._timeTicks(t0, tEnd, Math.max(2, Math.floor(iw / 90)))) {
@@ -2679,13 +2953,13 @@ class WeightTrackerPanel extends HTMLElement {
     for (const s of series) {
       // goal line
       if (this._mode === "abs" && s.person.goal !== null && s.person.goal !== undefined) {
-        const gy = y(s.person.goal).toFixed(1);
+        const gy = y(s.person.goal * uf).toFixed(1);
         svg += `<line x1="${m.l}" x2="${width - m.r}" y1="${gy}" y2="${gy}" stroke="${s.color}" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.7"/>`;
-        svg += `<text x="${m.l + 4}" y="${(y(s.person.goal) - 5).toFixed(1)}">${esc(t.goal)} ${esc(s.person.name)}</text>`;
+        svg += `<text x="${m.l + 4}" y="${(y(s.person.goal * uf) - 5).toFixed(1)}">${esc(t.goal)} ${esc(s.person.name)}</text>`;
       }
       // measurements (dots)
       for (const p of s.pts) {
-        const px = x(p.ts), py = y(p.weight - s.base);
+        const px = x(p.ts), py = y((p.weight - s.base) * uf);
         svg += `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="4" fill="${s.color}" fill-opacity="0.35" stroke="${s.color}" stroke-opacity="0.6" stroke-width="1"/>`;
         if (p.note) svg += `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="7.5" fill="none" stroke="var(--primary-text-color)" stroke-width="1.5"/>`;
         this._chartPoints.push({ px, py, m: p, s });
@@ -2693,7 +2967,7 @@ class WeightTrackerPanel extends HTMLElement {
       // trend line
       const trendPts = s.pts.filter((p) => p.trend !== null && p.trend !== undefined);
       if (trendPts.length > 1) {
-        const d = trendPts.map((p, i) => `${i ? "L" : "M"}${x(p.ts).toFixed(1)},${y(p.trend - s.base).toFixed(1)}`).join("");
+        const d = trendPts.map((p, i) => `${i ? "L" : "M"}${x(p.ts).toFixed(1)},${y((p.trend - s.base) * uf).toFixed(1)}`).join("");
         svg += `<path d="${d}" fill="none" stroke="var(--wt-card)" stroke-width="3.5" stroke-opacity="0.7" stroke-linejoin="round" stroke-linecap="round"/>`;
         svg += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
       }
@@ -2702,13 +2976,13 @@ class WeightTrackerPanel extends HTMLElement {
         // Cut at the edge if the goal date lies beyond the visible range.
         const endTs = Math.min(f.eta, tEnd);
         const endValue = f.from + (f.goal - f.from) * ((endTs - f.ts) / (f.eta - f.ts));
-        const fx = x(endTs), fy = y(endValue);
-        svg += `<path d="M${x(f.ts).toFixed(1)},${y(f.from).toFixed(1)}L${fx.toFixed(1)},${fy.toFixed(1)}" fill="none" stroke="${s.color}" stroke-width="2" stroke-dasharray="5 5" opacity="0.75"/>`;
+        const fx = x(endTs), fy = y(endValue * uf);
+        svg += `<path d="M${x(f.ts).toFixed(1)},${y(f.from * uf).toFixed(1)}L${fx.toFixed(1)},${fy.toFixed(1)}" fill="none" stroke="${s.color}" stroke-width="2" stroke-dasharray="5 5" opacity="0.75"/>`;
         if (endTs === f.eta) svg += `<circle cx="${fx.toFixed(1)}" cy="${fy.toFixed(1)}" r="5" fill="var(--wt-card)" stroke="${s.color}" stroke-width="2"/>`;
         svg += `<text x="${fx.toFixed(1)}" y="${(fy - 10).toFixed(1)}" text-anchor="end">${endTs === f.eta ? "≈" : "→"} ${esc(t.goal)} ${esc(this._date(f.eta, { day: "numeric", month: "short", year: endTs === f.eta ? undefined : "numeric" }))}</text>`;
       }
       const last = trendPts[trendPts.length - 1] || s.pts[s.pts.length - 1];
-      labels.push({ y: y((last.trend ?? last.weight) - s.base), x: x(last.ts), name: s.person.name, color: s.color });
+      labels.push({ y: y(((last.trend ?? last.weight) - s.base) * uf), x: x(last.ts), name: s.person.name, color: s.color });
     }
     // direct labels at the line ends (wide screens), pushed apart to avoid overlap
     if (width >= 500) {
@@ -2798,6 +3072,25 @@ class WeightTrackerPanel extends HTMLElement {
     const el = ev.composedPath().find((n) => n.dataset && n.dataset.action);
     if (!el || el.tagName === "SELECT") return;
     const { action } = el.dataset;
+    if (action === "pet-notes") {
+      this._petNotesOpen = this._petNotesOpen === el.dataset.pet ? null : el.dataset.pet;
+      this._render();
+      return;
+    } else if (action === "pet-event-add") {
+      const id = el.dataset.pet;
+      const text = (this.shadowRoot.getElementById(`pet-note-text-${id}`) || {}).value || "";
+      if (!text.trim()) return;
+      const date = (this.shadowRoot.getElementById(`pet-note-date-${id}`) || {}).value;
+      this._ws({
+        type: "weight_tracker/pet_event", action: "add", pet_id: id, text: text.trim(),
+        category: (this.shadowRoot.getElementById(`pet-note-cat-${id}`) || {}).value || "other",
+        ...(date ? { ts: new Date(`${date}T12:00:00`).getTime() } : {}),
+      }).catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
+      return;
+    } else if (action === "pet-event-delete") {
+      this._ws({ type: "weight_tracker/pet_event", action: "delete", event_id: el.dataset.id }).catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
+      return;
+    }
     if (action === "export-csv") {
       this._exportCsv();
       return;
@@ -2946,6 +3239,14 @@ class WeightTrackerPanel extends HTMLElement {
       this._setAccess(person.id, { user_id: owner, viewers });
     } else if (el.dataset.action === "sensors") {
       this._setAccess(el.dataset.person, { create_sensors: el.checked });
+    } else if (el.dataset.action === "unit") {
+      this._unitPref = el.value;
+      try {
+        localStorage.setItem("wt-unit", el.value);
+      } catch (err) {
+        // private mode etc.: the choice just is not remembered
+      }
+      this._render();
     } else if (el.dataset.action === "scale") {
       this._entryId = el.value;
       this._hidden.clear();

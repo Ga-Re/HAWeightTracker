@@ -31,6 +31,8 @@ CONF_NOTIFY_SERVICE = "notify_service"  # name of a notify.* service
 CONF_NOTIFY_WEIGH = "notify_weigh"
 CONF_NOTIFY_MILESTONES = "notify_milestones"
 CONF_REMINDER_DAYS = "reminder_days"  # 0 = off
+CONF_NOTIFY_PET_WARNINGS = "notify_pet_warnings"
+PET_EVENT_CATEGORIES = ("vet", "vaccination", "food", "medication", "other")
 CONF_SEX = "sex"
 SEXES = ("male", "female")
 REMINDER_HOUR = 18
@@ -41,6 +43,11 @@ CONF_PETS = "pets"
 CONF_PET_ID = "pet_id"
 CONF_SPECIES = "species"
 SPECIES = ("cat", "dog", "rabbit", "guinea_pig", "other")
+# Children are weighed like pets (held on the arm), with growth percentiles.
+CONF_KIND = "kind"
+KIND_PET = "pet"
+KIND_CHILD = "child"
+CONF_BIRTH_DATE = "birth_date"  # children: "YYYY-MM-DD"
 # Access control
 CONF_USER_ID = "user_id"
 CONF_VIEWERS = "viewers"

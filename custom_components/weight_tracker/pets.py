@@ -39,3 +39,36 @@ def closest_pet(diff: float, references: dict[str, float]) -> str | None:
 def split_pair(first: float, second: float) -> tuple[int, int]:
     """Indexes (alone, with_pet) of two readings: the lighter one is "alone"."""
     return (0, 1) if first <= second else (1, 0)
+
+
+# Unusually fast changes are an early warning sign (e.g. in cats).
+WARN_LOSS_PER_WEEK = 2.0  # % of body weight
+WARN_GAIN_PER_WEEK = 3.0
+WARN_LOSS_30D = 5.0
+WARN_GAIN_30D = 7.0
+
+WARNING_FAST_LOSS = "fast_loss"
+WARNING_FAST_GAIN = "fast_gain"
+WARNING_LOSS = "loss_30d"
+WARNING_GAIN = "gain_30d"
+
+
+def health_warning(
+    trend: float | None, rate_per_week: float | None, change_30d: float | None
+) -> tuple[str, float] | None:
+    """(warning code, percent) if a pet's weight changes unusually fast."""
+    if not trend:
+        return None
+    if rate_per_week is not None:
+        weekly = rate_per_week / trend * 100
+        if weekly <= -WARN_LOSS_PER_WEEK:
+            return WARNING_FAST_LOSS, round(weekly, 1)
+        if weekly >= WARN_GAIN_PER_WEEK:
+            return WARNING_FAST_GAIN, round(weekly, 1)
+    if change_30d is not None:
+        monthly = change_30d / trend * 100
+        if monthly <= -WARN_LOSS_30D:
+            return WARNING_LOSS, round(monthly, 1)
+        if monthly >= WARN_GAIN_30D:
+            return WARNING_GAIN, round(monthly, 1)
+    return None

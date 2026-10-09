@@ -39,6 +39,7 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util.unit_conversion import MassConverter
 
 from .analytics import PersonStats, Point, compute_stats, trend_series
+from .growth import curves, percentile, z_score
 from .body import Composition, age_from_birth_month, body_fat_class, body_fat_range, from_impedance
 from .milestones import (
     Milestone,
@@ -48,19 +49,28 @@ from .milestones import (
     is_new_low,
     next_change_step,
 )
-from .notifications import milestone_message, reminder_message, test_message, weigh_message
-from .pets import closest_pet, match_pet, split_pair
+from .notifications import (
+    milestone_message,
+    pet_warning_message,
+    reminder_message,
+    test_message,
+    weigh_message,
+)
+from .pets import closest_pet, health_warning, match_pet, split_pair
 from .const import (
     CONF_AMBIGUITY_MARGIN,
+    CONF_BIRTH_DATE,
     CONF_BIRTH_MONTH,
     CONF_BODY_FAT_ENTITY,
     CONF_DEBOUNCE,
     CONF_GOAL_WEIGHT,
     CONF_HEIGHT,
     CONF_IMPEDANCE_ENTITY,
+    CONF_KIND,
     CONF_MAX_WEIGHT,
     CONF_MIN_WEIGHT,
     CONF_NOTIFY_MILESTONES,
+    CONF_NOTIFY_PET_WARNINGS,
     CONF_NOTIFY_SERVICE,
     CONF_NOTIFY_WEIGH,
     CONF_PERSON_ENTITY,
@@ -70,6 +80,7 @@ from .const import (
     CONF_PETS,
     CONF_REMINDER_DAYS,
     CONF_SEX,
+    CONF_SPECIES,
     CONF_SOURCE,
     CONF_START_WEIGHT,
     CONF_TOLERANCE,
@@ -81,6 +92,7 @@ from .const import (
     DOMAIN,
     DUPLICATE_WINDOW,
     EXTRA_READING_MAX_AGE,
+    KIND_CHILD,
     EVENT_MEASUREMENT,
     METHOD_IMPORT,
     METHOD_MANUAL,
@@ -199,6 +211,29 @@ class PetMeasurement:
 
 
 @dataclass
+class PetEvent:
+    """A note in a pet's timeline: vet visit, vaccination, food change …"""
+
+    id: str
+    pet_id: str
+    ts: datetime
+    category: str
+    text: str
+
+    def as_dict(self) -> dict[str, Any]:
+        """Serialize for storage."""
+        return {"id": self.id, "pet_id": self.pet_id, "ts": self.ts.isoformat(), "category": self.category, "text": self.text}
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> PetEvent:
+        """Restore from storage."""
+        return cls(
+            data["id"], data["pet_id"], dt_util.parse_datetime(data["ts"]) or dt_util.utcnow(),
+            data.get("category", "other"), data.get("text", ""),
+        )
+
+
+@dataclass
 class WaistMeasurement:
     """A manually entered waist circumference."""
 
@@ -249,6 +284,13 @@ class WeightTrackerManager:
         self.pet_stats: dict[str, PersonStats] = {}
         self.pet_session: PetSession | None = None
         self.waist: list[WaistMeasurement] = []
+        # pet id -> (warning code, percent) while a pet changes unusually fast
+        self.pet_warnings: dict[str, tuple[str, float]] = {}
+        # child id -> growth data (percentile, curves) for the panel
+        self.growth: dict[str, dict[str, Any]] = {}
+        # pet id -> warning code already notified (to tell only once)
+        self._pet_warning_sent: dict[str, str] = {}
+        self.pet_events: list[PetEvent] = []
         # person id -> estimated body composition (for the panel and sensors)
         self.body: dict[str, dict[str, Any]] = {}
         # person id -> milestone id -> ISO time it was reached
@@ -330,10 +372,15 @@ class WeightTrackerManager:
             (WaistMeasurement.from_dict(w) for w in data.get("waist", [])), key=lambda w: w.ts
         )
         self.achievements = data.get("achievements", {})
+        self._pet_warning_sent = data.get("pet_warning_sent", {})
+        self.pet_events = sorted(
+            (PetEvent.from_dict(e) for e in data.get("pet_events", [])), key=lambda e: e.ts
+        )
         self._reminders = data.get("reminders", {})
         self._recalculate()
-        # Record what was already reached before, without notifying.
+        # Record what was already reached / known before, without notifying.
         self._check_milestones(notify=False)
+        self._check_pet_warnings(notify=False)
         self._update_notification()
         self.active = True
 
@@ -652,6 +699,45 @@ class WeightTrackerManager:
             self._save()
 
     @callback
+    def _check_pet_warnings(self, notify: bool) -> None:
+        """Tell persons who want it once when a pet starts changing unusually fast."""
+        for pet_id in list(self._pet_warning_sent):
+            if pet_id not in self.pet_warnings:
+                del self._pet_warning_sent[pet_id]  # back to normal: may warn again later
+        for pet_id, (code, percent) in self.pet_warnings.items():
+            if self._pet_warning_sent.get(pet_id) == code:
+                continue
+            self._pet_warning_sent[pet_id] = code
+            if not notify or pet_id not in self.pets:
+                continue
+            pet = self.pets[pet_id]
+            title, message = pet_warning_message(
+                self._german(), pet[CONF_NAME], code, percent, pet.get(CONF_SPECIES, "other")
+            )
+            for person_id, person in self.persons.items():
+                if person.get(CONF_NOTIFY_PET_WARNINGS):
+                    self._async_send(person_id, title, message)
+
+    @callback
+    def async_add_pet_event(self, pet_id: str, ts: datetime, category: str, text: str) -> PetEvent:
+        """Add a note to a pet's timeline."""
+        event = PetEvent(uuid4().hex[:12], pet_id, ts, category, text.strip()[:300])
+        self.pet_events.append(event)
+        self.pet_events.sort(key=lambda e: e.ts)
+        self._async_changed()
+        return event
+
+    @callback
+    def async_delete_pet_event(self, event_id: str) -> bool:
+        """Delete a pet note."""
+        before = len(self.pet_events)
+        self.pet_events = [e for e in self.pet_events if e.id != event_id]
+        if len(self.pet_events) == before:
+            return False
+        self._async_changed()
+        return True
+
+    @callback
     def _async_send_reminders(self, _now: datetime) -> None:
         """Daily: remind persons who have not weighed in for a while."""
         now = dt_util.utcnow()
@@ -852,6 +938,7 @@ class WeightTrackerManager:
     def async_delete_pet_data(self, pet_id: str) -> int:
         """Delete all measurements of a pet (pet is being removed)."""
         before = len(self.pet_measurements)
+        self.pet_events = [e for e in self.pet_events if e.pet_id != pet_id]
         self.pet_measurements = [m for m in self.pet_measurements if m.pet_id != pet_id]
         for m in self.measurements:
             if m.status == STATUS_PET_CANDIDATE and m.pet_id == pet_id:
@@ -1024,6 +1111,7 @@ class WeightTrackerManager:
     def _async_changed(self, notify_milestones: bool = True) -> None:
         self._recalculate()
         self._check_milestones(notify=notify_milestones)
+        self._check_pet_warnings(notify=notify_milestones)
         self._save()
         self._notify()
         self._update_notification()
@@ -1055,6 +1143,45 @@ class WeightTrackerManager:
             for measurement, (_, trend) in zip(measured, trend_series(points)):
                 self.trend_by_id[measurement.id] = round(trend, 2)
             self.pet_stats[pet_id] = compute_stats(points, now, goal=pet.get(CONF_GOAL_WEIGHT))
+        self.pet_warnings = {}
+        for pet_id, stats in self.pet_stats.items():
+            if self.pets[pet_id].get(CONF_KIND) == KIND_CHILD:
+                continue  # children grow: percentiles instead of warnings
+            if warning := health_warning(stats.trend, stats.rate_per_week, stats.change_30d):
+                self.pet_warnings[pet_id] = warning
+        self._recalculate_growth(now)
+
+    def _recalculate_growth(self, now: datetime) -> None:
+        """Weight-for-age percentiles of children (WHO 0-2 years, CDC 2-20 years)."""
+        self.growth = {}
+        for pet_id, pet in self.pets.items():
+            if pet.get(CONF_KIND) != KIND_CHILD or not pet.get(CONF_SEX) or not pet.get(CONF_BIRTH_DATE):
+                continue
+            born = dt_util.parse_datetime(f"{pet[CONF_BIRTH_DATE]}T00:00:00+00:00")
+            if born is None:
+                continue
+            sex = pet[CONF_SEX]
+
+            def months(ts: datetime) -> float:
+                return (ts - born).days / 30.4375
+
+            points = [
+                [round(months(m.ts), 2), m.weight]
+                for m in self.pet_measurements
+                if m.pet_id == pet_id and m.ts >= born
+            ]
+            age = months(now)
+            data: dict[str, Any] = {"age_months": round(age, 1), "points": points}
+            if points:
+                last_age, last_weight = points[-1]
+                pct = percentile(last_weight, sex, last_age)
+                z = z_score(last_weight, sex, last_age)
+                data["percentile"] = round(pct, 1) if pct is not None else None
+                data["z"] = round(z, 2) if z is not None else None
+            start = min([p[0] for p in points] + [age]) if points else max(age - 6, 0)
+            span = max(age - start, 3)
+            data["curves"] = curves(sex, max(0.0, start - span * 0.1), age + span * 0.25)
+            self.growth[pet_id] = data
 
     def _recalculate_body(self, now: datetime) -> None:
         """Body composition per person, only from readings that carry scale data."""
@@ -1112,6 +1239,8 @@ class WeightTrackerManager:
             "pet_measurements": [m.as_dict() for m in self.pet_measurements],
             "waist": [w.as_dict() for w in self.waist],
             "achievements": self.achievements,
+            "pet_warning_sent": self._pet_warning_sent,
+            "pet_events": [e.as_dict() for e in self.pet_events],
             "reminders": self._reminders,
         }
         if self._last_source:

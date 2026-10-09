@@ -15,6 +15,7 @@ from homeassistant.helpers import config_validation as cv
 
 from .const import (
     CONF_AMBIGUITY_MARGIN,
+    CONF_BIRTH_DATE,
     CONF_BIRTH_MONTH,
     CONF_CREATE_SENSORS,
     CONF_DEBOUNCE,
@@ -22,9 +23,11 @@ from .const import (
     CONF_BODY_FAT_ENTITY,
     CONF_HEIGHT,
     CONF_IMPEDANCE_ENTITY,
+    CONF_KIND,
     CONF_MAX_WEIGHT,
     CONF_MIN_WEIGHT,
     CONF_NOTIFY_MILESTONES,
+    CONF_NOTIFY_PET_WARNINGS,
     CONF_NOTIFY_SERVICE,
     CONF_NOTIFY_WEIGH,
     CONF_PERSON_ENTITY,
@@ -46,6 +49,8 @@ from .const import (
     DEFAULT_MIN_WEIGHT,
     DEFAULT_TOLERANCE,
     DISCARD_OPTION,
+    KIND_CHILD,
+    KIND_PET,
     LEGACY_BIRTH_DATE,
     PENDING_OPTION,
     SEXES,
@@ -92,6 +97,7 @@ PROFILE_SCHEMA = vol.Schema(
         vol.Optional(CONF_NOTIFY_SERVICE): vol.Any(None, "", vol.All(cv.string, vol.Match(r"^[a-z0-9_]+$"))),
         vol.Optional(CONF_NOTIFY_WEIGH): cv.boolean,
         vol.Optional(CONF_NOTIFY_MILESTONES): cv.boolean,
+        vol.Optional(CONF_NOTIFY_PET_WARNINGS): cv.boolean,
         vol.Optional(CONF_REMINDER_DAYS): vol.All(vol.Coerce(int), vol.Range(min=0, max=60)),
         vol.Optional(CONF_SEX): vol.Any(None, "", vol.In(SEXES)),
     }
@@ -104,6 +110,7 @@ PROFILE_KEYS = (
     CONF_NOTIFY_SERVICE,
     CONF_NOTIFY_WEIGH,
     CONF_NOTIFY_MILESTONES,
+    CONF_NOTIFY_PET_WARNINGS,
     CONF_REMINDER_DAYS,
     CONF_SEX,
 )
@@ -205,7 +212,7 @@ def build_person(
 
 def keep_personal_settings(new: dict[str, Any], old: dict[str, Any]) -> dict[str, Any]:
     """Settings a person made for themselves survive an admin edit of the person."""
-    for key in (CONF_NOTIFY_SERVICE, CONF_NOTIFY_WEIGH, CONF_NOTIFY_MILESTONES, CONF_REMINDER_DAYS):
+    for key in (CONF_NOTIFY_SERVICE, CONF_NOTIFY_WEIGH, CONF_NOTIFY_MILESTONES, CONF_NOTIFY_PET_WARNINGS, CONF_REMINDER_DAYS):
         if key in old and key not in new:
             new[key] = old[key]
     return new
@@ -222,9 +229,22 @@ def apply_profile(person: dict[str, Any], profile: dict[str, Any]) -> None:
             person[key] = profile[key]
 
 
+def _child_birth_date(value: Any) -> str | None:
+    """Full birth date of a child (days matter for babies)."""
+    if value in (None, ""):
+        return None
+    parsed = cv.date(value)
+    if not date(1990, 1, 1) <= parsed <= date.today():
+        raise vol.Invalid("birth date out of range")
+    return parsed.isoformat()
+
+
 PET_SCHEMA = vol.Schema(
     {
         vol.Optional(CONF_PET_ID): vol.Any(None, cv.string),
+        vol.Optional(CONF_KIND, default=KIND_PET): vol.In([KIND_PET, KIND_CHILD]),
+        vol.Optional(CONF_SEX): vol.Any(None, "", vol.In(SEXES)),
+        vol.Optional(CONF_BIRTH_DATE): _child_birth_date,
         vol.Required(CONF_NAME): vol.All(cv.string, vol.Strip, vol.Length(min=1, max=50)),
         vol.Optional(CONF_SPECIES, default="other"): vol.In(SPECIES),
         vol.Required(CONF_START_WEIGHT): _number(0.2, 80),
@@ -248,6 +268,13 @@ def build_pet(data: dict[str, Any], pet_id: str) -> dict[str, Any]:
         pet[CONF_GOAL_WEIGHT] = float(data[CONF_GOAL_WEIGHT])
     if data.get(CONF_BIRTH_MONTH):
         pet[CONF_BIRTH_MONTH] = data[CONF_BIRTH_MONTH]
+    if data.get(CONF_KIND) == KIND_CHILD:
+        pet[CONF_KIND] = KIND_CHILD
+        pet.pop(CONF_GOAL_WEIGHT, None)  # children: percentiles instead of goals
+        if data.get(CONF_SEX):
+            pet[CONF_SEX] = data[CONF_SEX]
+        if data.get(CONF_BIRTH_DATE):
+            pet[CONF_BIRTH_DATE] = data[CONF_BIRTH_DATE]
     return pet
 
 

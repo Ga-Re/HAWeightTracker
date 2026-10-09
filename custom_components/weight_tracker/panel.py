@@ -52,6 +52,7 @@ from .const import (
     CONF_HEIGHT,
     CONF_IMPEDANCE_ENTITY,
     CONF_NOTIFY_MILESTONES,
+    CONF_NOTIFY_PET_WARNINGS,
     CONF_NOTIFY_SERVICE,
     CONF_NOTIFY_WEIGH,
     CONF_PERSON_ENTITY,
@@ -69,6 +70,7 @@ from .const import (
     DATA_PANEL_REGISTERED,
     DOMAIN,
     PANEL_COMPONENT,
+    PET_EVENT_CATEGORIES,
     PANEL_URL_PATH,
     SIGNAL_UPDATED,
     STATIC_URL,
@@ -117,6 +119,7 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_waist)
     websocket_api.async_register_command(hass, ws_set_note)
     websocket_api.async_register_command(hass, ws_import)
+    websocket_api.async_register_command(hass, ws_pet_event)
     file_hash = await hass.async_add_executor_job(_panel_file_hash)
     hass.data[DATA_PANEL_HASH] = file_hash
     if file_hash is None:
@@ -276,6 +279,7 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                     "service": person.get(CONF_NOTIFY_SERVICE),
                     "weigh": person.get(CONF_NOTIFY_WEIGH, False),
                     "milestones": person.get(CONF_NOTIFY_MILESTONES, False),
+                    "pet_warnings": person.get(CONF_NOTIFY_PET_WARNINGS, False),
                     "reminder_days": person.get(CONF_REMINDER_DAYS, 0),
                 }
             if admin:
@@ -333,11 +337,25 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                 "id": pet_id,
                 "name": pet[CONF_NAME],
                 "species": pet.get(CONF_SPECIES, "other"),
+                "kind": pet.get("kind", "pet"),
+                "sex": pet.get(CONF_SEX),
+                "birth_date": pet.get("birth_date"),
+                "growth": manager.growth.get(pet_id),
                 "color_index": len(manager.persons) + index,
                 "start_weight": pet.get(CONF_START_WEIGHT),
                 "goal": pet.get(CONF_GOAL_WEIGHT),
                 "birth_month": pet.get(CONF_BIRTH_MONTH),
                 "entities": sensor_ids.get(f"pet:{pet_id}", {}),
+                "warning": (
+                    {"code": manager.pet_warnings[pet_id][0], "percent": manager.pet_warnings[pet_id][1]}
+                    if pet_id in manager.pet_warnings
+                    else None
+                ),
+                "events": [
+                    {"id": e.id, "ts": int(e.ts.timestamp() * 1000), "category": e.category, "text": e.text}
+                    for e in manager.pet_events
+                    if e.pet_id == pet_id
+                ],
                 "stats": {k: _jsonable(v) for k, v in asdict(stats).items()} if stats else {},
             }
             if admin:
@@ -942,3 +960,34 @@ def ws_import(
     ]
     added, skipped = manager.async_import(rows, person_id=person_id, pet_id=pet_id)
     connection.send_result(msg["id"], {"added": added, "skipped": skipped})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/pet_event",
+        vol.Required("entry_id"): str,
+        vol.Required("action"): vol.In(["add", "delete"]),
+        vol.Optional("pet_id"): str,
+        vol.Optional("ts"): vol.All(vol.Coerce(int), vol.Range(min=0)),
+        vol.Optional("category"): vol.In(PET_EVENT_CATEGORIES),
+        vol.Optional("text"): vol.All(str, vol.Length(min=1, max=300)),
+        vol.Optional("event_id"): str,
+    }
+)
+@callback
+def ws_pet_event(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Vet visits, vaccinations, food changes … (every user: pets belong to the household)."""
+    if (manager := _entry_manager(hass, connection, msg)) is None:
+        return
+    if msg["action"] == "add":
+        if msg.get("pet_id") not in manager.pets or not msg.get("text"):
+            connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Pet not found")
+            return
+        ts = dt_util.utc_from_timestamp(msg["ts"] / 1000) if "ts" in msg else dt_util.utcnow()
+        manager.async_add_pet_event(msg["pet_id"], ts, msg.get("category", "other"), msg["text"])
+    elif not manager.async_delete_pet_event(msg.get("event_id", "")):
+        connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Not found")
+        return
+    connection.send_result(msg["id"])

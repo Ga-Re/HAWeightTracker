@@ -17,7 +17,8 @@ Auf dem Home Assistant muss danach genau diese Struktur liegen. Wichtig ist der 
 ```
 /config/custom_components/weight_tracker/
 ├── __init__.py, access.py, analytics.py, button.py, config_flow.py, const.py,
-│   body.py, detector.py, entity.py, manager.py, milestones.py, notifications.py, panel.py, pets.py,
+│   body.py, detector.py, entity.py, growth.py, manager.py, milestones.py, notifications.py,
+│   panel.py, pets.py,
 │   sensor.py, services.py, settings.py
 ├── manifest.json, icons.json, services.yaml
 ├── brand/
@@ -109,6 +110,19 @@ Haustiere werden per **Differenzmessung** gewogen: einmal allein auf die Waage, 
 - Haustier-Messungen lassen sich unter *Messungen* einem anderen Tier zuordnen oder löschen (Admins und die Person, die das Tier getragen hat). Über *Messung eintragen* kannst du ein Gewicht auch von Hand eintragen.
 
 Genauigkeit: Viele Personenwaagen messen auf 0,1 kg genau, die Differenz kann also um etwa ±0,2 kg schwanken. Der Trend gleicht das über mehrere Messungen aus.
+
+### Gesundheitswarnung und Notizen für Haustiere
+
+- Nimmt ein Tier ungewöhnlich schnell ab oder zu (≥ 2 % Abnahme bzw. ≥ 3 % Zunahme pro Woche, oder über 30 Tage mehr als 5 % weniger bzw. 7 % mehr), erscheint auf seiner Karte eine Warnung. Bei Katzen kann schneller Gewichtsverlust ein frühes Warnzeichen sein. Wer möchte, bekommt einmalig eine Nachricht: *Meine Daten → Benachrichtigungen → Warnungen zu Haustieren*.
+- **Notizen** pro Tier: Tierarzt, Impfung, Futter, Medikament, Sonstiges. Die neueste steht auf der Karte, alle über *📋 Notizen*. Im Verlauf sind sie als Markierung zu sehen.
+
+## Kinder und Babys
+
+Kinder werden wie Haustiere per Differenzmessung gewogen (einmal allein, einmal mit dem Kind auf dem Arm). Statt eines Zielgewichts zeigt ihre Karte die **Perzentile** und eine **Wachstumskurve** mit den Bändern 3.–97. und 15.–85. Perzentile. Bis 2 Jahre gilt der WHO-Standard, danach die CDC-Referenz ([Daten](https://www.cdc.gov/growthcharts/who-data-files.htm), [Daten](https://www.cdc.gov/growthcharts/cdc-data-files.htm)). Liegt das Gewicht unter der 3. oder über der 97. Perzentile, weist das Panel darauf hin. Kinder legt ein Admin unter *Einstellungen → Kinder* an, mit Geschlecht und Geburtsdatum. Alle Benutzer sehen sie, wie die Haustiere.
+
+## Einheiten
+
+Oben rechts im Panel wählst du **kg**, **lb** oder **st**. Die Wahl gilt für dieses Gerät, voreingestellt ist das Einheitensystem von Home Assistant. Anzeigen, Graph und Eingabefelder rechnen um, gespeichert wird immer in kg. Bei st zeigt das Panel große Werte als „13 st 10 lb“, Veränderungen in lb.
 
 ## Datenschutz & Freigaben
 

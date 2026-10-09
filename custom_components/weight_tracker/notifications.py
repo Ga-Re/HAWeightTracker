@@ -79,6 +79,23 @@ def milestone_message(german: bool, milestone: Milestone, goal_sign: int) -> tup
     return title, text
 
 
+def pet_warning_message(german: bool, name: str, code: str, percent: float, species: str) -> tuple[str, str]:
+    """Title and text when a pet's weight changes unusually fast."""
+    value = _num(percent, german, digits=1, signed=True)
+    weekly = code.startswith("fast_")
+    if german:
+        period = "pro Woche" if weekly else "in 30 Tagen"
+        what = "nimmt schnell ab" if percent < 0 else "nimmt schnell zu"
+        hint = "Bei Katzen kann das ein frühes Warnzeichen sein – sprich am besten mit deiner Tierarztpraxis." if species == "cat" \
+            else "Das kann ein Warnzeichen sein – sprich am besten mit deiner Tierarztpraxis."
+        return f"⚠️ {name} {what}", f"{value} % {period}. {hint}"
+    period = "per week" if weekly else "in 30 days"
+    what = "is losing weight fast" if percent < 0 else "is gaining weight fast"
+    hint = "In cats this can be an early warning sign – best talk to your vet." if species == "cat" \
+        else "This can be a warning sign – best talk to your vet."
+    return f"⚠️ {name} {what}", f"{value} % {period}. {hint}"
+
+
 def reminder_message(german: bool, days: int) -> tuple[str, str]:
     """Title and text of the "time to weigh in" reminder."""
     if german:

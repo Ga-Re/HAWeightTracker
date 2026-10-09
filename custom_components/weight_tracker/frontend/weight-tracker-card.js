@@ -105,11 +105,25 @@ class WeightTrackerCard extends HTMLElement {
     }
   }
 
+  // Same display unit as the panel (kg / lb; st is shown as lb here).
+  get _unitLabel() {
+    let unit = null;
+    try {
+      unit = localStorage.getItem("wt-unit");
+    } catch (err) {
+      unit = null;
+    }
+    if (!unit) unit = this._hass && this._hass.config && this._hass.config.unit_system && this._hass.config.unit_system.mass === "lb" ? "lb" : "kg";
+    return unit === "kg" ? "kg" : "lb";
+  }
+
   _kg(value, digits = 1, signed = false) {
     if (value === null || value === undefined || Number.isNaN(value)) return "–";
-    const text = new Intl.NumberFormat(this._lang, { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(Math.abs(value));
-    if (signed) return `${value > 0.049 ? "+" : value < -0.049 ? "−" : "±"}${text} kg`;
-    return `${value < 0 ? "−" : ""}${text} kg`;
+    const label = this._unitLabel;
+    const v = label === "kg" ? value : value * 2.20462262;
+    const text = new Intl.NumberFormat(this._lang, { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(Math.abs(v));
+    if (signed) return `${v > 0.049 ? "+" : v < -0.049 ? "−" : "±"}${text} ${label}`;
+    return `${v < 0 ? "−" : ""}${text} ${label}`;
   }
 
   // The configured person/pet, or the user's own person.
@@ -176,7 +190,7 @@ class WeightTrackerCard extends HTMLElement {
         const digits = isPet && s.latest_weight < 10 ? 2 : 1;
         body = `
           <div class="head">${avatar}<div class="name">${wtEsc(subject.name)}</div></div>
-          <div class="hero"><span class="value">${s.latest_weight !== null && s.latest_weight !== undefined ? this._kg(s.latest_weight, digits).replace(" kg", "") : "–"}</span><span class="unit">kg</span></div>
+          <div class="hero"><span class="value">${s.latest_weight !== null && s.latest_weight !== undefined ? this._kg(s.latest_weight, digits).replace(` ${this._unitLabel}`, "") : "–"}</span><span class="unit">${this._unitLabel}</span></div>
           <div class="stats"><span>${wtEsc(t.trend)} <b>${this._kg(s.trend, digits)}</b></span><span>${wtEsc(t.d7)} <b>${this._kg(s.change_7d, digits, true)}</b></span></div>
           ${goal}
           ${this._chart(entry, subject, isPet, color)}`;
