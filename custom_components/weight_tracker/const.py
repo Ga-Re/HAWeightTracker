@@ -73,6 +73,7 @@ METHOD_PET_SESSION = "pet_session"
 METHOD_PET_AUTO = "pet_auto"
 
 METHOD_MANUAL = "manual"
+METHOD_IMPORT = "import"
 
 DISCARD_OPTION = "discard"
 PENDING_OPTION = "pending"

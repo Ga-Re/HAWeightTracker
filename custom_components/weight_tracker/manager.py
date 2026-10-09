@@ -82,6 +82,7 @@ from .const import (
     DUPLICATE_WINDOW,
     EXTRA_READING_MAX_AGE,
     EVENT_MEASUREMENT,
+    METHOD_IMPORT,
     METHOD_MANUAL,
     METHOD_PET_AUTO,
     METHOD_PET_SESSION,
@@ -928,6 +929,50 @@ class WeightTrackerManager:
         return measurement
 
     @callback
+    def async_import(
+        self, rows: list[dict[str, Any]], person_id: str | None = None, pet_id: str | None = None
+    ) -> tuple[int, int]:
+        """Import old measurements (e.g. CSV from another app). Returns (added, skipped).
+
+        Duplicates (same minute and weight) are skipped. No achievement
+        notifications: importing years of data must not flood anybody.
+        """
+        if pet_id is not None:
+            existing = {
+                (int(m.ts.timestamp() // 60), round(m.weight, 1))
+                for m in self.pet_measurements if m.pet_id == pet_id
+            }
+        else:
+            existing = {
+                (int(m.ts.timestamp() // 60), round(m.weight, 1))
+                for m in self.measurements if m.person_id == person_id
+            }
+        added = skipped = 0
+        for row in rows:
+            ts: datetime = row["ts"]
+            key = (int(ts.timestamp() // 60), round(row["weight"], 1))
+            if key in existing:
+                skipped += 1
+                continue
+            existing.add(key)
+            added += 1
+            if pet_id is not None:
+                self.pet_measurements.append(
+                    PetMeasurement(uuid4().hex[:12], ts, round(row["weight"], 2), pet_id, None, METHOD_IMPORT, row.get("note"))
+                )
+            else:
+                self.measurements.append(
+                    Measurement(
+                        uuid4().hex[:12], ts, round(row["weight"], 2), person_id, STATUS_ASSIGNED,
+                        METHOD_IMPORT, body_fat=row.get("body_fat"), note=row.get("note"),
+                    )
+                )
+        self.measurements.sort(key=lambda m: m.ts)
+        self.pet_measurements.sort(key=lambda m: m.ts)
+        self._async_changed(notify_milestones=False)
+        return added, skipped
+
+    @callback
     def async_add_waist(self, person_id: str, cm: float, ts: datetime) -> WaistMeasurement:
         """Store a waist circumference."""
         entry = WaistMeasurement(uuid4().hex[:12], ts, round(cm, 1), person_id)
@@ -976,9 +1021,9 @@ class WeightTrackerManager:
         self._notify()
 
     @callback
-    def _async_changed(self) -> None:
+    def _async_changed(self, notify_milestones: bool = True) -> None:
         self._recalculate()
-        self._check_milestones(notify=True)
+        self._check_milestones(notify=notify_milestones)
         self._save()
         self._notify()
         self._update_notification()

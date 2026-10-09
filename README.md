@@ -24,6 +24,7 @@ Auf dem Home Assistant muss danach genau diese Struktur liegen. Wichtig ist der 
 │   ├── icon.png
 │   └── icon@2x.png
 ├── frontend/
+│   ├── weight-tracker-card.js
 │   └── weight-tracker-panel.js
 └── translations/
     ├── de.json
@@ -64,6 +65,19 @@ Vor jedem Namen steht das **Bild der Home-Assistant-Person**. Es stammt von der 
 Die Formulare nutzen die Eingabefelder von Home Assistant selbst. Waagen-Sensor und Anwesenheit sind durchsuchbare Entitätsauswahlen mit Filter: Gewichtssensoren bzw. nur `person.*`-Entitäten. Speichern lädt die Integration kurz neu, das Panel aktualisiert sich dabei von selbst. Der Knopf *Konfigurieren* unter Geräte & Dienste verweist nur noch auf das Panel.
 
 Das Panel passt sich dem hellen oder dunklen Theme an, funktioniert auf dem Handy und lädt nichts aus dem Internet. Die Daten kommen live über die WebSocket-Verbindung von Home Assistant.
+
+## Auswertung
+
+- **Prognose im Graph:** Mit Zielgewicht verlängert eine gestrichelte Linie den Trend bis zum voraussichtlichen Datum, eine Linie markiert „Heute“. Ein- und ausschaltbar über *📈 Prognose*.
+- **Kalender** (unter *Meine Daten*): ein Jahr auf einen Blick, ein Kästchen pro Tag. Blau: Trend in Richtung Ziel, Rot: weg vom Ziel, Grau: kaum Veränderung, leer: nicht gewogen. Dazu Messtage und längste Serie.
+- **CSV-Export und -Import** (unter *Messungen*): Export aller sichtbaren Messungen als CSV. Der Import übernimmt alte Daten aus anderen Apps (Withings, Zepp/Mi Fit, Garmin oder eigene Tabellen). Spalten, Trennzeichen, Datumsformat, Pfund und Körperfett (in % oder kg) werden erkannt. Vor dem Import zeigt eine Vorschau, was übernommen wird, Duplikate werden übersprungen. Ein Import löst keine Erfolgs-Benachrichtigungen aus.
+- **Dashboard-Karte:** In jedem Dashboard gibt es in der Kartenauswahl die Karte **Weight Tracker**. Sie zeigt Gewicht, Trend, Ziel und Verlauf von dir selbst, einer anderen Person oder einem Haustier, jeweils nur soweit freigegeben. Eine manuelle Ressource ist nicht nötig. Ein Klick öffnet das Panel.
+
+```yaml
+type: custom:weight-tracker-card
+person: Mimi        # optional, leer = du selbst
+chart_days: 90      # optional, 0 = ohne Verlauf
+```
 
 ## Körperdaten
 

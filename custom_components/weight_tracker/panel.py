@@ -82,17 +82,22 @@ _LOGGER = logging.getLogger(__name__)
 
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 PANEL_FILE = FRONTEND_DIR / f"{PANEL_COMPONENT}.js"
+CARD_FILE = FRONTEND_DIR / "weight-tracker-card.js"
 BRAND_DIR = Path(__file__).parent / "brand"
 BRAND_URL = "/weight_tracker_brand"
 DATA_PANEL_HASH = f"{DOMAIN}_panel_hash"
 
 
-def _panel_file_hash() -> str | None:
-    """Content hash of the panel code (cache busting), None if missing."""
+def _file_hash(path: Path) -> str | None:
+    """Content hash of a frontend file (cache busting), None if missing."""
     try:
-        return hashlib.sha1(PANEL_FILE.read_bytes()).hexdigest()[:10]
+        return hashlib.sha1(path.read_bytes()).hexdigest()[:10]
     except OSError:
         return None
+
+
+def _panel_file_hash() -> str | None:
+    return _file_hash(PANEL_FILE)
 
 
 async def async_setup_frontend(hass: HomeAssistant) -> None:
@@ -111,6 +116,7 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_notify_test)
     websocket_api.async_register_command(hass, ws_waist)
     websocket_api.async_register_command(hass, ws_set_note)
+    websocket_api.async_register_command(hass, ws_import)
     file_hash = await hass.async_add_executor_job(_panel_file_hash)
     hass.data[DATA_PANEL_HASH] = file_hash
     if file_hash is None:
@@ -138,6 +144,9 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
         if await hass.async_add_executor_job(BRAND_DIR.is_dir):
             paths.append(StaticPathConfig(BRAND_URL, str(BRAND_DIR), True))
         await hass.http.async_register_static_paths(paths)
+    # Dashboard card: loaded on every frontend page, no manual resource needed.
+    if card_hash := await hass.async_add_executor_job(_file_hash, CARD_FILE):
+        frontend.add_extra_js_url(hass, f"{STATIC_URL}/{CARD_FILE.name}?v={card_hash}")
 
 
 async def async_register_panel(hass: HomeAssistant) -> None:
@@ -890,3 +899,46 @@ def ws_set_note(
         return
     manager.async_set_note(measurement, msg.get("note"))
     connection.send_result(msg["id"])
+
+
+IMPORT_ROW = vol.Schema(
+    {
+        vol.Required("ts"): vol.All(vol.Coerce(int), vol.Range(min=0)),  # ms since epoch
+        vol.Required("weight"): vol.All(vol.Coerce(float), vol.Range(min=0.1, max=500)),
+        vol.Optional("body_fat"): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=1, max=75))),
+        vol.Optional("note"): vol.Any(None, vol.All(str, vol.Length(max=200))),
+    }
+)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/import",
+        vol.Required("entry_id"): str,
+        vol.Exclusive("person_id", "target"): str,
+        vol.Exclusive("pet_id", "target"): str,
+        vol.Required("rows"): vol.All([IMPORT_ROW], vol.Length(min=1, max=2000)),
+    }
+)
+@callback
+def ws_import(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Import measurements (CSV parsed in the panel). Persons: own/admin; pets: everybody."""
+    if (manager := _entry_manager(hass, connection, msg)) is None:
+        return
+    person_id, pet_id = msg.get("person_id"), msg.get("pet_id")
+    if pet_id is not None:
+        allowed = pet_id in manager.pets
+    else:
+        person = manager.persons.get(person_id or "")
+        allowed = person is not None and can_manage(connection.user, person)
+    if not allowed:
+        connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Not found")
+        return
+    rows = [
+        {**row, "ts": dt_util.utc_from_timestamp(row["ts"] / 1000)}
+        for row in msg["rows"]
+    ]
+    added, skipped = manager.async_import(rows, person_id=person_id, pet_id=pet_id)
+    connection.send_result(msg["id"], {"added": added, "skipped": skipped})

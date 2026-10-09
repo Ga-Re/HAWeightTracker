@@ -44,6 +44,23 @@ const TEXT = {
     absolute: "kg",
     relative: "Veränderung",
     chartEmpty: "Im gewählten Zeitraum gibt es keine Messungen.",
+    forecast: "Prognose",
+    calendar: "Kalender",
+    calendarHint: "Jedes Kästchen ist ein Tag. Blau: Trend in Richtung Ziel, Rot: weg vom Ziel, Grau: kaum Veränderung, leer: nicht gewogen.",
+    calendarStats: (days, best) => `${days} Tage mit Messung in 12 Monaten · längste Serie ${best} Tage`,
+    calendarLegend: { good: "Richtung Ziel", bad: "weg vom Ziel", flat: "kaum Veränderung", none: "nicht gewogen" },
+    weekdaysShort: ["Mo", "", "Mi", "", "Fr", "", ""],
+    importExport: "Import & Export",
+    importExportHint: "Exportiere deine Messungen als CSV (z. B. als Sicherung) oder übernimm alte Daten aus anderen Apps (Withings, Zepp/Mi Fit, Garmin, eigene Tabellen).",
+    exportCsv: "⬇ CSV exportieren",
+    importCsv: "⬆ CSV importieren",
+    importPreview: (n, from, to, skipped) => `${n} Messungen von ${from} bis ${to}${skipped ? ` · ${skipped} Zeilen übersprungen` : ""}`,
+    importColumns: (cols) => `Erkannte Spalten: ${cols}`,
+    importNothing: "In dieser Datei wurden keine Gewichte gefunden. Sie braucht eine Spalte mit Datum und eine mit Gewicht.",
+    importTarget: "Importieren für",
+    importButton: "Importieren",
+    importDone: (added, skipped) => `${added} Messungen importiert${skipped ? `, ${skipped} doppelte übersprungen` : ""}`,
+    today: "Heute",
     measurement: "Messung",
     monthly: "Monatsdurchschnitt",
     month: "Monat",
@@ -268,6 +285,23 @@ const TEXT = {
     absolute: "kg",
     relative: "Change",
     chartEmpty: "No measurements in the selected range.",
+    forecast: "Forecast",
+    calendar: "Calendar",
+    calendarHint: "Each square is a day. Blue: trend towards the goal, red: away from it, grey: hardly any change, empty: not weighed.",
+    calendarStats: (days, best) => `${days} days with a measurement in 12 months · longest streak ${best} days`,
+    calendarLegend: { good: "towards goal", bad: "away from goal", flat: "hardly any change", none: "not weighed" },
+    weekdaysShort: ["Mon", "", "Wed", "", "Fri", "", ""],
+    importExport: "Import & export",
+    importExportHint: "Export your measurements as CSV (e.g. as a backup) or take over old data from other apps (Withings, Zepp/Mi Fit, Garmin, own spreadsheets).",
+    exportCsv: "⬇ Export CSV",
+    importCsv: "⬆ Import CSV",
+    importPreview: (n, from, to, skipped) => `${n} measurements from ${from} to ${to}${skipped ? ` · ${skipped} rows skipped` : ""}`,
+    importColumns: (cols) => `Detected columns: ${cols}`,
+    importNothing: "No weights found in this file. It needs a date column and a weight column.",
+    importTarget: "Import for",
+    importButton: "Import",
+    importDone: (added, skipped) => `${added} measurements imported${skipped ? `, ${skipped} duplicates skipped` : ""}`,
+    today: "Today",
     measurement: "Measurement",
     monthly: "Monthly average",
     month: "Month",
@@ -470,6 +504,95 @@ const TEXT = {
   },
 };
 
+// ----------------------------------------------------------------- CSV import
+// Reads weight exports of other apps (Withings, Zepp/Mi Fit, Garmin, own tables).
+// Returns { rows: [{ ts, weight, body_fat? }], skipped, columns }.
+function parseWeightCsv(text, lang = "en") {
+  const clean = String(text || "").replace(/^﻿/, "").replace(/\r\n?/g, "\n").trim();
+  if (!clean) return { rows: [], skipped: 0, columns: {} };
+  const firstLine = clean.split("\n")[0];
+  const delimiter = [";", "\t", ","].map((d) => [d, firstLine.split(d).length]).sort((a, b) => b[1] - a[1])[0][0];
+  // Minimal CSV reader with quotes.
+  const records = [];
+  let field = "", record = [], quoted = false;
+  for (let i = 0; i < clean.length; i++) {
+    const c = clean[i];
+    if (quoted) {
+      if (c === '"' && clean[i + 1] === '"') { field += '"'; i++; }
+      else if (c === '"') quoted = false;
+      else field += c;
+    } else if (c === '"') quoted = true;
+    else if (c === delimiter) { record.push(field); field = ""; }
+    else if (c === "\n") { record.push(field); records.push(record); record = []; field = ""; }
+    else field += c;
+  }
+  record.push(field); records.push(record);
+
+  const header = records[0].map((h) => h.trim().toLowerCase());
+  const find = (test) => header.findIndex(test);
+  const dateIdx = find((h) => /^(date|datum|day|tag)\b|date ?time|timestamp|^time$|^zeit$|zeitpunkt/.test(h));
+  const timeIdx = find((h, i) => i !== dateIdx && /^(time|zeit|uhrzeit)\b/.test(h));
+  const weightIdx = find((h) => /(weight|gewicht)/.test(h) && !/(fat|fett|muscle|muskel|bone|knochen|water|wasser|lean|goal|ziel)/.test(h));
+  const fatIdx = find((h) => /(fat|fett)/.test(h) && !/(visceral|viszeral)/.test(h));
+  if (dateIdx < 0 || weightIdx < 0) return { rows: [], skipped: records.length - 1, columns: { header: records[0] } };
+  const weightFactor = /\blbs?\b|pound|pfund/.test(header[weightIdx]) ? 0.45359237 : /\(g\)|\bgram/.test(header[weightIdx]) ? 0.001 : 1;
+  const fatIsKg = fatIdx >= 0 && /(mass|masse|\(kg\)|\bkg\b)/.test(header[fatIdx]) && !/(%|rate|percent|prozent|anteil)/.test(header[fatIdx]);
+
+  const number = (raw) => {
+    let v = String(raw || "").trim().replace(/\s|kg|lbs?|%/gi, "");
+    if (/^-?\d{1,3}(\.\d{3})+,\d+$/.test(v)) v = v.replace(/\./g, "").replace(",", ".");
+    else v = v.replace(",", ".");
+    return v === "" ? NaN : Number(v);
+  };
+  const date = (raw, timeRaw) => {
+    let v = String(raw || "").trim();
+    if (timeRaw) v = `${v} ${String(timeRaw).trim()}`;
+    if (/^\d{10}(\d{3})?$/.test(v)) return Number(v.length === 10 ? v + "000" : v);
+    let m = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?)?\s*(Z|[+-]\d{2}:?\d{2})?$/.exec(v);
+    if (m) {
+      const [, y, mo, d, h = "0", mi = "0", s = "0", tz] = m;
+      if (tz) {
+        const iso = `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}T${h.padStart(2, "0")}:${mi}:${s.padStart(2, "0")}${tz === "Z" ? "Z" : tz.replace(/^([+-]\d{2})(\d{2})$/, "$1:$2")}`;
+        return Date.parse(iso);
+      }
+      return new Date(+y, +mo - 1, +d, +h, +mi, +s).getTime();
+    }
+    m = /^(\d{1,2})([./])(\d{1,2})\2(\d{2,4})(?:[ ,T]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(v);
+    if (m) {
+      let [, a, sep, b, y, h = "0", mi = "0", s = "0"] = m;
+      if (y.length === 2) y = `20${y}`;
+      // dd.mm.yyyy; with "/" it is dd/mm unless the language is English (mm/dd) – a value > 12 decides.
+      let day = +a, month = +b;
+      if (sep === "/" && (+a > 12 ? false : +b > 12 ? true : !lang.startsWith("de"))) { day = +b; month = +a; }
+      return new Date(+y, month - 1, day, +h, +mi, +s).getTime();
+    }
+    const parsed = Date.parse(v);
+    return Number.isNaN(parsed) ? NaN : parsed;
+  };
+
+  const rows = [];
+  let skipped = 0;
+  for (const rec of records.slice(1)) {
+    if (rec.every((f) => !String(f).trim())) continue;
+    const ts = date(rec[dateIdx], timeIdx >= 0 ? rec[timeIdx] : null);
+    const weight = number(rec[weightIdx]) * weightFactor;
+    if (!Number.isFinite(ts) || !Number.isFinite(weight) || weight < 0.1 || weight > 500 || ts > Date.now() + 86400000) { skipped++; continue; }
+    const row = { ts, weight: Math.round(weight * 100) / 100 };
+    if (fatIdx >= 0) {
+      let fat = number(rec[fatIdx]);
+      if (fatIsKg && Number.isFinite(fat)) fat = (fat / weight) * 100;
+      if (Number.isFinite(fat) && fat >= 1 && fat <= 75) row.body_fat = Math.round(fat * 10) / 10;
+    }
+    rows.push(row);
+  }
+  rows.sort((a, b) => a.ts - b.ts);
+  return {
+    rows,
+    skipped,
+    columns: { date: records[0][dateIdx], time: timeIdx >= 0 ? records[0][timeIdx] : null, weight: records[0][weightIdx], fat: fatIdx >= 0 ? records[0][fatIdx] : null },
+  };
+}
+
 const esc = (value) =>
   String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
@@ -552,6 +675,12 @@ const STYLE = `
   .tile .pen:hover { background: rgba(127,127,127,.15); color: var(--primary-color, #03a9f4); }
   .tile .pen:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); }
   .tile .actions { margin-top: 12px; }
+  .cal { display: block; width: 100%; height: auto; margin-top: 12px; }
+  .cal text { fill: var(--wt-muted); font-size: 9px; font-family: inherit; }
+  .legend-row { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--wt-muted); margin-top: 8px; }
+  .legend-row span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend-row i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
+  .file-btn input { display: none; }
   .note { font-size: 12px; color: var(--wt-muted); font-style: italic; white-space: normal; max-width: 260px; }
   .note-edit { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .note-edit input { flex: 1 1 220px; font: inherit; font-size: 14px; padding: 6px 10px; min-height: 36px; border-radius: 8px; border: 1px solid var(--wt-border); background: var(--wt-card); color: var(--primary-text-color); }
@@ -689,6 +818,7 @@ class WeightTrackerPanel extends HTMLElement {
     this._entryId = null;
     this._range = 90;
     this._mode = "abs";
+    this._forecast = true;
     this._hidden = new Set();
     this._listPerson = "all";
     this._listLimit = 15;
@@ -961,7 +1091,8 @@ class WeightTrackerPanel extends HTMLElement {
         ${this._renderPending()}
         ${canAdd ? `<div class="card">${this._renderAddForm()}</div>` : ""}
         ${this._entry.persons.length ? `<div class="card">${this._renderList()}</div>` : ""}
-        ${this._renderPetList()}`);
+        ${this._renderPetList()}
+        ${this._renderImportExport()}`);
     } else {
       const persons = this._entry.persons;
       this._content(`
@@ -1308,6 +1439,7 @@ class WeightTrackerPanel extends HTMLElement {
       </div>
       <div class="tiles">${this._myDataTiles(person, facts, defaults)}</div>
       ${this._renderBody(person, facts)}
+      ${this._renderCalendar(person)}
       <div class="two">
         <div class="card" data-preview="health-${esc(person.id)}">${this._myDataHealth(facts)}</div>
         <div class="card" data-preview="goal-${esc(person.id)}">${this._myDataGoal(person, facts)}</div>
@@ -1467,6 +1599,79 @@ class WeightTrackerPanel extends HTMLElement {
       </div>`;
   }
 
+  // Year heatmap: one square per day, color = trend change towards / away from the goal.
+  _renderCalendar(person) {
+    const t = this._t;
+    const all = this._assigned(person.id);
+    if (!all.length) return "";
+    const dayKey = (ts) => { const d = new Date(ts); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
+    const byDay = new Map();
+    for (const m of all) byDay.set(dayKey(m.ts), m);   // last measurement of the day
+    const sign = person.goal && all[0] && person.goal > all[0].weight ? 1 : -1;
+    const changes = new Map();
+    let prev = null;
+    for (const m of [...byDay.values()]) {
+      if (prev !== null && m.trend !== null && m.trend !== undefined) changes.set(dayKey(m.ts), m.trend - prev);  // raw change; colorFor applies the goal direction
+      prev = m.trend ?? prev;
+    }
+    const dark = this._dark;
+    const good = dark ? ["#2a5d9e", "#3987e5", "#86b6ef"] : ["#b7d3f6", "#5598e7", "#1c5cab"];
+    const bad = dark ? ["#8a3b3b", "#d04f4f", "#f19a9a"] : ["#f6c4c4", "#e66767", "#b83232"];
+    const flat = dark ? "#55544f" : "#c9c8c3";
+    const empty = dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)";
+    const colorFor = (change) => {
+      if (change === undefined) return flat;
+      const towards = sign < 0 ? change < 0 : change > 0;
+      const size = Math.abs(change);
+      if (size < 0.05) return flat;
+      const step = size < 0.15 ? 0 : size < 0.4 ? 1 : 2;
+      return (towards ? good : bad)[step];
+    };
+    // 53 weeks, starting on a Monday
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const start = new Date(today); start.setDate(start.getDate() - 52 * 7 - ((today.getDay() + 6) % 7));
+    const cell = 11, gap = 2, left = 22, top = 14;
+    let svg = "", day = new Date(start), col = 0, lastMonth = -1, days = 0;
+    while (day <= today) {
+      const row = (day.getDay() + 6) % 7;
+      if (row === 0 && day.getMonth() !== lastMonth && day.getDate() <= 7) {
+        svg += `<text x="${left + col * (cell + gap)}" y="9">${esc(this._date(day.getTime(), { month: "short" }))}</text>`;
+        lastMonth = day.getMonth();
+      }
+      const key = dayKey(day.getTime());
+      const m = byDay.get(key);
+      if (m) days++;
+      const fill = m ? colorFor(changes.get(key)) : empty;
+      const title = m ? `${this._date(day.getTime())}: ${this._kg(m.weight)}${changes.has(key) ? ` (${t.trend} ${this._kg(changes.get(key), { signed: true, digits: 2 })})` : ""}` : this._date(day.getTime());
+      svg += `<rect x="${left + col * (cell + gap)}" y="${top + row * (cell + gap)}" width="${cell}" height="${cell}" rx="2" fill="${fill}"><title>${esc(title)}</title></rect>`;
+      day.setDate(day.getDate() + 1);
+      if ((day.getDay() + 6) % 7 === 0) col++;
+    }
+    const labels = t.weekdaysShort.map((d, i) => d ? `<text x="0" y="${top + i * (cell + gap) + 9}">${esc(d)}</text>` : "").join("");
+    const width = left + (col + 1) * (cell + gap), height = top + 7 * (cell + gap);
+    // longest streak
+    let best = 0, run = 0, prevDay = null;
+    for (const key of [...byDay.keys()]) {
+      const [y, mo, d] = key.split("-").map(Number);
+      const dt = new Date(y, mo, d).getTime();
+      run = prevDay !== null && Math.round((dt - prevDay) / DAY) === 1 ? run + 1 : 1;
+      best = Math.max(best, run); prevDay = dt;
+    }
+    const L = t.calendarLegend;
+    return `
+      <div class="card">
+        <h2>📅 ${esc(t.calendar)}</h2>
+        <div class="hint" style="margin-top:4px">${esc(t.calendarStats(days, best))}</div>
+        <svg class="cal" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(t.calendarHint)}">${labels}${svg}</svg>
+        <div class="legend-row">
+          <span><i style="background:${good[2]}"></i>${esc(L.good)}</span>
+          <span><i style="background:${bad[2]}"></i>${esc(L.bad)}</span>
+          <span><i style="background:${flat}"></i>${esc(L.flat)}</span>
+          <span><i style="background:${empty};box-shadow:inset 0 0 0 1px var(--wt-grid)"></i>${esc(L.none)}</span>
+        </div>
+      </div>`;
+  }
+
   // Small line chart for [[ts, value], ...]
   _sparkline(points, color, unit = "") {
     if (points.length < 2) return "";
@@ -1544,6 +1749,7 @@ class WeightTrackerPanel extends HTMLElement {
         <div class="chips" role="group">
           <button class="chip" data-action="mode" data-mode="abs" aria-pressed="${this._mode === "abs"}">${esc(t.absolute)}</button>
           <button class="chip" data-action="mode" data-mode="rel" aria-pressed="${this._mode === "rel"}">${esc(t.relative)}</button>
+          ${this._mode === "abs" ? `<button class="chip" data-action="forecast" aria-pressed="${this._forecast}">📈 ${esc(t.forecast)}</button>` : ""}
         </div>
         <div class="chips" role="group">
           ${RANGES.map((r) => `<button class="chip" data-action="range" data-range="${r.key}" aria-pressed="${this._range === r.key}">${de ? r.de : r.en}</button>`).join("")}
@@ -1592,6 +1798,88 @@ class WeightTrackerPanel extends HTMLElement {
       </div>
       ${!shown.length ? `<div class="message">${esc(t.noData)}</div>` : ""}
       ${rows.length > shown.length ? `<button class="btn more" data-action="more">${esc(t.more)} (${rows.length - shown.length})</button>` : ""}`;
+  }
+
+  _renderImportExport() {
+    const t = this._t;
+    const targets = [
+      ...this._entry.persons.filter((p) => p.can_manage).map((p) => ({ value: `person:${p.id}`, label: p.name })),
+      ...(this._entry.pets || []).map((p) => ({ value: `pet:${p.id}`, label: `${this._speciesEmoji(p.species)} ${p.name}` })),
+    ];
+    const imp = this._import;
+    let preview = "";
+    if (imp) {
+      if (!imp.parsed.rows.length) {
+        preview = `<div class="form-error">${esc(t.importNothing)}</div>`;
+      } else {
+        const rows = imp.parsed.rows, c = imp.parsed.columns;
+        const cols = [c.date, c.time, c.weight, c.fat].filter(Boolean).map((x) => `„${x}“`).join(", ");
+        preview = `
+          <div style="margin-top:12px"><b>${esc(imp.name)}</b></div>
+          <div class="hint">${esc(t.importPreview(rows.length, this._date(rows[0].ts), this._date(rows[rows.length - 1].ts), imp.parsed.skipped))}</div>
+          <div class="hint">${esc(t.importColumns(cols))}</div>
+          <div class="actions" style="align-items:center">
+            <label class="muted small">${esc(t.importTarget)}
+              <select class="inline" id="import-target">${targets.map((o) => `<option value="${esc(o.value)}" ${o.value === imp.target ? "selected" : ""}>${esc(o.label)}</option>`).join("")}</select></label>
+            <button class="btn primary" data-action="import-run" ${imp.busy ? "disabled" : ""}>${esc(t.importButton)}</button>
+            <button class="btn" data-action="import-cancel">${esc(t.cancel)}</button>
+          </div>`;
+      }
+    }
+    return `
+      <div class="card">
+        <h2>⇅ ${esc(t.importExport)}</h2>
+        <div class="hint" style="margin-top:4px">${esc(t.importExportHint)}</div>
+        <div class="actions">
+          <button class="btn" data-action="export-csv">${esc(t.exportCsv)}</button>
+          ${targets.length ? `<label class="btn file-btn">${esc(t.importCsv)}<input type="file" accept=".csv,.txt,text/csv" data-action="import-file"></label>` : ""}
+        </div>
+        ${preview}
+      </div>`;
+  }
+
+  _exportCsv() {
+    const quote = (v) => (v === null || v === undefined ? "" : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
+    const iso = (ts) => { const d = new Date(ts); const p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; };
+    const lines = [["type", "name", "date", "weight_kg", "trend_kg", "body_fat_pct", "note"].join(",")];
+    for (const person of this._entry.persons) {
+      const fat = new Map(((person.body && person.body.history) || []).map(([ts, f]) => [ts, f]));
+      for (const m of this._assigned(person.id)) {
+        lines.push(["person", person.name, iso(m.ts), m.weight, m.trend ?? "", fat.get(m.ts) ?? "", m.note || ""].map(quote).join(","));
+      }
+    }
+    for (const m of this._entry.pet_measurements || []) {
+      const pet = this._pet(m.pet_id);
+      lines.push(["pet", pet ? pet.name : "", iso(m.ts), m.weight, m.trend ?? "", "", m.note || ""].map(quote).join(","));
+    }
+    const blob = new Blob([lines.join("\n") + "\n"], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `weight-tracker-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+
+  async _runImport() {
+    const imp = this._import;
+    const target = (this.shadowRoot.getElementById("import-target") || {}).value || imp.target;
+    const [kind, id] = target.split(":");
+    imp.busy = true;
+    this._render();
+    let added = 0, skipped = 0;
+    try {
+      for (let i = 0; i < imp.parsed.rows.length; i += 2000) {
+        const res = await this._ws({ type: "weight_tracker/import", [kind === "pet" ? "pet_id" : "person_id"]: id, rows: imp.parsed.rows.slice(i, i + 2000) });
+        added += res.added; skipped += res.skipped;
+      }
+      this._import = null;
+      this._toast(this._t.importDone(added, skipped));
+    } catch (err) {
+      imp.busy = false;
+      this._toast(`${this._t.error}: ${this._errorText(err)}`);
+    }
+    this._render();
   }
 
   _noteEditRow(kind, m) {
@@ -2324,6 +2612,20 @@ class WeightTrackerPanel extends HTMLElement {
     }
     // Start at the first measurement in range, with a small margin, at least one day.
     let t0 = Math.min(firstTs - (now - firstTs) * 0.02, now - DAY);
+    // Forecast: trend extended to the goal at the expected date (max. one year ahead).
+    let tEnd = now;
+    if (this._mode === "abs" && this._forecast) {
+      for (const s of series) {
+        const st = s.person.stats || {};
+        const last = s.pts[s.pts.length - 1];
+        const eta = st.goal_eta ? Date.parse(`${st.goal_eta}T12:00:00`) : null;
+        if (!s.person.goal || st.goal_reached || !eta || eta <= now || eta - now > 365 * DAY || last.trend === null || last.trend === undefined) continue;
+        s.forecast = { ts: last.ts, from: last.trend, eta, goal: s.person.goal };
+        tEnd = Math.max(tEnd, eta + (eta - t0) * 0.03);
+      }
+      // The future part may take at most as much room as the past shown.
+      tEnd = Math.min(tEnd, now + Math.max(now - t0, 14 * DAY));
+    }
 
     let lo = Infinity, hi = -Infinity;
     for (const s of series) {
@@ -2348,7 +2650,7 @@ class WeightTrackerPanel extends HTMLElement {
     const labelWidth = Math.min(110, Math.max(...series.map((s) => s.person.name.length)) * 7 + 16);
     const m = { l: 44, r: width < 500 ? 12 : labelWidth, t: 12, b: 28 };
     const iw = width - m.l - m.r, ih = height - m.t - m.b;
-    const x = (ts) => m.l + ((ts - t0) / (now - t0)) * iw;
+    const x = (ts) => m.l + ((ts - t0) / (tEnd - t0)) * iw;
     const y = (v) => m.t + (1 - (v - lo) / (hi - lo)) * ih;
 
     let svg = `<svg viewBox="0 0 ${width} ${height}" height="${height}" role="img" aria-label="${esc(t.history)}">`;
@@ -2360,12 +2662,17 @@ class WeightTrackerPanel extends HTMLElement {
       svg += `<text x="${m.l - 8}" y="${yy}" text-anchor="end" dominant-baseline="middle">${esc(this._kg(v, { unit: false, signed: this._mode === "rel" && v !== 0, digits: step < 1 ? 1 : 0 }))}</text>`;
     }
     // x axis
-    for (const tick of this._timeTicks(t0, now, Math.max(2, Math.floor(iw / 90)))) {
+    for (const tick of this._timeTicks(t0, tEnd, Math.max(2, Math.floor(iw / 90)))) {
       const xx = x(tick.t).toFixed(1);
       svg += `<line x1="${xx}" x2="${xx}" y1="${height - m.b}" y2="${height - m.b + 4}" stroke="var(--wt-grid)"/>`;
       svg += `<text x="${xx}" y="${height - 8}" text-anchor="middle">${esc(this._date(tick.t, tick.fmt))}</text>`;
     }
     svg += `<line x1="${m.l}" x2="${width - m.r}" y1="${height - m.b}" y2="${height - m.b}" stroke="var(--wt-grid)"/>`;
+    if (tEnd > now) {
+      const nx = x(now).toFixed(1);
+      svg += `<line x1="${nx}" x2="${nx}" y1="${m.t}" y2="${height - m.b}" stroke="var(--wt-muted)" stroke-width="1" stroke-dasharray="2 3" opacity="0.7"/>`;
+      svg += `<text x="${(x(now) + 4).toFixed(1)}" y="${m.t + 10}">${esc(t.today)}</text>`;
+    }
 
     this._chartPoints = [];
     const labels = [];
@@ -2389,6 +2696,16 @@ class WeightTrackerPanel extends HTMLElement {
         const d = trendPts.map((p, i) => `${i ? "L" : "M"}${x(p.ts).toFixed(1)},${y(p.trend - s.base).toFixed(1)}`).join("");
         svg += `<path d="${d}" fill="none" stroke="var(--wt-card)" stroke-width="3.5" stroke-opacity="0.7" stroke-linejoin="round" stroke-linecap="round"/>`;
         svg += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      }
+      if (s.forecast) {
+        const f = s.forecast;
+        // Cut at the edge if the goal date lies beyond the visible range.
+        const endTs = Math.min(f.eta, tEnd);
+        const endValue = f.from + (f.goal - f.from) * ((endTs - f.ts) / (f.eta - f.ts));
+        const fx = x(endTs), fy = y(endValue);
+        svg += `<path d="M${x(f.ts).toFixed(1)},${y(f.from).toFixed(1)}L${fx.toFixed(1)},${fy.toFixed(1)}" fill="none" stroke="${s.color}" stroke-width="2" stroke-dasharray="5 5" opacity="0.75"/>`;
+        if (endTs === f.eta) svg += `<circle cx="${fx.toFixed(1)}" cy="${fy.toFixed(1)}" r="5" fill="var(--wt-card)" stroke="${s.color}" stroke-width="2"/>`;
+        svg += `<text x="${fx.toFixed(1)}" y="${(fy - 10).toFixed(1)}" text-anchor="end">${endTs === f.eta ? "≈" : "→"} ${esc(t.goal)} ${esc(this._date(f.eta, { day: "numeric", month: "short", year: endTs === f.eta ? undefined : "numeric" }))}</text>`;
       }
       const last = trendPts[trendPts.length - 1] || s.pts[s.pts.length - 1];
       labels.push({ y: y((last.trend ?? last.weight) - s.base), x: x(last.ts), name: s.person.name, color: s.color });
@@ -2481,6 +2798,17 @@ class WeightTrackerPanel extends HTMLElement {
     const el = ev.composedPath().find((n) => n.dataset && n.dataset.action);
     if (!el || el.tagName === "SELECT") return;
     const { action } = el.dataset;
+    if (action === "export-csv") {
+      this._exportCsv();
+      return;
+    } else if (action === "import-run") {
+      this._runImport();
+      return;
+    } else if (action === "import-cancel") {
+      this._import = null;
+      this._render();
+      return;
+    }
     if (action === "note-edit") {
       this._editNote = { kind: el.dataset.kind, id: el.dataset.id };
       this._render();
@@ -2569,6 +2897,9 @@ class WeightTrackerPanel extends HTMLElement {
     } else if (action === "range") {
       this._range = Number(el.dataset.range);
       this._render();
+    } else if (action === "forecast") {
+      this._forecast = !this._forecast;
+      this._render();
     } else if (action === "mode") {
       this._mode = el.dataset.mode;
       this._render();
@@ -2590,6 +2921,16 @@ class WeightTrackerPanel extends HTMLElement {
   _onChange(ev) {
     const el = ev.composedPath()[0];
     if (!el.dataset) return;
+    if (el.dataset.action === "import-file" && el.files && el.files[0]) {
+      const file = el.files[0];
+      file.text().then((text) => {
+        const me = this._entry.persons.find((p) => p.is_me && p.can_manage) || this._entry.persons.find((p) => p.can_manage);
+        const firstPet = (this._entry.pets || [])[0];
+        this._import = { name: file.name, parsed: parseWeightCsv(text, this._lang), target: me ? `person:${me.id}` : firstPet ? `pet:${firstPet.id}` : "", busy: false };
+        this._render();
+      });
+      return;
+    }
     if (el.dataset.action === "pet-reassign") {
       this._ws({ type: "weight_tracker/pet_measurement", measurement_id: el.dataset.id, action: "assign", pet_id: el.value }).catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
     } else if (el.dataset.action === "reassign" && el.value) {
