@@ -5,6 +5,7 @@ Used by the panel's websocket API and by the config flow.
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
 import voluptuous as vol
@@ -14,6 +15,7 @@ from homeassistant.helpers import config_validation as cv
 
 from .const import (
     CONF_AMBIGUITY_MARGIN,
+    CONF_BIRTH_DATE,
     CONF_CREATE_SENSORS,
     CONF_DEBOUNCE,
     CONF_GOAL_WEIGHT,
@@ -53,6 +55,26 @@ def _optional_number(low: float, high: float) -> vol.Any:
     return vol.Any(None, _number(low, high))
 
 
+def _birth_date(value: Any) -> str | None:
+    """Accept an ISO date (or empty), return it as ISO string."""
+    if value in (None, ""):
+        return None
+    parsed = cv.date(value)
+    if not date(1900, 1, 1) <= parsed <= date.today():
+        raise vol.Invalid("birth date out of range")
+    return parsed.isoformat()
+
+
+# Fields a person may change about themselves (see ws update_profile).
+PROFILE_SCHEMA = vol.Schema(
+    {
+        vol.Optional(CONF_HEIGHT): _optional_number(50, 250),
+        vol.Optional(CONF_GOAL_WEIGHT): _optional_number(1, 300),
+        vol.Optional(CONF_BIRTH_DATE): _birth_date,
+    }
+)
+
+
 SETTINGS_SCHEMA = vol.Schema(
     {
         vol.Optional(CONF_NAME): vol.All(cv.string, vol.Strip, vol.Length(min=1, max=50)),
@@ -72,6 +94,7 @@ PERSON_SCHEMA = vol.Schema(
         vol.Required(CONF_START_WEIGHT): _number(1, 300),
         vol.Optional(CONF_HEIGHT): _optional_number(50, 250),
         vol.Optional(CONF_GOAL_WEIGHT): _optional_number(1, 300),
+        vol.Optional(CONF_BIRTH_DATE): _birth_date,
         vol.Optional(CONF_PERSON_ENTITY): vol.Any(
             None, "", cv.entity_domain(["person", "device_tracker"])
         ),
@@ -117,6 +140,8 @@ def build_person(
     for key in (CONF_HEIGHT, CONF_GOAL_WEIGHT):
         if data.get(key) not in (None, ""):
             person[key] = float(data[key])
+    if data.get(CONF_BIRTH_DATE):
+        person[CONF_BIRTH_DATE] = data[CONF_BIRTH_DATE]
     if data.get(CONF_PERSON_ENTITY):
         person[CONF_PERSON_ENTITY] = data[CONF_PERSON_ENTITY]
 
@@ -133,3 +158,14 @@ def build_person(
     )
     person[CONF_CREATE_SENSORS] = bool(data.get(CONF_CREATE_SENSORS, False))
     return person
+
+
+def apply_profile(person: dict[str, Any], profile: dict[str, Any]) -> None:
+    """Apply validated profile changes; None removes a value."""
+    for key in (CONF_HEIGHT, CONF_GOAL_WEIGHT, CONF_BIRTH_DATE):
+        if key not in profile:
+            continue
+        if profile[key] in (None, ""):
+            person.pop(key, None)
+        else:
+            person[key] = profile[key]

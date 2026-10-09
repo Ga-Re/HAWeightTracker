@@ -21,6 +21,7 @@ CONF_START_WEIGHT = "start_weight"
 CONF_HEIGHT = "height"
 CONF_GOAL_WEIGHT = "goal_weight"
 CONF_PERSON_ENTITY = "person_entity"
+CONF_BIRTH_DATE = "birth_date"
 # Access control
 CONF_USER_ID = "user_id"
 CONF_VIEWERS = "viewers"

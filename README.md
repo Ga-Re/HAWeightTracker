@@ -37,7 +37,9 @@ Das Panel hat drei Tabs.
 
 ### Übersicht
 - **Offene Messungen** stehen ganz oben. Ein Klick auf den Namen ordnet die Messung zu.
-- **Eine Karte pro Person** zeigt aktuelles Gewicht, Trend, Veränderung über 7 und 30 Tage und insgesamt, Tempo pro Woche und BMI. Mit Zielgewicht kommen ein Fortschrittsbalken und das voraussichtliche Datum dazu.
+- **Eine Karte pro Person** zeigt aktuelles Gewicht, Trend, Veränderung über 7 und 30 Tage und insgesamt, Tempo pro Woche, BMI und Alter. Mit Zielgewicht kommen ein Fortschrittsbalken und das voraussichtliche Datum dazu.
+  - Sind für die Person Sensoren angelegt, öffnet ein Klick auf einen Wert die gewohnte Entitätsansicht von Home Assistant mit Verlauf.
+  - Über den Stift ✎ kann jede Person **ihre eigenen Daten** ändern: Größe, Zielgewicht und Geburtsdatum. Admins können das bei allen Personen.
 - **Verlauf als Graph:** Jede Messung ist ein Punkt, dazu kommt die geglättete Trendlinie und das Zielgewicht als gestrichelte Linie. Zeiträume: 30 Tage, 90 Tage, 1 Jahr, alles. Mit *Veränderung* starten alle Personen bei 0, das ist praktisch für den Vergleich. Personen lassen sich ein- und ausblenden, beim Überfahren zeigt ein Tooltip die Details.
 - **Monatsdurchschnitt** pro Person mit Veränderung zum Vormonat.
 
@@ -61,7 +63,7 @@ Jede Person sieht standardmäßig **nur ihre eigenen Daten**.
 | Rolle | sieht | darf |
 |---|---|---|
 | **Admin** | alle Personen und alle Messungen | alles: zuordnen, verwerfen, löschen, eintragen, Freigaben ändern |
-| **Die Person selbst** (verknüpfter HA-Benutzer) | eigene Daten und offene Messungen, die zum eigenen Gewicht passen | offene Messungen übernehmen („Das war ich“), eigene Messungen eintragen und löschen, „Nicht ich“ (zurück zu offen) |
+| **Die Person selbst** (verknüpfter HA-Benutzer) | eigene Daten und offene Messungen, die zum eigenen Gewicht passen | offene Messungen übernehmen („Das war ich“), eigene Messungen eintragen und löschen, „Nicht ich“ (zurück zu offen), Größe, Zielgewicht und Geburtsdatum ändern |
 | **Freigegebener Benutzer** | die freigegebene Person | nur ansehen |
 | **Alle anderen** | nichts | nichts |
 

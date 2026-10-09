@@ -26,18 +26,22 @@ from homeassistant.components import (
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .access import async_assignable_users, can_manage, can_view, is_unrestricted
 from .settings import (
     PERSON_SCHEMA,
+    PROFILE_SCHEMA,
     SETTING_DEFAULTS,
+    apply_profile,
     SETTINGS_SCHEMA,
     build_person,
     person_name_error,
     settings_error,
 )
 from .const import (
+    CONF_BIRTH_DATE,
     CONF_CREATE_SENSORS,
     CONF_GOAL_WEIGHT,
     CONF_HEIGHT,
@@ -81,6 +85,7 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_update_settings)
     websocket_api.async_register_command(hass, ws_save_person)
     websocket_api.async_register_command(hass, ws_delete_person)
+    websocket_api.async_register_command(hass, ws_update_profile)
     file_hash = await hass.async_add_executor_job(_panel_file_hash)
     hass.data[DATA_PANEL_HASH] = file_hash
     if file_hash is None:
@@ -134,6 +139,20 @@ def async_remove_panel(hass: HomeAssistant) -> None:
         frontend.async_remove_panel(hass, PANEL_URL_PATH)
 
 
+def _person_sensor_ids(hass: HomeAssistant, entry_id: str) -> dict[str, dict[str, str]]:
+    """Map person id -> sensor key -> current entity id (from the registry)."""
+    result: dict[str, dict[str, str]] = {}
+    prefix = f"{entry_id}_"
+    for reg_entry in er.async_entries_for_config_entry(er.async_get(hass), entry_id):
+        if reg_entry.domain != "sensor" or reg_entry.disabled_by:
+            continue
+        rest = reg_entry.unique_id.removeprefix(prefix)
+        person_id, _, key = rest.partition("_")
+        if key and hass.states.get(reg_entry.entity_id) is not None:
+            result.setdefault(person_id, {})[key] = reg_entry.entity_id
+    return result
+
+
 def _jsonable(value: Any) -> Any:
     if isinstance(value, (datetime, date)):
         return value.isoformat()
@@ -155,6 +174,7 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
     entries = []
     for entry in active_entries(hass):
         manager = entry.runtime_data
+        sensor_ids = _person_sensor_ids(hass, entry.entry_id)
         persons = []
         visible: set[str] = set()
         for index, (person_id, person) in enumerate(manager.persons.items()):
@@ -172,6 +192,9 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                 "start_weight": person.get(CONF_START_WEIGHT),
                 "height": person.get(CONF_HEIGHT),
                 "goal": person.get(CONF_GOAL_WEIGHT),
+                "birth_date": person.get(CONF_BIRTH_DATE),
+                # entity ids of the person's sensors (for HA's more-info dialog)
+                "entities": sensor_ids.get(person_id, {}),
                 "stats": {k: _jsonable(v) for k, v in asdict(stats).items()} if stats else {},
             }
             if admin:
@@ -409,3 +432,36 @@ def ws_delete_person(
     options[CONF_PERSONS] = remaining
     hass.config_entries.async_update_entry(entry, options=options)
     connection.send_result(msg["id"], {"deleted_measurements": deleted})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/update_profile",
+        vol.Required("entry_id"): str,
+        vol.Required("person_id"): str,
+        vol.Required("profile"): dict,
+    }
+)
+@callback
+def ws_update_profile(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Let a person change their own height, goal and birth date (admins: anyone)."""
+    entry = hass.config_entries.async_get_entry(msg["entry_id"])
+    options = deepcopy(dict(entry.options)) if entry and entry.domain == DOMAIN else {}
+    person = next(
+        (p for p in options.get(CONF_PERSONS, []) if p[CONF_PERSON_ID] == msg["person_id"]),
+        None,
+    )
+    # Unknown and foreign persons give the same answer (no information leak).
+    if entry is None or person is None or not can_manage(connection.user, person):
+        connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Person not found")
+        return
+    try:
+        profile = PROFILE_SCHEMA(msg["profile"])
+    except vol.Invalid as err:
+        connection.send_error(msg["id"], websocket_api.ERR_INVALID_FORMAT, str(err))
+        return
+    apply_profile(person, profile)
+    hass.config_entries.async_update_entry(entry, options=options)
+    connection.send_result(msg["id"])
