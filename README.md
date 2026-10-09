@@ -17,7 +17,7 @@ Auf dem Home Assistant muss danach genau diese Struktur liegen. Wichtig ist der 
 ```
 /config/custom_components/weight_tracker/
 ├── __init__.py, access.py, analytics.py, button.py, config_flow.py, const.py,
-│   body.py, detector.py, entity.py, growth.py, manager.py, notifications.py,
+│   body.py, clothes.py, detector.py, entity.py, growth.py, manager.py, notifications.py,
 │   panel.py, pets.py,
 │   sensor.py, services.py, settings.py
 ├── manifest.json, icons.json, services.yaml
@@ -88,6 +88,15 @@ chart_days: 90      # optional, 0 = ohne Verlauf
   - Ohne diese Sensoren erscheint nirgends etwas zur Körperzusammensetzung.
   - Unter *Einstellungen → Sensoren* lassen sich dafür zusätzlich die Sensoren Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz anlegen.
 - **Notizen zu Messungen** („Urlaub“, „krank“, „neues Training“): beim Eintragen oder über 📝 in der Messliste. Im Graph sind Messungen mit Notiz umrandet, der Tooltip zeigt die Notiz.
+
+## Mit oder ohne Kleidung
+
+Eine Waage kann Kleidung nicht erkennen. Darum markiert jede Person selbst, wenn sie sich mit Kleidung gewogen hat, und die Integration lernt daraus:
+- **Einschalten** unter *Meine Daten → Kachel „Kleidung“* (Stift ✎), dort lässt sich auch der Startwert setzen (Standard 0,8 kg).
+- **Markieren** per 👕 in der Messliste, mit dem Häkchen „Mit Kleidung“ beim Eintragen oder mit dem Knopf **👕 Mit Kleidung** in der Nachricht nach dem Wiegen (Home-Assistant-App).
+- **Abziehen:** Markierte Messungen zählen in Trend, Statistik, Prognose und Sensoren ohne Kleidung. Der gemessene Wert bleibt sichtbar (👕 in der Liste und im Tooltip).
+- **Lernen:** Jede markierte Messung wird mit den Messungen ohne Kleidung aus den Stunden davor und danach verglichen (bis 36 Stunden Abstand). Aus diesen Unterschieden ergibt sich dein Kleidungsgewicht (Median der letzten 12). Bei wenigen Markierungen zählt der Startwert noch mit, sodass einzelne Ausreißer den Wert kaum verschieben.
+- Haustier-Messungen sind nicht betroffen, weil man bei beiden Wiegungen gleich angezogen ist.
 
 ## Benachrichtigungen
 

@@ -121,6 +121,10 @@
         "note": {
           "name": "Notiz",
           "description": "Optionale Notiz zur Messung."
+        },
+        "clothes": {
+          "name": "Mit Kleidung",
+          "description": "Mit Kleidung gewogen: das gelernte Kleidungsgewicht wird abgezogen."
         }
       }
     },

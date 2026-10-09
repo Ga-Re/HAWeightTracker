@@ -48,6 +48,8 @@ from .settings import (
 from .const import (
     CONF_BIRTH_MONTH,
     CONF_BODY_FAT_ENTITY,
+    CONF_CLOTHES,
+    CONF_CLOTHES_KG,
     CONF_SENSORS,
     CONF_GOAL_WEIGHT,
     CONF_HEIGHT,
@@ -121,6 +123,7 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_import)
     websocket_api.async_register_command(hass, ws_pet_event)
     websocket_api.async_register_command(hass, ws_set_sensors)
+    websocket_api.async_register_command(hass, ws_set_clothes)
     file_hash = await hass.async_add_executor_job(_panel_file_hash)
     hass.data[DATA_PANEL_HASH] = file_hash
     if file_hash is None:
@@ -270,6 +273,13 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                 "stats": {k: _jsonable(v) for k, v in asdict(stats).items()} if stats else {},
             }
             if data["can_manage"]:
+                learned, samples = manager.clothes_estimate(person_id)
+                data["clothes"] = {
+                    "enabled": bool(person.get(CONF_CLOTHES, False)),
+                    "start": person.get(CONF_CLOTHES_KG, 0.8),
+                    "learned": learned,
+                    "samples": samples,
+                }
                 data["notify"] = {
                     "service": person.get(CONF_NOTIFY_SERVICE),
                     "weigh": person.get(CONF_NOTIFY_WEIGH, False),
@@ -319,6 +329,7 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                     "method": m.method,
                     "trend": manager.trend_by_id.get(m.id),
                     "note": m.note,
+                    "clothes_kg": m.clothes_kg,
                     **extra,
                 }
             )
@@ -1017,4 +1028,32 @@ def ws_set_sensors(
         return
     subject[CONF_SENSORS] = [k for k in valid_sensor_keys(msg["kind"]) if k in set(msg["sensors"]) & allowed]
     hass.config_entries.async_update_entry(entry, options=options)
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/set_clothes",
+        vol.Required("entry_id"): str,
+        vol.Required("measurement_id"): str,
+        vol.Required("clothes"): bool,
+    }
+)
+@callback
+def ws_set_clothes(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Mark a measurement as weighed with clothes (the person itself or an admin)."""
+    if (manager := _entry_manager(hass, connection, msg)) is None:
+        return
+    measurement = manager.get_measurement(msg["measurement_id"])
+    person = (
+        manager.persons.get(measurement.person_id)
+        if measurement and measurement.status == STATUS_ASSIGNED and measurement.person_id
+        else None
+    )
+    if person is None or not can_manage(connection.user, person):
+        connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Measurement not found")
+        return
+    manager.async_set_clothes(measurement, msg["clothes"])
     connection.send_result(msg["id"])

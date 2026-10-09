@@ -21,6 +21,8 @@ from .const import (
     CONF_DEBOUNCE,
     CONF_GOAL_WEIGHT,
     CONF_BODY_FAT_ENTITY,
+    CONF_CLOTHES,
+    CONF_CLOTHES_KG,
     CONF_HEIGHT,
     CONF_IMPEDANCE_ENTITY,
     CONF_KIND,
@@ -101,6 +103,8 @@ PROFILE_SCHEMA = vol.Schema(
         vol.Optional(CONF_NOTIFY_PET_WARNINGS): cv.boolean,
         vol.Optional(CONF_REMINDER_DAYS): vol.All(vol.Coerce(int), vol.Range(min=0, max=60)),
         vol.Optional(CONF_SEX): vol.Any(None, "", vol.In(SEXES)),
+        vol.Optional(CONF_CLOTHES): cv.boolean,
+        vol.Optional(CONF_CLOTHES_KG): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=4))),
     }
 )
 
@@ -112,6 +116,8 @@ PROFILE_KEYS = (
     CONF_NOTIFY_PET_WARNINGS,
     CONF_REMINDER_DAYS,
     CONF_SEX,
+    CONF_CLOTHES,
+    CONF_CLOTHES_KG,
 )
 
 
@@ -215,7 +221,7 @@ def keep_personal_settings(new: dict[str, Any], old: dict[str, Any]) -> dict[str
     """Settings a person made for themselves (and the sensor choice) survive an admin edit."""
     if CONF_SENSORS in old:
         new[CONF_SENSORS] = old[CONF_SENSORS]
-    for key in (CONF_NOTIFY_WEIGH, CONF_NOTIFY_PET_WARNINGS, CONF_REMINDER_DAYS):
+    for key in (CONF_NOTIFY_WEIGH, CONF_NOTIFY_PET_WARNINGS, CONF_REMINDER_DAYS, CONF_CLOTHES, CONF_CLOTHES_KG):
         if key in old and key not in new:
             new[key] = old[key]
     return new

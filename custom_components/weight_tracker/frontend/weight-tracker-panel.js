@@ -248,6 +248,17 @@ const TEXT = {
     notifications: "Benachrichtigungen",
     notificationsHint: "Hier entscheidest du, welche Nachrichten du bekommst.",
     notifyTarget: (device) => `Nachrichten gehen an: ${device}`,
+    clothes: "Kleidung",
+    clothesOn: "Kleidung berücksichtigen",
+    clothesOnHint: "Markiere Messungen „mit Kleidung“ – das Kleidungsgewicht wird abgezogen und mit jeder Markierung genauer.",
+    clothesStart: "Startwert Kleidungsgewicht",
+    clothesStartHint: "Wird verwendet, bis genug markierte Messungen da sind (typisch 0,5–1,5 kg).",
+    clothesOff: "aus",
+    clothesLearned: (n) => n ? `gelernt aus ${n} ${n === 1 ? "Messung" : "Messungen"}` : "Startwert – lernt mit jeder Markierung",
+    withClothes: "Mit Kleidung",
+    markClothes: "Als „mit Kleidung“ markieren",
+    unmarkClothes: "Markierung „mit Kleidung“ entfernen",
+    measuredWithClothes: (kg) => `gemessen ${kg} mit Kleidung`,
     notifyNoDevice: "Für dich ist noch kein Gerät eingerichtet – ein Admin kann das unter Einstellungen → Personen festlegen.",
     notifyDeviceAdminHint: "Wohin die Nachrichten dieser Person gehen. Welche Nachrichten sie bekommt, entscheidet sie selbst unter „Meine Daten“.",
     sensorSettings: "Sensoren in Home Assistant",
@@ -519,6 +530,17 @@ const TEXT = {
     notifications: "Notifications",
     notificationsHint: "Here you decide which messages you get.",
     notifyTarget: (device) => `Messages go to: ${device}`,
+    clothes: "Clothes",
+    clothesOn: "Account for clothes",
+    clothesOnHint: "Mark measurements “with clothes” – the clothes weight is deducted and gets more precise with every mark.",
+    clothesStart: "Start value clothes weight",
+    clothesStartHint: "Used until there are enough marked measurements (typically 0.5–1.5 kg).",
+    clothesOff: "off",
+    clothesLearned: (n) => n ? `learned from ${n} ${n === 1 ? "measurement" : "measurements"}` : "start value – learns with every mark",
+    withClothes: "With clothes",
+    markClothes: "Mark “with clothes”",
+    unmarkClothes: "Remove “with clothes”",
+    measuredWithClothes: (kg) => `measured ${kg} with clothes`,
     notifyNoDevice: "No device is set up for you yet – an admin can choose one under Settings → Persons.",
     notifyDeviceAdminHint: "Where this person's messages go. Which messages they get, they decide themselves under “My details”.",
     sensorSettings: "Sensors in Home Assistant",
@@ -755,6 +777,8 @@ const STYLE = `
   .legend-row span { display: inline-flex; align-items: center; gap: 5px; }
   .legend-row i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
   .file-btn input { display: none; }
+  .icon-btn.on { background: rgba(127,127,127,.18); }
+  .icon-btn:not(.on)[data-action="clothes-toggle"] { opacity: 0.45; }
   .note { font-size: 12px; color: var(--wt-muted); font-style: italic; white-space: normal; max-width: 260px; }
   .note-edit { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .note-edit input { flex: 1 1 220px; font: inherit; font-size: 14px; padding: 6px 10px; min-height: 36px; border-radius: 8px; border: 1px solid var(--wt-border); background: var(--wt-card); color: var(--primary-text-color); }
@@ -1173,6 +1197,11 @@ class WeightTrackerPanel extends HTMLElement {
     if (abs < 86400) return rtf.format(Math.round(diff / 3600), "hour");
     if (abs < 86400 * 45) return rtf.format(Math.round(diff / 86400), "day");
     return rtf.format(Math.round(diff / (86400 * 30.4)), "month");
+  }
+
+  // Weight without clothes (what statistics use); the raw reading stays in m.weight.
+  _w(m) {
+    return m.clothes_kg ? m.weight - m.clothes_kg : m.weight;
   }
 
   _assigned(personId) {
@@ -1656,13 +1685,19 @@ class WeightTrackerPanel extends HTMLElement {
       goal: this._def("number", "goal_weight", t.goalWeight, { min: 1, max: 300, step: 0.1, unit: "kg", helper: t.goalWeightHint, onChange: refresh }),
       sex: this._def("select", "sex", t.sex, { options: Object.entries(t.sexNames).map(([value, label]) => ({ value, label })), emptyLabel: t.sexNone, helper: t.sexHint, onChange: refresh }),
       waist: this._def("number", "waist_new", t.waistNew, { min: 30, max: 250, step: 0.5, unit: "cm", helper: t.waistHint }),
+      clothes: [
+        this._def("boolean", "clothes", t.clothesOn, { helper: t.clothesOnHint, wide: true }),
+        this._def("number", "clothes_kg", t.clothesStart, { min: 0, max: 4, step: 0.1, unit: "kg", helper: t.clothesStartHint, wide: true }),
+      ],
     };
   }
 
   _renderMyData(person) {
     const t = this._t;
     const formId = `profile-form-${person.id}`;
-    const defaults = { height: person.height ?? null, goal_weight: person.goal ?? null, birth_month: person.birth_month || null, sex: person.sex || "", waist_new: null };
+    const c = person.clothes || {};
+    const defaults = { height: person.height ?? null, goal_weight: person.goal ?? null, birth_month: person.birth_month || null, sex: person.sex || "", waist_new: null,
+      clothes: Boolean(c.enabled), clothes_kg: c.start ?? 0.8 };
     if (!this._dirty.has(formId) || !this._models[formId]) this._models[formId] = { ...defaults };
     const facts = this._profileFacts(person, this._models[formId]);
     return `
@@ -1741,6 +1776,8 @@ class WeightTrackerPanel extends HTMLElement {
       bmi: content(t.bmi, f.bmi ? this._kg(f.bmi, { unit: false }) : "–", f.bmi && (f.age === null || f.age >= 18) ? esc(t.bmiCat(f.bmi)) : ""),
       goal: content(t.goal, f.goal ? `${this._kg(f.goal, { unit: false })} <small>${this._unitLabel}</small>` : "–", remaining !== null ? esc(Math.abs(remaining) <= 0.2 ? t.goalReached : t.goalLeft(this._kg(Math.abs(remaining)))) : ""),
       sex: content(t.sex, f.sex ? esc(t.sexNames[f.sex]) : "–", f.sex ? "" : esc(t.sexHint)),
+      clothes: person.clothes ? content(t.clothes, person.clothes.enabled ? `${this._kg(person.clothes.learned, { unit: false })} <small>${this._unitLabel}</small>` : esc(t.clothesOff),
+        person.clothes.enabled ? esc(t.clothesLearned(person.clothes.samples)) : esc(t.clothesOnHint)) : "",
       waist: content(t.waist, f.waist ? `${this._kg(f.waist, { unit: false, digits: f.waist % 1 ? 1 : 0 })} <small>cm</small>` : "–",
         f.whtr ? `${esc(t.whtr)} ${this._kg(f.whtr, { unit: false, digits: 2 })} · ${esc(t.whtrClass[f.whtrClass])}` : ""),
     };
@@ -1751,15 +1788,15 @@ class WeightTrackerPanel extends HTMLElement {
     const formId = `profile-form-${person.id}`;
     const defs = this._tileDefs(person);
     const contents = this._tileContents(person, facts);
-    const labels = { age: t.age, height: t.height, bmi: t.bmi, goal: t.goal, sex: t.sex, waist: t.waist };
-    return ["age", "height", "bmi", "goal", "sex", "waist"].map((key) => {
+    const labels = { age: t.age, height: t.height, bmi: t.bmi, goal: t.goal, sex: t.sex, waist: t.waist, clothes: t.clothes };
+    return ["age", "height", "bmi", "goal", "sex", "waist", ...(person.clothes ? ["clothes"] : [])].map((key) => {
       const editing = this._editTile && this._editTile.key === key && this._editTile.person === person.id;
       if (editing) {
         return `
           <div class="tile editing">
             <div class="label">${esc(labels[key])}</div>
             <div class="form" id="${esc(formId)}">
-              ${this._formFields(formId, [defs[key]], defaults)}
+              ${this._formFields(formId, [].concat(defs[key]), defaults)}
               ${key === "waist" ? this._waistList(person) : ""}
               <div class="actions">
                 <button class="btn primary" type="button" data-action="save-form" data-form="${esc(formId)}">${esc(t.save)}</button>
@@ -1857,7 +1894,7 @@ class WeightTrackerPanel extends HTMLElement {
       const m = byDay.get(key);
       if (m) days++;
       const fill = m ? colorFor(changes.get(key)) : empty;
-      const title = m ? `${this._date(day.getTime())}: ${this._kg(m.weight)}${changes.has(key) ? ` (${t.trend} ${this._kg(changes.get(key), { signed: true, digits: 2 })})` : ""}` : this._date(day.getTime());
+      const title = m ? `${this._date(day.getTime())}: ${this._kg(this._w(m))}${changes.has(key) ? ` (${t.trend} ${this._kg(changes.get(key), { signed: true, digits: 2 })})` : ""}` : this._date(day.getTime());
       svg += `<rect x="${left + col * (cell + gap)}" y="${top + row * (cell + gap)}" width="${cell}" height="${cell}" rx="2" fill="${fill}"><title>${esc(title)}</title></rect>`;
       day.setDate(day.getDate() + 1);
       if ((day.getDay() + 6) % 7 === 0) col++;
@@ -1984,8 +2021,8 @@ class WeightTrackerPanel extends HTMLElement {
     // change vs. the previous measurement of the same person
     for (const m of this._entry.measurements) {
       if (m.status !== "assigned") continue;
-      if (previous[m.person_id] !== undefined) m._delta = m.weight - previous[m.person_id];
-      previous[m.person_id] = m.weight;
+      if (previous[m.person_id] !== undefined) m._delta = this._w(m) - previous[m.person_id];
+      previous[m.person_id] = this._w(m);
     }
     return `
       <div class="chart-head">
@@ -2002,11 +2039,11 @@ class WeightTrackerPanel extends HTMLElement {
             ${shown.map((m) => `
               <tr>
                 <td class="num">${esc(this._dateTime(m.ts))}${m.note ? `<div class="note">📝 ${esc(m.note)}</div>` : ""}</td>
-                <td class="r num"><b>${this._kg(m.weight, { unit: false })}</b></td>
+                <td class="r num"><b>${this._kg(this._w(m), { unit: false })}</b>${m.clothes_kg ? `<div class="note" title="${esc(t.measuredWithClothes(this._kg(m.weight)))}">👕 ${this._kg(m.weight, { unit: false })}</div>` : ""}</td>
                 <td class="r num muted">${m.status === "assigned" && m._delta !== undefined ? this._kg(m._delta, { signed: true, unit: false }) : ""}</td>
                 <td>${this._renderPersonCell(m)}</td>
                 <td><span class="tag ${m.status === "pending" ? "warn" : ""}">${esc(m.status === "pending" ? t.open : m.status === "discarded" ? t.discarded : t.methods[m.method] || m.method)}</span></td>
-                <td class="r">${this._canDelete(m) && m.status === "assigned" ? `<button class="icon-btn" data-action="note-edit" data-kind="person" data-id="${esc(m.id)}" title="${esc(t.editNote)}" aria-label="${esc(t.editNote)}">📝</button>` : ""}${this._canDelete(m) ? `<button class="icon-btn" data-action="delete" data-id="${esc(m.id)}" title="${esc(t.deleteLabel)}" aria-label="${esc(t.deleteLabel)}">✕</button>` : ""}</td>
+                <td class="r">${this._canDelete(m) && m.status === "assigned" && ((this._personOf(m) || {}).clothes || {}).enabled ? `<button class="icon-btn ${m.clothes_kg ? "on" : ""}" data-action="clothes-toggle" data-id="${esc(m.id)}" data-on="${m.clothes_kg ? "1" : ""}" title="${esc(m.clothes_kg ? t.unmarkClothes : t.markClothes)}" aria-label="${esc(m.clothes_kg ? t.unmarkClothes : t.markClothes)}" aria-pressed="${Boolean(m.clothes_kg)}">👕</button>` : ""}${this._canDelete(m) && m.status === "assigned" ? `<button class="icon-btn" data-action="note-edit" data-kind="person" data-id="${esc(m.id)}" title="${esc(t.editNote)}" aria-label="${esc(t.editNote)}">📝</button>` : ""}${this._canDelete(m) ? `<button class="icon-btn" data-action="delete" data-id="${esc(m.id)}" title="${esc(t.deleteLabel)}" aria-label="${esc(t.deleteLabel)}">✕</button>` : ""}</td>
               </tr>${this._noteEditRow("person", m)}`).join("")}
           </tbody>
         </table>
@@ -2056,11 +2093,11 @@ class WeightTrackerPanel extends HTMLElement {
   _exportCsv() {
     const quote = (v) => (v === null || v === undefined ? "" : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
     const iso = (ts) => { const d = new Date(ts); const p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; };
-    const lines = [["type", "name", "date", "weight_kg", "trend_kg", "body_fat_pct", "note"].join(",")];
+    const lines = [["type", "name", "date", "weight_kg", "trend_kg", "body_fat_pct", "note", "clothes_kg"].join(",")];
     for (const person of this._entry.persons) {
       const fat = new Map(((person.body && person.body.history) || []).map(([ts, f]) => [ts, f]));
       for (const m of this._assigned(person.id)) {
-        lines.push(["person", person.name, iso(m.ts), m.weight, m.trend ?? "", fat.get(m.ts) ?? "", m.note || ""].map(quote).join(","));
+        lines.push(["person", person.name, iso(m.ts), Math.round(this._w(m) * 100) / 100, m.trend ?? "", fat.get(m.ts) ?? "", m.note || "", m.clothes_kg ?? ""].map(quote).join(","));
       }
     }
     for (const m of this._entry.pet_measurements || []) {
@@ -2784,7 +2821,7 @@ class WeightTrackerPanel extends HTMLElement {
         // Only the value of the tile being edited.
         const profile = {};
         for (const def of this._forms[formId] || []) {
-          profile[def.name] = def.kind === "number" ? num(m[def.name]) : m[def.name] || null;
+          profile[def.name] = def.kind === "number" ? num(m[def.name]) : def.kind === "boolean" ? Boolean(m[def.name]) : m[def.name] || null;
         }
         await this._ws({
           type: "weight_tracker/update_profile",
@@ -2800,6 +2837,7 @@ class WeightTrackerPanel extends HTMLElement {
           weight: Number(m.weight),
           ...(m.ts ? { timestamp: m.ts } : {}),
           ...(m.note && String(m.note).trim() ? { note: String(m.note).trim() } : {}),
+          ...(m.clothes ? { clothes: true } : {}),
         });
       }
       this._clearForm(formId);
@@ -2861,6 +2899,7 @@ class WeightTrackerPanel extends HTMLElement {
       this._def("number", "weight", t.weight, { required: true, min: 1, max: 500, step: 0.1, unit: "kg" }),
       this._def("datetime", "ts", t.date, { required: true }),
       this._def("text", "note", t.note, { helper: t.notePlaceholder }),
+      ...(own.some((p) => p.clothes && p.clothes.enabled) ? [this._def("boolean", "clothes", t.withClothes)] : []),
     ];
     const defaults = { person: (own.find((p) => p.is_me) || own[0] || pets[0] || {}).id, weight: null, ts: this._nowString() };
     return `
@@ -2881,7 +2920,7 @@ class WeightTrackerPanel extends HTMLElement {
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       if (!months.has(key)) months.set(key, {});
       const bucket = months.get(key);
-      (bucket[m.person_id] = bucket[m.person_id] || []).push(m.weight);
+      (bucket[m.person_id] = bucket[m.person_id] || []).push(this._w(m));
     }
     if (!months.size) return "";
     const keys = [...months.keys()].sort().reverse().slice(0, 12);
@@ -2957,7 +2996,7 @@ class WeightTrackerPanel extends HTMLElement {
     let lo = Infinity, hi = -Infinity;
     for (const s of series) {
       for (const m of s.pts) {
-        for (const v of [m.weight, m.trend]) {
+        for (const v of [this._w(m), m.trend]) {
           if (v === null || v === undefined) continue;
           lo = Math.min(lo, (v - s.base) * uf);
           hi = Math.max(hi, (v - s.base) * uf);
@@ -3012,7 +3051,7 @@ class WeightTrackerPanel extends HTMLElement {
       }
       // measurements (dots)
       for (const p of s.pts) {
-        const px = x(p.ts), py = y((p.weight - s.base) * uf);
+        const px = x(p.ts), py = y((this._w(p) - s.base) * uf);
         svg += `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="4" fill="${s.color}" fill-opacity="0.35" stroke="${s.color}" stroke-opacity="0.6" stroke-width="1"/>`;
         if (p.note) svg += `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="7.5" fill="none" stroke="var(--primary-text-color)" stroke-width="1.5"/>`;
         this._chartPoints.push({ px, py, m: p, s });
@@ -3102,11 +3141,12 @@ class WeightTrackerPanel extends HTMLElement {
       <line x1="${best.px.toFixed(1)}" x2="${best.px.toFixed(1)}" y1="${m.t}" y2="${height - m.b}" stroke="var(--wt-muted)" stroke-width="1" stroke-dasharray="3 3"/>
       <circle cx="${best.px.toFixed(1)}" cy="${best.py.toFixed(1)}" r="6" fill="${best.s.color}" stroke="var(--wt-card)" stroke-width="2"/>`;
     const tip = this.shadowRoot.getElementById("tooltip");
-    const rel = this._mode === "rel" ? `<div class="muted small">${esc(t.relative)}: ${this._kg(best.m.weight - best.s.base, { signed: true })}</div>` : "";
+    const rel = this._mode === "rel" ? `<div class="muted small">${esc(t.relative)}: ${this._kg(this._w(best.m) - best.s.base, { signed: true })}</div>` : "";
     tip.innerHTML = `
       <div class="t-head"><span class="dot" style="background:${best.s.color}"></span>${esc(best.s.person.name)}</div>
       <div class="muted small">${esc(this._dateTime(best.m.ts))}</div>
-      <div>${esc(t.measurement)}: <b class="num">${this._kg(best.m.weight)}</b></div>
+      <div>${esc(t.measurement)}: <b class="num">${this._kg(this._w(best.m))}</b></div>
+      ${best.m.clothes_kg ? `<div class="muted small">👕 ${esc(t.measuredWithClothes(this._kg(best.m.weight)))}</div>` : ""}
       ${best.m.trend !== null && best.m.trend !== undefined ? `<div>${esc(t.trend)}: <span class="num">${this._kg(best.m.trend)}</span></div>` : ""}
       ${best.m.note ? `<div class="note" style="max-width:220px">📝 ${esc(best.m.note)}</div>` : ""}
       ${rel}`;
@@ -3172,6 +3212,11 @@ class WeightTrackerPanel extends HTMLElement {
     const el = ev.composedPath().find((n) => n.dataset && n.dataset.action);
     if (!el || el.tagName === "SELECT") return;
     const { action } = el.dataset;
+    if (action === "clothes-toggle") {
+      this._ws({ type: "weight_tracker/set_clothes", measurement_id: el.dataset.id, clothes: !el.dataset.on })
+        .catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
+      return;
+    }
     if (action === "sensor-all" || action === "sensor-none") {
       this._saveSensors(el.dataset.kind, el.dataset.id, action === "sensor-all" ? this._sensorKeys(el.dataset.kind) : []);
       return;

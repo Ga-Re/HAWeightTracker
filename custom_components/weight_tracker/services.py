@@ -53,6 +53,7 @@ ADD_SCHEMA = vol.Schema(
         vol.Required(ATTR_WEIGHT): vol.All(vol.Coerce(float), vol.Range(min=1, max=500)),
         vol.Optional(ATTR_TIMESTAMP): cv.datetime,
         vol.Optional("note"): vol.All(cv.string, vol.Length(max=200)),
+        vol.Optional("clothes"): cv.boolean,
     }
 )
 DELETE_SCHEMA = vol.Schema({**_BASE, vol.Optional(ATTR_MEASUREMENT_ID): cv.string})
@@ -153,6 +154,8 @@ def async_setup_services(hass: HomeAssistant) -> None:
             added = manager.async_add(person_id, call.data[ATTR_WEIGHT], dt_util.as_utc(timestamp))
         if note := call.data.get("note"):
             manager.async_set_note(added, note)
+        if call.data.get("clothes") and pet_id is None:
+            manager.async_set_clothes(added, True)
 
     async def delete(call: ServiceCall) -> None:
         manager = _manager(hass, call)

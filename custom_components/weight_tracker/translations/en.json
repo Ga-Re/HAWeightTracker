@@ -121,6 +121,10 @@
         "note": {
           "name": "Note",
           "description": "Optional note for the measurement."
+        },
+        "clothes": {
+          "name": "With clothes",
+          "description": "Weighed with clothes: the learned clothes weight is deducted."
         }
       }
     },

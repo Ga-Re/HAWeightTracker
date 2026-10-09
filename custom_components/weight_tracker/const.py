@@ -31,6 +31,10 @@ CONF_NOTIFY_SERVICE = "notify_service"  # name of a notify.* service
 CONF_NOTIFY_WEIGH = "notify_weigh"
 CONF_REMINDER_DAYS = "reminder_days"  # 0 = off
 CONF_NOTIFY_PET_WARNINGS = "notify_pet_warnings"
+# Clothes: each person can switch it on, mark measurements and set a start value
+CONF_CLOTHES = "clothes"
+CONF_CLOTHES_KG = "clothes_kg"
+CLOTHES_ACTION_PREFIX = "WEIGHT_TRACKER_CLOTHES_"
 PET_EVENT_CATEGORIES = ("vet", "vaccination", "food", "medication", "other")
 CONF_SEX = "sex"
 SEXES = ("male", "female")

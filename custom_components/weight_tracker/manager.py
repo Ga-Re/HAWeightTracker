@@ -39,6 +39,7 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util.unit_conversion import MassConverter
 
 from .analytics import PersonStats, Point, compute_stats, trend_series
+from .clothes import DEFAULT_CLOTHES_KG, learned_clothes, offset_samples
 from .growth import curves, percentile, z_score
 from .body import Composition, age_from_birth_month, body_fat_class, body_fat_range, from_impedance
 from .notifications import (
@@ -52,7 +53,10 @@ from .const import (
     CONF_AMBIGUITY_MARGIN,
     CONF_BIRTH_DATE,
     CONF_BIRTH_MONTH,
+    CLOTHES_ACTION_PREFIX,
     CONF_BODY_FAT_ENTITY,
+    CONF_CLOTHES,
+    CONF_CLOTHES_KG,
     CONF_DEBOUNCE,
     CONF_GOAL_WEIGHT,
     CONF_HEIGHT,
@@ -122,6 +126,13 @@ class Measurement:
     impedance: float | None = None
     body_fat: float | None = None
     note: str | None = None
+    # Weighed with clothes: the clothes weight deducted (None = without clothes)
+    clothes_kg: float | None = None
+
+    @property
+    def effective(self) -> float:
+        """Weight without clothes (what statistics use)."""
+        return round(self.weight - (self.clothes_kg or 0), 2)
 
     def as_dict(self) -> dict[str, Any]:
         """Serialize for storage."""
@@ -137,7 +148,7 @@ class Measurement:
             data["pet_id"] = self.pet_id
         if self.pair_id:
             data["pair_id"] = self.pair_id
-        for key in ("impedance", "body_fat", "note"):
+        for key in ("impedance", "body_fat", "note", "clothes_kg"):
             if getattr(self, key) is not None:
                 data[key] = getattr(self, key)
         return data
@@ -157,6 +168,7 @@ class Measurement:
             impedance=data.get("impedance"),
             body_fat=data.get("body_fat"),
             note=data.get("note"),
+            clothes_kg=data.get("clothes_kg"),
         )
 
 
@@ -386,6 +398,9 @@ class WeightTrackerManager:
                 self.hass, self._async_send_reminders, hour=REMINDER_HOUR, minute=0, second=0
             )
         )
+        self._unsubs.append(
+            self.hass.bus.async_listen("mobile_app_notification_action", self._async_notification_action)
+        )
 
     async def async_unload(self) -> None:
         """Stop listening and flush data."""
@@ -606,7 +621,9 @@ class WeightTrackerManager:
         return (self.hass.config.language or "").startswith("de")
 
     @callback
-    def _async_send(self, person_id: str, title: str, message: str) -> None:
+    def _async_send(
+        self, person_id: str, title: str, message: str, data: dict[str, Any] | None = None
+    ) -> None:
         """Send a notification to the device the person chose for themselves."""
         service = self.persons.get(person_id, {}).get(CONF_NOTIFY_SERVICE)
         if not service:
@@ -616,7 +633,7 @@ class WeightTrackerManager:
             return
         self.hass.async_create_task(
             self.hass.services.async_call(
-                "notify", service, {"title": title, "message": message}
+                "notify", service, {"title": title, "message": message, **({"data": data} if data else {})}
             )
         )
 
@@ -637,7 +654,11 @@ class WeightTrackerManager:
             trends[-1],
             stats.change_7d if stats else None,
         )
-        self._async_send(person_id, title, message)
+        data = None
+        if person.get(CONF_CLOTHES):
+            label = "👕 Mit Kleidung" if self._german() else "👕 With clothes"
+            data = {"actions": [{"action": f"{CLOTHES_ACTION_PREFIX}{measurement.id}", "title": label}]}
+        self._async_send(person_id, title, message, data)
 
     @callback
     def _check_pet_warnings(self, notify: bool) -> None:
@@ -1000,6 +1021,37 @@ class WeightTrackerManager:
         self._async_changed(notify=False)
         return added, skipped
 
+    def clothes_estimate(self, person_id: str) -> tuple[float, int]:
+        """(learned clothes weight, number of samples) of a person."""
+        person = self.persons.get(person_id, {})
+        start = float(person.get(CONF_CLOTHES_KG, DEFAULT_CLOTHES_KG))
+        assigned = [m for m in self.measurements if m.person_id == person_id and m.status == STATUS_ASSIGNED]
+        samples = offset_samples(
+            [(m.ts, m.weight) for m in assigned if m.clothes_kg is not None],
+            [(m.ts, m.weight) for m in assigned if m.clothes_kg is None],
+        )
+        return learned_clothes(start, samples), len(samples)
+
+    @callback
+    def async_set_clothes(self, measurement: Measurement, with_clothes: bool) -> None:
+        """Mark a measurement as weighed with (or without) clothes."""
+        if with_clothes and measurement.person_id:
+            if measurement.clothes_kg is None:
+                measurement.clothes_kg = self.clothes_estimate(measurement.person_id)[0]
+        else:
+            measurement.clothes_kg = None
+        self._async_changed()
+
+    @callback
+    def _async_notification_action(self, event: Event) -> None:
+        """Button "with clothes" in the notification after weighing."""
+        action = str(event.data.get("action", ""))
+        if not action.startswith(CLOTHES_ACTION_PREFIX):
+            return
+        measurement = self.get_measurement(action.removeprefix(CLOTHES_ACTION_PREFIX))
+        if measurement is not None and measurement.status == STATUS_ASSIGNED:
+            self.async_set_clothes(measurement, True)
+
     @callback
     def async_add_waist(self, person_id: str, cm: float, ts: datetime) -> WaistMeasurement:
         """Store a waist circumference."""
@@ -1066,7 +1118,7 @@ class WeightTrackerManager:
                 for m in self.measurements
                 if m.person_id == person_id and m.status == STATUS_ASSIGNED
             ]
-            points = [Point(m.ts, m.weight) for m in assigned]
+            points = [Point(m.ts, m.effective) for m in assigned]
             for measurement, (_, trend) in zip(assigned, trend_series(points)):
                 self.trend_by_id[measurement.id] = round(trend, 2)
             self.stats[person_id] = compute_stats(
@@ -1142,7 +1194,7 @@ class WeightTrackerManager:
             for m in assigned:
                 composition = None
                 if m.impedance is not None and sex and age and height:
-                    composition = from_impedance(m.weight, height, age, sex, m.impedance)
+                    composition = from_impedance(m.effective, height, age, sex, m.impedance)
                 if composition is None and m.body_fat is not None:
                     composition = Composition(body_fat=round(m.body_fat, 1))
                 if composition is not None:

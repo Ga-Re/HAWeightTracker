@@ -41,6 +41,9 @@ add_measurement:
       example: "nach dem Urlaub"
       selector:
         text:
+    clothes:
+      selector:
+        boolean:
 
 delete_measurement:
   fields:
