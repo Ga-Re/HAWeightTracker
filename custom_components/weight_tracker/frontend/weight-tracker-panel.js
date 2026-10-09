@@ -132,15 +132,54 @@ const TEXT = {
     required: (label) => `Bitte „${label}“ ausfüllen.`,
     editProfile: "Daten bearbeiten",
     myData: "Meine Daten",
+    pets: "Haustiere",
+    pet: "Haustier",
+    weighPet: (name) => `${name} wiegen`,
+    weighAnyPet: "Haustier wiegen",
+    petSessionTitle: (name) => `Haustier-Messung${name ? ` für ${name}` : ""} läuft`,
+    petSessionHint: (name) => `Stell dich einmal allein auf die Waage und einmal mit ${name || "dem Tier"} auf dem Arm – die Reihenfolge ist egal.`,
+    petSessionStep: (n) => `Messung ${n + 1} von 2`,
+    petSessionLeft: (time) => `noch ${time}`,
+    petSuggestion: "War das eine Haustier-Messung?",
+    petSuggestionText: (pet, kg, who) => `${pet}: ${kg} (${who} mit ${pet} auf dem Arm)`,
+    petYes: (name) => `Ja, ${name}`,
+    petNo: "Nein, das war ich",
+    petMeasurements: "Haustier-Messungen",
+    carriedBy: "gewogen von",
+    petNoData: "Noch keine Messung – tippe auf „Wiegen“.",
+    species: "Tierart",
+    speciesNames: { cat: "Katze", dog: "Hund", rabbit: "Kaninchen", guinea_pig: "Meerschweinchen", other: "Anderes" },
+    addPet: "Haustier hinzufügen",
+    newPet: "Neues Haustier",
+    deletePet: "Haustier löschen",
+    petsHint: "Haustiere wiegst du, indem du sie auf den Arm nimmst. Alle Benutzer sehen sie und dürfen sie wiegen.",
+    petStartWeight: "Ungefähres Gewicht",
+    petStartHint: "Hilft, die Haustier-Messung automatisch zu erkennen.",
+    petMethods: { pet_session: "per Knopf", pet_auto: "automatisch erkannt", manual: "manuell" },
     profileHint: "Diese Angaben kannst du selbst ändern.",
-    birthDate: "Geburtsdatum",
+    birthDate: "Geburtsmonat",
+    birthMonthHint: "Monat und Jahr reichen für das Alter.",
+    age: "Alter",
+    ageMissing: "Geburtsmonat eintragen",
+    myDataHint: "Deine Angaben. Sehen können sie nur du und Admins.",
+    healthy: "Gesunder Bereich",
+    healthyRange: (h, lo, hi) => `Bei ${h} cm liegt das Normalgewicht (BMI 18,5–24,9) bei etwa ${lo} – ${hi}.`,
+    healthyNeedsHeight: "Trage deine Größe ein, dann siehst du hier deinen BMI und dein Normalgewicht.",
+    bmiYouth: "Für Kinder und Jugendliche gelten altersabhängige Werte – die Einstufung entfällt.",
+    youAt: "Du",
+    yourGoal: "Dein Ziel",
+    noGoal: "Lege unten ein Zielgewicht fest, dann siehst du hier deinen Fortschritt.",
+    startedAt: "Start",
+    editData: "Angaben ändern",
+    cm: "cm",
+    bmiZones: ["Untergewicht", "Normal", "Übergewicht", "Adipositas"],
     day: "Tag",
     month2: "Monat",
     year: "Jahr",
     invalidDate: (label) => `„${label}“ ist kein gültiges Datum.`,
     sensorsFound: (n) => `📈 ${n} Sensoren in HA`,
     sensorsMissing: "⚠️ Sensoren aktiviert, aber in HA nicht gefunden",
-    birthDateHint: "Optional, für das Alter. Die BMI-Einstufung gilt nur für Erwachsene.",
+    birthDateHint: "Optional, für das Alter. Monat und Jahr reichen.",
     years: (n) => `${n} Jahre`,
     showDetails: (label) => `${label}: Verlauf anzeigen`,
     invalidNumber: (label) => `„${label}“ ist keine gültige Zahl.`,
@@ -263,15 +302,54 @@ const TEXT = {
     required: (label) => `Please fill in “${label}”.`,
     editProfile: "Edit details",
     myData: "My details",
+    pets: "Pets",
+    pet: "Pet",
+    weighPet: (name) => `Weigh ${name}`,
+    weighAnyPet: "Weigh pet",
+    petSessionTitle: (name) => `Pet weighing${name ? ` for ${name}` : ""} in progress`,
+    petSessionHint: (name) => `Step on the scale once alone and once holding ${name || "the pet"} – in any order.`,
+    petSessionStep: (n) => `Reading ${n + 1} of 2`,
+    petSessionLeft: (time) => `${time} left`,
+    petSuggestion: "Was that a pet weighing?",
+    petSuggestionText: (pet, kg, who) => `${pet}: ${kg} (${who} holding ${pet})`,
+    petYes: (name) => `Yes, ${name}`,
+    petNo: "No, that was me",
+    petMeasurements: "Pet measurements",
+    carriedBy: "weighed by",
+    petNoData: "No measurement yet – tap “Weigh”.",
+    species: "Species",
+    speciesNames: { cat: "Cat", dog: "Dog", rabbit: "Rabbit", guinea_pig: "Guinea pig", other: "Other" },
+    addPet: "Add pet",
+    newPet: "New pet",
+    deletePet: "Delete pet",
+    petsHint: "You weigh a pet by holding it. All users see pets and may weigh them.",
+    petStartWeight: "Approximate weight",
+    petStartHint: "Helps to recognize pet weighings automatically.",
+    petMethods: { pet_session: "button", pet_auto: "detected", manual: "manual" },
     profileHint: "You can change these details yourself.",
-    birthDate: "Date of birth",
+    birthDate: "Birth month",
+    birthMonthHint: "Month and year are enough for the age.",
+    age: "Age",
+    ageMissing: "Add birth month",
+    myDataHint: "Your details. Only you and admins can see them.",
+    healthy: "Healthy range",
+    healthyRange: (h, lo, hi) => `At ${h} cm a normal weight (BMI 18.5–24.9) is about ${lo} – ${hi}.`,
+    healthyNeedsHeight: "Add your height to see your BMI and your normal weight range.",
+    bmiYouth: "Children and teenagers use age-specific values – no classification shown.",
+    youAt: "You",
+    yourGoal: "Your goal",
+    noGoal: "Set a goal weight below to see your progress here.",
+    startedAt: "Start",
+    editData: "Edit details",
+    cm: "cm",
+    bmiZones: ["Underweight", "Normal", "Overweight", "Obese"],
     day: "Day",
     month2: "Month",
     year: "Year",
     invalidDate: (label) => `“${label}” is not a valid date.`,
     sensorsFound: (n) => `📈 ${n} sensors in HA`,
     sensorsMissing: "⚠️ Sensors enabled but not found in HA",
-    birthDateHint: "Optional, for the age. The BMI classification applies to adults only.",
+    birthDateHint: "Optional, for the age. Month and year are enough.",
     years: (n) => `${n} years`,
     showDetails: (label) => `${label}: show history`,
     invalidNumber: (label) => `“${label}” is not a valid number.`,
@@ -342,7 +420,34 @@ const STYLE = `
   .editor h3 { font-size: 15px; font-weight: 500; margin: 0; display: flex; align-items: center; gap: 8px; }
   .field { min-width: 0; }
   .bd-label { font-size: 12px; color: var(--wt-muted); margin-bottom: 4px; }
-  .bd-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1.2fr); gap: 8px; }
+  .bd-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr) auto; gap: 8px; align-items: center; }
+  .bd-age { min-width: 72px; text-align: center; padding: 4px 8px; border-radius: 10px; background: rgba(127,127,127,.1); }
+  .bd-age b { display: block; font-size: 24px; line-height: 1.1; }
+  .bd-age span { font-size: 11px; color: var(--wt-muted); }
+  .section-title { font-size: 15px; font-weight: 500; margin: 8px 0 -4px; color: var(--wt-muted); display: flex; align-items: center; gap: 8px; }
+  .session { border-left: 4px solid var(--primary-color, #03a9f4); display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+  .session .what { flex: 1 1 260px; }
+  .session .count { font-variant-numeric: tabular-nums; font-weight: 500; }
+  .mini { display: block; width: 100%; height: 96px; margin-top: 12px; }
+  .mini text { fill: var(--wt-muted); font-size: 10px; font-family: inherit; }
+  .pet-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+  .profile-hero { display: flex; align-items: center; gap: 16px; }
+  .avatar { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 24px; font-weight: 500; flex: none; }
+  .avatar.pet { background: rgba(127,127,127,.14) !important; font-size: 28px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .tile { background: var(--wt-card); border: 1px solid var(--wt-border); border-radius: var(--wt-radius); padding: 14px 16px; min-width: 0; }
+  .tile .label { font-size: 12px; color: var(--wt-muted); }
+  .tile .big { font-size: 30px; font-weight: 500; line-height: 1.2; margin-top: 2px; }
+  .tile .big small { font-size: 15px; font-weight: 400; color: var(--wt-muted); }
+  .tile .sub { font-size: 12px; color: var(--wt-muted); margin-top: 2px; }
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .scale { position: relative; margin: 26px 0 6px; }
+  .scale .zones { display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px; }
+  .scale .zones div { height: 100%; }
+  .scale .marker { position: absolute; top: -24px; transform: translateX(-50%); text-align: center; font-size: 12px; font-weight: 500; white-space: nowrap; }
+  .scale .marker::after { content: ""; display: block; width: 2px; height: 22px; margin: 2px auto 0; background: var(--primary-text-color); border-radius: 1px; }
+  .scale .labels { display: flex; font-size: 11px; color: var(--wt-muted); margin-top: 4px; gap: 2px; }
+  .scale .labels div { text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .bd-row label { display: grid; gap: 4px; font-size: 12px; color: var(--wt-muted); min-width: 0; }
   .link {
     background: none; border: none; padding: 0 2px; margin: 0 -2px; font: inherit; color: inherit;
@@ -463,6 +568,7 @@ class WeightTrackerPanel extends HTMLElement {
     this._chartPoints = [];
     this._tab = "overview";
     this._editPerson = null; // person id, "new" or null
+    this._editPet = null; // pet id, "new" or null
     this._models = {}; // form values, survive live updates while edited
     this._forms = {}; // field definitions of the forms on screen
     this._dirty = new Set();
@@ -499,6 +605,10 @@ class WeightTrackerPanel extends HTMLElement {
   }
 
   disconnectedCallback() {
+    if (this._countdownTimer) {
+      clearInterval(this._countdownTimer);
+      this._countdownTimer = null;
+    }
     if (this._unsub) {
       this._unsub();
       this._unsub = null;
@@ -624,6 +734,14 @@ class WeightTrackerPanel extends HTMLElement {
     return palette[index % palette.length];
   }
 
+  _speciesEmoji(species) {
+    return { cat: "🐱", dog: "🐶", rabbit: "🐰", guinea_pig: "🐹" }[species] || "🐾";
+  }
+
+  _pet(petId) {
+    return (this._entry.pets || []).find((p) => p.id === petId);
+  }
+
   _personColor(personId) {
     const person = this._entry.persons.find((p) => p.id === personId);
     return person ? this._color(person.color_index) : "var(--wt-muted)";
@@ -671,9 +789,9 @@ class WeightTrackerPanel extends HTMLElement {
       ? `<select data-action="scale">${entries.map((e) => `<option value="${esc(e.entry_id)}" ${e === this._entry ? "selected" : ""}>${esc(e.title)}</option>`).join("")}</select>`
       : "";
     const tabs = [["overview", t.tabOverview], ["measurements", t.tabMeasurements]];
-    const ownPersons = entries.length ? this._entry.persons.filter((p) => p.can_manage) : [];
+    const myPersons = entries.length ? this._entry.persons.filter((p) => p.is_me) : [];
+    if (myPersons.length) tabs.push(["mydata", t.myData]);
     if (this._isAdmin) tabs.push(["settings", t.tabSettings]);
-    else if (ownPersons.length) tabs.push(["settings", t.myData]);
     if (!tabs.some(([key]) => key === this._tab)) this._tab = "overview";
     this.shadowRoot.getElementById("tabs").innerHTML = entries.length
       ? tabs.map(([key, label]) => `<button class="tab" role="tab" data-action="tab" data-tab="${key}" aria-selected="${this._tab === key}">${esc(label)}</button>`).join("")
@@ -685,29 +803,39 @@ class WeightTrackerPanel extends HTMLElement {
 
     this._forms = {};
     if (this._tab === "settings") {
-      this._content(this._isAdmin ? this._renderSettings() : ownPersons.map((p) => this._renderProfileEditor(p)).join(""));
-    } else if (!this._entry.persons.length) {
+      this._content(this._renderSettings());
+    } else if (this._tab === "mydata") {
+      this._content(myPersons.map((p) => this._renderMyData(p)).join(""));
+    } else if (!this._entry.persons.length && !(this._entry.pets || []).length) {
       this._content(this._isAdmin
         ? `<div class="card message">${esc(t.noPersonsAdmin)}<div class="actions" style="justify-content:center"><button class="btn primary" data-action="tab" data-tab="settings">${esc(t.toSettings)}</button></div></div>`
         : `<div class="message">${esc(t.noAccess)}</div>`);
     } else if (this._tab === "measurements") {
-      const canAdd = this._entry.persons.some((p) => p.can_manage);
+      const canAdd = this._entry.persons.some((p) => p.can_manage) || (this._entry.pets || []).length;
       this._content(`
+        ${this._renderPetSession()}
         ${this._renderPending()}
         <div class="split">
-          <div class="card">${this._renderList()}</div>
+          <div class="side">
+            ${this._entry.persons.length ? `<div class="card">${this._renderList()}</div>` : ""}
+            ${this._renderPetList()}
+          </div>
           <div class="side">${canAdd ? `<div class="card">${this._renderAddForm()}</div>` : ""}</div>
         </div>`);
     } else {
+      const persons = this._entry.persons;
       this._content(`
+        ${this._renderPetSession()}
         ${this._renderPending()}
-        <div class="persons">${this._entry.persons.map((p) => this._renderPerson(p, p.color_index)).join("")}</div>
+        ${persons.length ? `<div class="persons">${persons.map((p) => this._renderPerson(p, p.color_index)).join("")}</div>
         <div class="card">
           ${this._renderChartHead()}
           <div class="chart" id="chart"></div>
-        </div>
-        ${this._renderMonthly()}`);
+        </div>` : ""}
+        ${this._renderPets()}
+        ${persons.length ? this._renderMonthly() : ""}`);
     }
+    this._syncCountdown();
     this._mountFields();
     this._resizeObserver.disconnect();
     const chart = this.shadowRoot.getElementById("chart");
@@ -718,6 +846,34 @@ class WeightTrackerPanel extends HTMLElement {
   }
 
   _renderPending() {
+    return `${this._renderPetSuggestions()}${this._renderPendingPersons()}`;
+  }
+
+  _renderPetSuggestions() {
+    const t = this._t;
+    const candidates = this._entry.measurements.filter((m) => m.status === "pet_candidate").reverse();
+    if (!candidates.length) return "";
+    const pets = this._entry.pets || [];
+    return candidates.map((m) => {
+      const pet = this._pet(m.pet_id);
+      const person = this._entry.persons.find((p) => p.id === m.pair_person_id);
+      if (!pet) return "";
+      const others = pets.filter((p) => p.id !== pet.id);
+      return `
+        <div class="card pending" role="region" aria-label="${esc(t.petSuggestion)}">
+          <h2>${this._speciesEmoji(pet.species)} ${esc(t.petSuggestion)}</h2>
+          <div class="pending-row">
+            <div class="what"><b class="num">${esc(t.petSuggestionText(pet.name, this._kg(m.pet_weight), person ? person.name : "?"))}</b>
+              <span class="muted small">· ${esc(this._dateTime(m.ts))}</span></div>
+            <button class="btn primary" data-action="pet-confirm" data-id="${esc(m.id)}" data-pet="${esc(pet.id)}">${esc(t.petYes(pet.name))}</button>
+            ${others.map((o) => `<button class="btn" data-action="pet-confirm" data-id="${esc(m.id)}" data-pet="${esc(o.id)}">${this._speciesEmoji(o.species)} ${esc(o.name)}</button>`).join("")}
+            <button class="btn quiet" data-action="pet-reject" data-id="${esc(m.id)}">${esc(t.petNo)}</button>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  _renderPendingPersons() {
     const t = this._t;
     const pending = this._entry.measurements.filter((m) => m.status === "pending").slice(-10).reverse();
     if (!pending.length) return "";
@@ -759,7 +915,7 @@ class WeightTrackerPanel extends HTMLElement {
     // With sensors in HA, values open HA's own more-info dialog on click.
     const link = (key, label, html) => this._link(person, key, label, html);
     const stat = (key, label, value) => `<div class="stat"><div class="label">${esc(label)}</div><div class="val num">${link(key, label, value)}</div></div>`;
-    const age = this._age(person.birth_date);
+    const age = this._age(person.birth_month);
     const bmiText = s.bmi
       ? `${this._kg(s.bmi, { unit: false })}${age === null || age >= 18 ? ` <span class="muted small">${esc(t.bmiCat(s.bmi))}</span>` : ""}`
       : "–";
@@ -782,6 +938,143 @@ class WeightTrackerPanel extends HTMLElement {
       </div>`;
   }
 
+  // ---------------------------------------------------------------- pets
+
+  _renderPetSession() {
+    const t = this._t;
+    const session = this._entry.pet_session;
+    if (!session) return "";
+    const pet = session.pet_id ? this._pet(session.pet_id) : null;
+    return `
+      <div class="card session" role="status">
+        <div class="what">
+          <h2>${pet ? this._speciesEmoji(pet.species) : "🐾"} ${esc(t.petSessionTitle(pet ? pet.name : ""))}</h2>
+          <div class="hint" style="margin-top:4px">${esc(t.petSessionHint(pet ? pet.name : ""))}</div>
+        </div>
+        <div><span class="count">${esc(t.petSessionStep(session.readings))}</span> · <span class="muted" data-countdown>${esc(this._countdownText())}</span></div>
+        <button class="btn" data-action="pet-cancel">${esc(t.cancel)}</button>
+      </div>`;
+  }
+
+  _countdownText() {
+    const session = this._entry && this._entry.pet_session;
+    if (!session) return "";
+    const left = Math.max(0, Math.round((session.expires - Date.now()) / 1000));
+    return this._t.petSessionLeft(`${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`);
+  }
+
+  // Tick the countdown without re-rendering the page.
+  _syncCountdown() {
+    const active = Boolean(this._entry && this._entry.pet_session);
+    if (active && !this._countdownTimer) {
+      this._countdownTimer = setInterval(() => {
+        const el = this.shadowRoot.querySelector("[data-countdown]");
+        if (el) el.textContent = this._countdownText();
+      }, 1000);
+    } else if (!active && this._countdownTimer) {
+      clearInterval(this._countdownTimer);
+      this._countdownTimer = null;
+    }
+  }
+
+  _renderPets() {
+    const t = this._t;
+    const pets = this._entry.pets || [];
+    if (!pets.length) return "";
+    return `
+      <div class="section-title">🐾 ${esc(t.pets)}</div>
+      <div class="persons">${pets.map((pet) => this._renderPetCard(pet)).join("")}</div>`;
+  }
+
+  _renderPetCard(pet) {
+    const t = this._t;
+    const s = pet.stats || {};
+    const color = this._color(pet.color_index);
+    const link = (key, label, html) => this._link(pet, key, label, html);
+    const stat = (key, label, value) => `<div class="stat"><div class="label">${esc(label)}</div><div class="val num">${link(key, label, value)}</div></div>`;
+    const age = this._age(pet.birth_month);
+    const latestTs = s.latest_ts ? Date.parse(s.latest_ts) : null;
+    const session = this._entry.pet_session;
+    let goalHtml = "";
+    if (pet.goal && s.trend !== null && s.trend !== undefined) {
+      const start = s.first_weight ?? pet.start_weight;
+      const span = start - pet.goal;
+      const progress = span ? Math.min(1, Math.max(0, (start - s.trend) / span)) : 1;
+      goalHtml = `
+        <div class="goal">
+          <div class="row"><span>${esc(t.goal)} ${this._kg(pet.goal)}</span><span class="num">${s.goal_reached ? esc(t.goalReached) : link("goal_distance", t.goal, esc(t.goalLeft(this._kg(Math.abs(s.goal_remaining)))))}</span></div>
+          <div class="bar"><div style="width:${(progress * 100).toFixed(1)}%;background:${color}"></div></div>
+        </div>`;
+    }
+    return `
+      <div class="card person-card">
+        <div class="person-head"><span class="avatar pet" style="width:36px;height:36px;font-size:20px">${this._speciesEmoji(pet.species)}</span>
+          <h2>${esc(pet.name)}${age !== null ? ` <span class="muted small" style="font-weight:400">· ${esc(t.years(age))}</span>` : ""}</h2>
+          <span class="muted small">${latestTs ? link("last_measured", t.measured, `${esc(t.measured)} ${esc(this._relative(latestTs))}`) : ""}</span></div>
+        ${s.latest_weight !== null && s.latest_weight !== undefined ? `
+          <div class="hero">${link("weight", t.weight, `<span class="value num">${this._kg(s.latest_weight, { unit: false, digits: s.latest_weight < 10 ? 2 : 1 })}</span><span class="unit"> kg</span>`)}
+            ${s.change_last !== null && s.change_last !== undefined ? `<span class="muted small num">${link("change_last", t.weight, this._kg(s.change_last, { signed: true, digits: 2 }))}</span>` : ""}</div>
+          <div class="stats">
+            ${stat("trend", t.trend, this._kg(s.trend, { digits: 2 }))}
+            ${stat("change_30d", t.d30, this._kg(s.change_30d, { signed: true, digits: 2 }))}
+            ${stat("change_total", t.total, this._kg(s.change_total, { signed: true, digits: 2 }))}
+          </div>
+          ${this._miniChart(pet, color)}` : `<div class="hint" style="margin:16px 0 4px">${esc(t.petNoData)}</div>`}
+        ${goalHtml}
+        <div class="pet-actions">
+          <button class="btn ${session ? "" : "primary"}" data-action="pet-start" data-pet="${esc(pet.id)}" ${session ? "disabled" : ""}>🐾 ${esc(t.weighPet(pet.name))}</button>
+        </div>
+      </div>`;
+  }
+
+  // Small history chart of one pet (last 180 days): dots + trend line.
+  _miniChart(pet, color) {
+    const now = Date.now();
+    const pts = (this._entry.pet_measurements || []).filter((m) => m.pet_id === pet.id && m.ts >= now - 180 * DAY);
+    if (pts.length < 2) return "";
+    const W = 320, H = 80, padL = 30, padR = 6, padT = 6, padB = 6;
+    const values = pts.flatMap((m) => [m.weight, m.trend ?? m.weight]);
+    let lo = Math.min(...values), hi = Math.max(...values);
+    if (hi - lo < 0.4) { lo -= 0.2; hi += 0.2; }
+    const t0 = pts[0].ts, t1 = Math.max(now, pts[pts.length - 1].ts);
+    const x = (ts) => padL + ((ts - t0) / Math.max(t1 - t0, 1)) * (W - padL - padR);
+    const y = (v) => padT + (1 - (v - lo) / (hi - lo)) * (H - padT - padB);
+    const trend = pts.map((m, i) => `${i ? "L" : "M"}${x(m.ts).toFixed(1)},${y(m.trend ?? m.weight).toFixed(1)}`).join("");
+    return `<svg class="mini" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(this._t.history)}">
+      <text x="0" y="${padT + 8}">${esc(this._kg(hi, { unit: false }))}</text>
+      <text x="0" y="${H - padB}">${esc(this._kg(lo, { unit: false }))}</text>
+      ${pts.map((m) => `<circle cx="${x(m.ts).toFixed(1)}" cy="${y(m.weight).toFixed(1)}" r="3" fill="${color}" fill-opacity="0.35"/>`).join("")}
+      <path d="${trend}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    </svg>`;
+  }
+
+  _renderPetList() {
+    const t = this._t;
+    const pets = this._entry.pets || [];
+    const rows = (this._entry.pet_measurements || []).slice().reverse().slice(0, 30);
+    if (!pets.length) return "";
+    return `
+      <div class="card">
+        <h2>🐾 ${esc(t.petMeasurements)}</h2>
+        ${rows.length ? `<div class="table-wrap"><table>
+          <thead><tr><th>${esc(t.date)}</th><th class="r">${esc(t.weight)}</th><th>${esc(t.pet)}</th><th>${esc(t.carriedBy)}</th><th>${esc(t.source)}</th><th></th></tr></thead>
+          <tbody>${rows.map((m) => {
+            const pet = this._pet(m.pet_id);
+            const petCell = m.can_edit
+              ? `<select class="inline" data-action="pet-reassign" data-id="${esc(m.id)}">${pets.map((p) => `<option value="${esc(p.id)}" ${p.id === m.pet_id ? "selected" : ""}>${this._speciesEmoji(p.species)} ${esc(p.name)}</option>`).join("")}</select>`
+              : `${pet ? `${this._speciesEmoji(pet.species)} ${esc(pet.name)}` : "–"}`;
+            return `<tr>
+              <td class="num">${esc(this._dateTime(m.ts))}</td>
+              <td class="r num"><b>${this._kg(m.weight, { unit: false, digits: 2 })}</b></td>
+              <td>${petCell}</td>
+              <td>${esc(m.by || "–")}</td>
+              <td><span class="tag">${esc(t.petMethods[m.method] || m.method)}</span></td>
+              <td class="r">${m.can_edit ? `<button class="icon-btn" data-action="pet-delete" data-id="${esc(m.id)}" title="${esc(t.deleteLabel)}" aria-label="${esc(t.deleteLabel)}">✕</button>` : ""}</td>
+            </tr>`;
+          }).join("")}</tbody></table></div>` : `<div class="message">${esc(t.petNoData)}</div>`}
+      </div>`;
+  }
+
   // Entity id of a person's sensor: from the server, or found via HA's own
   // frontend registry (platform + translation key + device identifier).
   _entityFor(person, key) {
@@ -790,7 +1083,8 @@ class WeightTrackerPanel extends HTMLElement {
     const entities = this._hass && this._hass.entities;
     const devices = (this._hass && this._hass.devices) || {};
     if (!entities) return null;
-    const identifier = `${this._entry.entry_id}_${person.id}`;
+    const isPet = (this._entry.pets || []).includes(person);
+    const identifier = isPet ? `${this._entry.entry_id}_pet_${person.id}` : `${this._entry.entry_id}_${person.id}`;
     for (const entry of Object.values(entities)) {
       if (entry.platform !== "weight_tracker" || entry.translation_key !== key || !entry.device_id) continue;
       const device = devices[entry.device_id];
@@ -813,33 +1107,127 @@ class WeightTrackerPanel extends HTMLElement {
     return `<button class="link" data-action="more-info" data-entity="${esc(entityId)}" title="${esc(this._t.showDetails(label))}">${html}</button>`;
   }
 
-  _age(birthDate) {
-    if (!birthDate) return null;
-    const b = new Date(`${birthDate}T00:00:00`);
-    if (Number.isNaN(b.getTime())) return null;
+  _age(birthMonth) {
+    const match = /^(\d{4})-(\d{2})/.exec(birthMonth || "");
+    if (!match) return null;
+    const year = Number(match[1]), month = Number(match[2]);
     const now = new Date();
-    let age = now.getFullYear() - b.getFullYear();
-    if (now.getMonth() < b.getMonth() || (now.getMonth() === b.getMonth() && now.getDate() < b.getDate())) age -= 1;
-    return age;
+    const age = now.getFullYear() - year - (now.getMonth() + 1 < month ? 1 : 0);
+    return age >= 0 && age < 130 ? age : null;
   }
 
-  _renderProfileEditor(person) {
+  // ------------------------------------------------------------- my data
+
+  // Values shown on "My details", from the (possibly unsaved) form model.
+  _profileFacts(person, model) {
+    const s = person.stats || {};
+    const height = model.height === null || model.height === undefined || model.height === "" ? null : Number(model.height);
+    const goal = model.goal_weight === null || model.goal_weight === undefined || model.goal_weight === "" ? null : Number(model.goal_weight);
+    const weight = s.latest_weight ?? null;
+    const age = model.birth_month && model.birth_month !== "invalid" ? this._age(model.birth_month) : null;
+    const h = height && !Number.isNaN(height) ? height / 100 : null;
+    const bmi = h && weight ? weight / (h * h) : null;
+    return {
+      age, height: h ? height : null, weight, bmi, goal: goal && !Number.isNaN(goal) ? goal : null,
+      low: h ? 18.5 * h * h : null, high: h ? 24.9 * h * h : null, trend: s.trend ?? weight,
+    };
+  }
+
+  _renderMyData(person) {
     const t = this._t;
     const formId = `profile-form-${person.id}`;
+    const defaults = { height: person.height ?? null, goal_weight: person.goal ?? null, birth_month: person.birth_month || null };
+    const refresh = () => this._refreshMyData(person);
     const fields = [
-      this._def("number", "height", t.height, { min: 50, max: 250, step: 1, unit: "cm", helper: t.heightHint }),
-      this._def("number", "goal_weight", t.goalWeight, { min: 1, max: 300, step: 0.1, unit: "kg", helper: t.goalWeightHint }),
-      this._def("birthdate", "birth_date", t.birthDate, { helper: t.birthDateHint }),
+      this._def("number", "height", t.height, { min: 50, max: 250, step: 1, unit: "cm", helper: t.heightHint, onChange: refresh }),
+      this._def("number", "goal_weight", t.goalWeight, { min: 1, max: 300, step: 0.1, unit: "kg", helper: t.goalWeightHint, onChange: refresh }),
+      this._def("birthmonth", "birth_month", t.birthDate, { helper: t.birthMonthHint, wide: true, onChange: refresh }),
     ];
-    const defaults = { height: person.height ?? null, goal_weight: person.goal ?? null, birth_date: person.birth_date || null };
+    const formHtml = this._formFields(formId, fields, defaults); // creates the model
+    const facts = this._profileFacts(person, this._models[formId]);
     return `
+      <div class="card profile-hero">
+        <div class="avatar" style="background:${this._color(person.color_index)}">${esc(person.name.slice(0, 1).toUpperCase())}</div>
+        <div><h2>${esc(person.name)}</h2><div class="hint" style="margin-top:2px">${esc(t.myDataHint)}</div></div>
+      </div>
+      <div class="tiles" data-preview="tiles-${esc(person.id)}">${this._myDataTiles(person, facts)}</div>
+      <div class="two">
+        <div class="card" data-preview="health-${esc(person.id)}">${this._myDataHealth(facts)}</div>
+        <div class="card" data-preview="goal-${esc(person.id)}">${this._myDataGoal(person, facts)}</div>
+      </div>
       <div class="card">
-        <h2 class="who"><span class="dot" style="background:${this._color(person.color_index)}"></span>${esc(person.name)}</h2>
-        <div class="hint" style="margin-top:4px">${esc(t.profileHint)}</div>
+        <h2>✎ ${esc(t.editData)}</h2>
         <div class="form" id="${esc(formId)}">
-          ${this._formFields(formId, fields, defaults)}
+          ${formHtml}
           ${this._formActions(formId)}
         </div>
+      </div>`;
+  }
+
+  _refreshMyData(person) {
+    const facts = this._profileFacts(person, this._models[`profile-form-${person.id}`] || {});
+    const set = (key, html) => {
+      const el = this.shadowRoot.querySelector(`[data-preview="${key}-${person.id}"]`);
+      if (el) el.innerHTML = html;
+    };
+    set("tiles", this._myDataTiles(person, facts));
+    set("health", this._myDataHealth(facts));
+    set("goal", this._myDataGoal(person, facts));
+  }
+
+  _myDataTiles(person, f) {
+    const t = this._t;
+    const tile = (label, big, sub = "") => `<div class="tile"><div class="label">${esc(label)}</div><div class="big num">${big}</div>${sub ? `<div class="sub">${sub}</div>` : ""}</div>`;
+    const remaining = f.goal !== null && f.trend !== null ? f.goal - f.trend : null;
+    return [
+      tile(t.age, f.age !== null ? `${f.age} <small>${esc(t.years(f.age).replace(/^\d+\s*/, ""))}</small>` : "–", f.age === null ? esc(t.ageMissing) : ""),
+      tile(t.height, f.height ? `${this._kg(f.height, { unit: false, digits: 0 })} <small>cm</small>` : "–"),
+      tile(t.bmi, f.bmi ? this._kg(f.bmi, { unit: false }) : "–", f.bmi && (f.age === null || f.age >= 18) ? esc(t.bmiCat(f.bmi)) : ""),
+      tile(t.goal, f.goal ? `${this._kg(f.goal, { unit: false })} <small>kg</small>` : "–", remaining !== null ? esc(Math.abs(remaining) <= 0.2 ? t.goalReached : t.goalLeft(this._kg(Math.abs(remaining)))) : ""),
+    ].join("");
+  }
+
+  _myDataHealth(f) {
+    const t = this._t;
+    if (!f.height) return `<h2>${esc(t.healthy)}</h2><div class="hint" style="margin-top:8px">${esc(t.healthyNeedsHeight)}</div>`;
+    const min = 15, max = 40;
+    const zones = [[min, 18.5, "var(--warning-color, #ffa600)"], [18.5, 25, "var(--success-color, #43a047)"], [25, 30, "var(--warning-color, #ffa600)"], [30, max, "var(--error-color, #db4437)"]];
+    const width = (a, b) => `${((b - a) / (max - min)) * 100}%`;
+    const pos = f.bmi ? Math.min(max, Math.max(min, f.bmi)) : null;
+    const youth = f.age !== null && f.age < 18;
+    return `
+      <h2>${esc(t.healthy)}</h2>
+      <div class="scale" role="img" aria-label="BMI ${f.bmi ? this._kg(f.bmi, { unit: false }) : "–"}">
+        ${pos !== null ? `<div class="marker" style="left:${((pos - min) / (max - min)) * 100}%">${esc(t.youAt)} ${this._kg(f.bmi, { unit: false })}</div>` : ""}
+        <div class="zones">${zones.map(([a, b, c]) => `<div style="width:${width(a, b)};background:${c}"></div>`).join("")}</div>
+        <div class="labels">${zones.map(([a, b], i) => `<div style="width:${width(a, b)}">${esc(t.bmiZones[i])}</div>`).join("")}</div>
+      </div>
+      <div class="hint" style="margin-top:10px">${esc(t.healthyRange(this._kg(f.height, { unit: false, digits: 0 }), this._kg(f.low, { unit: false }), this._kg(f.high)))}</div>
+      ${youth ? `<div class="hint" style="margin-top:6px">${esc(t.bmiYouth)}</div>` : ""}`;
+  }
+
+  _myDataGoal(person, f) {
+    const t = this._t;
+    const s = person.stats || {};
+    if (!f.goal) return `<h2>${esc(t.yourGoal)}</h2><div class="hint" style="margin-top:8px">${esc(t.noGoal)}</div>`;
+    const start = s.first_weight ?? person.start_weight;
+    const span = start - f.goal;
+    const progress = f.trend !== null && span ? Math.min(1, Math.max(0, (start - f.trend) / span)) : 0;
+    // The ETA from the server belongs to the saved goal; recompute for an edited one.
+    let eta = t.goalNoEta;
+    const remaining = f.trend !== null ? f.goal - f.trend : null;
+    if (remaining !== null && Math.abs(remaining) <= 0.2) eta = t.goalReached;
+    else if (s.rate_per_week && remaining !== null && s.rate_per_week * remaining > 0) {
+      const weeks = remaining / s.rate_per_week;
+      if (weeks <= 260) eta = t.goalEta(this._date(Date.now() + weeks * 7 * DAY));
+    }
+    return `
+      <h2>${esc(t.yourGoal)}</h2>
+      <div class="goal" style="border:none;padding-top:4px">
+        <div class="row"><span>${esc(t.startedAt)} ${this._kg(start)}</span><span>${esc(t.goal)} ${this._kg(f.goal)}</span></div>
+        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(progress * 100)}"><div style="width:${(progress * 100).toFixed(1)}%;background:${this._color(person.color_index)}"></div></div>
+        <div class="row"><span class="muted">${esc(eta)}</span><span class="num">${Math.round(progress * 100)} %</span></div>
+        ${s.rate_per_week !== null && s.rate_per_week !== undefined ? `<div class="hint" style="margin-top:6px">${esc(t.perWeek)}: ${this._kg(s.rate_per_week, { signed: true, digits: 2 })}</div>` : ""}
       </div>`;
   }
 
@@ -974,10 +1362,6 @@ class WeightTrackerPanel extends HTMLElement {
       </div>`;
   }
 
-  _renderSettings() {
-    return `${this._renderScaleSettings()}${this._renderPersonsSettings()}${this._entry.persons.length ? this._renderAccess() : ""}`;
-  }
-
   // ---------------------------------------------------------------- forms
 
   // Field definition: { name, label, helper, required, wide, kind, selector, ... }
@@ -993,8 +1377,8 @@ class WeightTrackerPanel extends HTMLElement {
     if (kind === "boolean") def.selector = { boolean: {} };
     if (kind === "datetime") def.selector = { datetime: {} };
     if (kind === "date") def.selector = { date: {} };
-    // "birthdate": three fields (day, month, year) instead of a calendar
-    // where you would have to click back month by month.
+    // "birthmonth": month + year fields instead of a calendar where you would
+    // have to click back month by month.
     return def;
   }
 
@@ -1012,7 +1396,7 @@ class WeightTrackerPanel extends HTMLElement {
       const def = (this._forms[formId] || []).find((f) => f.name === host.dataset.field);
       if (!def) continue;
       const value = this._models[formId][def.name];
-      if (def.kind === "birthdate") host.appendChild(this._birthDateField(formId, def, value));
+      if (def.kind === "birthmonth") host.appendChild(this._birthMonthField(formId, def, value));
       else host.appendChild(this._haReady ? this._haField(formId, def, value) : this._nativeField(formId, def, value));
     }
   }
@@ -1038,49 +1422,53 @@ class WeightTrackerPanel extends HTMLElement {
     return el;
   }
 
-  _birthDateField(formId, def, value) {
+  _birthMonthField(formId, def, value) {
     const t = this._t;
     const model = this._models[formId];
     const partsKey = `${def.name}:parts`;
     if (!model[partsKey]) {
-      const [y, m, d] = String(value || "").split("-");
-      model[partsKey] = { d: d ? String(Number(d)) : "", m: m ? String(Number(m)) : "", y: y ? Number(y) : null };
+      const match = /^(\d{4})-(\d{2})/.exec(value || "");
+      model[partsKey] = { m: match ? String(Number(match[2])) : "", y: match ? Number(match[1]) : null };
     }
     const parts = model[partsKey];
+    const box = document.createElement("div");
+    const ageHtml = () => {
+      const age = this._age(model[def.name] && model[def.name] !== "invalid" ? model[def.name] : null);
+      return age === null ? `<b>–</b><span>${esc(t.age)}</span>` : `<b>${age}</b><span>${esc(t.years(age).replace(/^\d+\s*/, ""))}</span>`;
+    };
     const update = (key, v) => {
       parts[key] = v === undefined || v === null ? (key === "y" ? null : "") : v;
-      const { d, m, y } = parts;
+      const { m, y } = parts;
       let result;
-      if (!d && !m && !y) result = null;
-      else if (!d || !m || !y) result = "invalid";
+      if (!m && !y) result = null;
+      else if (!m || !y) result = "invalid";
       else {
-        const date = new Date(Number(y), Number(m) - 1, Number(d));
-        const valid = date.getFullYear() === Number(y) && date.getMonth() === Number(m) - 1 && date.getDate() === Number(d);
-        const pad = (n) => String(n).padStart(2, "0");
-        result = valid && Number(y) >= 1900 && date <= new Date() ? `${y}-${pad(m)}-${pad(d)}` : "invalid";
+        const now = new Date();
+        const valid = Number(y) >= 1900 && (Number(y) < now.getFullYear() || (Number(y) === now.getFullYear() && Number(m) <= now.getMonth() + 1));
+        result = valid ? `${y}-${String(m).padStart(2, "0")}` : "invalid";
       }
       this._setValue(formId, def, result);
+      box.querySelector(".bd-age").innerHTML = ageHtml();
     };
     const monthName = (i) => new Intl.DateTimeFormat(this._lang, { month: "long" }).format(new Date(2000, i, 1));
-    const days = Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }));
     const months = Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: monthName(i) }));
-    const thisYear = new Date().getFullYear();
     const sub = [
-      ["d", this._def("select", `${def.name}-d`, t.day, { options: days }), parts.d],
       ["m", this._def("select", `${def.name}-m`, t.month2, { options: months }), parts.m],
-      ["y", this._def("number", `${def.name}-y`, t.year, { min: 1900, max: thisYear, step: 1 }), parts.y],
+      ["y", this._def("number", `${def.name}-y`, t.year, { min: 1900, max: new Date().getFullYear(), step: 1 }), parts.y],
     ];
-    const box = document.createElement("div");
     box.innerHTML = `<div class="bd-label">${esc(def.label)}</div><div class="bd-row"></div>${def.helper ? `<div class="hint" style="margin-top:4px">${esc(def.helper)}</div>` : ""}`;
     const row = box.querySelector(".bd-row");
-    for (const [key, subDef] of sub) {
-      // Sub fields write into the parts, not directly into the model.
+    for (const [key, subDef, current] of sub) {
       const proxyForm = `${formId}::${key}`;
-      this._models[proxyForm] = { [subDef.name]: value };
+      this._models[proxyForm] = {};
       subDef.onChange = (v) => update(key, v);
-      const el = this._haReady ? this._haField(proxyForm, subDef, sub.find((x) => x[0] === key)[2] || undefined) : this._nativeField(proxyForm, subDef, sub.find((x) => x[0] === key)[2]);
-      row.appendChild(el);
+      row.appendChild(this._haReady ? this._haField(proxyForm, subDef, current || undefined) : this._nativeField(proxyForm, subDef, current));
     }
+    const age = document.createElement("div");
+    age.className = "bd-age";
+    age.setAttribute("aria-live", "polite");
+    age.innerHTML = ageHtml();
+    row.appendChild(age);
     return box;
   }
 
@@ -1165,7 +1553,7 @@ class WeightTrackerPanel extends HTMLElement {
       const empty = value === null || value === undefined || value === "" || (typeof value === "string" && !value.trim());
       if (def.required && empty) return t.required(def.label);
       if (def.kind === "number" && !empty && Number.isNaN(Number(value))) return t.invalidNumber(def.label);
-      if (def.kind === "birthdate" && value === "invalid") return t.invalidDate(def.label);
+      if (def.kind === "birthmonth" && value === "invalid") return t.invalidDate(def.label);
     }
     return null;
   }
@@ -1181,7 +1569,7 @@ class WeightTrackerPanel extends HTMLElement {
   }
 
   _renderSettings() {
-    return `${this._renderScaleSettings()}${this._renderPersonsSettings()}${this._entry.persons.length ? this._renderAccess() : ""}`;
+    return `${this._renderScaleSettings()}${this._renderPersonsSettings()}${this._renderPetsSettings()}${this._entry.persons.length ? this._renderAccess() : ""}`;
   }
 
   _renderScaleSettings() {
@@ -1258,7 +1646,7 @@ class WeightTrackerPanel extends HTMLElement {
       start_weight: p.start_weight ?? null,
       height: p.height ?? null,
       goal_weight: p.goal ?? null,
-      birth_date: p.birth_date || null,
+      birth_month: p.birth_month || null,
       person_entity: p.person_entity || null,
       user_id: p.user_id || null,
       viewers: p.viewers || [],
@@ -1275,7 +1663,7 @@ class WeightTrackerPanel extends HTMLElement {
       this._def("number", "start_weight", t.startWeight, { required: true, min: 1, max: 300, step: 0.1, unit: "kg", helper: t.startWeightHint }),
       this._def("number", "height", t.height, { min: 50, max: 250, step: 1, unit: "cm", helper: t.heightHint }),
       this._def("number", "goal_weight", t.goalWeight, { min: 1, max: 300, step: 0.1, unit: "kg", helper: t.goalWeightHint }),
-      this._def("birthdate", "birth_date", t.birthDate, { helper: t.birthDateHint }),
+      this._def("birthmonth", "birth_month", t.birthDate, { helper: t.birthDateHint }),
       this._def("entity", "person_entity", t.presence, { filter: { domain: "person" }, helper: t.presenceHint }),
       this._def("select", "user_id", t.linkedUser, {
         options: users.map((u) => ({ value: u.id, label: u.is_admin ? `${u.name} (${t.admin})` : u.name })),
@@ -1297,6 +1685,69 @@ class WeightTrackerPanel extends HTMLElement {
     return `
       <div class="form editor" id="${esc(formId)}" data-person="${esc(id)}">
         <h3>${person ? `<span class="dot" style="background:${this._color(p.color_index)}"></span>${esc(p.name)}` : esc(t.newPerson)}</h3>
+        ${this._formFields(formId, fields, defaults)}
+        ${this._formActions(formId, extra)}
+      </div>`;
+  }
+
+  _renderPetsSettings() {
+    const t = this._t;
+    const pets = this._entry.pets || [];
+    const counts = {};
+    for (const m of this._entry.pet_measurements || []) counts[m.pet_id] = (counts[m.pet_id] || 0) + 1;
+    const rows = pets.map((p) => {
+      if (this._editPet === p.id) return this._renderPetEditor(p);
+      const age = this._age(p.birth_month);
+      const sensors = this._sensorCount(p);
+      const bits = [
+        t.speciesNames[p.species] || p.species,
+        `≈ ${this._kg(p.start_weight)}`,
+        age !== null ? t.years(age) : null,
+        p.goal ? `${t.goal} ${this._kg(p.goal)}` : null,
+        t.count(counts[p.id] || 0),
+        p.create_sensors ? (sensors ? t.sensorsFound(sensors) : t.sensorsMissing) : null,
+      ].filter(Boolean);
+      return `
+        <div class="person-row">
+          <span style="font-size:20px">${this._speciesEmoji(p.species)}</span>
+          <div class="info"><b>${esc(p.name)}</b><div class="hint">${esc(bits.join(" · "))}</div></div>
+          <button class="btn" data-action="edit-pet" data-pet="${esc(p.id)}">${esc(t.edit)}</button>
+        </div>`;
+    }).join("");
+    return `
+      <div class="card">
+        <h2>🐾 ${esc(t.pets)}</h2>
+        <div class="hint" style="margin-top:4px">${esc(t.petsHint)}</div>
+        <div style="margin-top:8px">${rows}</div>
+        ${this._editPet === "new" ? this._renderPetEditor(null) : `<div class="actions"><button class="btn primary" data-action="edit-pet" data-pet="new">＋ ${esc(t.addPet)}</button></div>`}
+      </div>`;
+  }
+
+  _renderPetEditor(pet) {
+    const t = this._t;
+    const p = pet || {};
+    const id = pet ? pet.id : "new";
+    const formId = `pet-form-${id}`;
+    const fields = [
+      this._def("text", "name", t.name, { required: true }),
+      this._def("select", "species", t.species, { required: true, options: Object.entries(t.speciesNames).map(([value, label]) => ({ value, label: `${this._speciesEmoji(value)} ${label}` })) }),
+      this._def("number", "start_weight", t.petStartWeight, { required: true, min: 0.2, max: 80, step: 0.1, unit: "kg", helper: t.petStartHint }),
+      this._def("number", "goal_weight", t.goalWeight, { min: 0.2, max: 80, step: 0.1, unit: "kg" }),
+      this._def("birthmonth", "birth_month", t.birthDate, { helper: t.birthMonthHint, wide: true }),
+      this._def("boolean", "create_sensors", t.createSensors, { helper: t.sensorsHint, wide: true }),
+    ];
+    const defaults = {
+      name: p.name || "", species: p.species || "cat", start_weight: p.start_weight ?? null,
+      goal_weight: p.goal ?? null, birth_month: p.birth_month || null, create_sensors: Boolean(p.create_sensors),
+    };
+    const count = (this._entry.pet_measurements || []).filter((m) => m.pet_id === id).length;
+    const extra = `
+      <button class="btn" type="button" data-action="cancel-edit" data-form="${esc(formId)}">${esc(t.cancel)}</button>
+      <span class="spacer"></span>
+      ${pet ? `<button class="btn danger" type="button" data-action="delete-pet" data-pet="${esc(id)}" data-count="${count}">${esc(t.deletePet)}</button>` : ""}`;
+    return `
+      <div class="form editor" id="${esc(formId)}">
+        <h3>${pet ? `${this._speciesEmoji(p.species)} ${esc(p.name)}` : esc(t.newPet)}</h3>
         ${this._formFields(formId, fields, defaults)}
         ${this._formActions(formId, extra)}
       </div>`;
@@ -1352,7 +1803,7 @@ class WeightTrackerPanel extends HTMLElement {
             start_weight: num(m.start_weight),
             height: num(m.height),
             goal_weight: num(m.goal_weight),
-            birth_date: m.birth_date || null,
+            birth_month: m.birth_month || null,
             person_entity: m.person_entity || null,
             user_id: m.user_id || null,
             viewers: m.viewers || [],
@@ -1361,12 +1812,29 @@ class WeightTrackerPanel extends HTMLElement {
         });
         this._editPerson = null;
         this._toast(this._t.saved);
+      } else if (formId.startsWith("pet-form-")) {
+        const id = formId.slice("pet-form-".length);
+        const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v));
+        await this._ws({
+          type: "weight_tracker/save_pet",
+          pet: {
+            pet_id: id === "new" ? null : id,
+            name: String(m.name).trim(),
+            species: m.species || "other",
+            start_weight: num(m.start_weight),
+            goal_weight: num(m.goal_weight),
+            birth_month: m.birth_month || null,
+            create_sensors: Boolean(m.create_sensors),
+          },
+        });
+        this._editPet = null;
+        this._toast(this._t.saved);
       } else if (formId.startsWith("profile-form-")) {
         const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v));
         await this._ws({
           type: "weight_tracker/update_profile",
           person_id: formId.slice("profile-form-".length),
-          profile: { height: num(m.height), goal_weight: num(m.goal_weight), birth_date: m.birth_date || null },
+          profile: { height: num(m.height), goal_weight: num(m.goal_weight), birth_month: m.birth_month || null },
         });
         this._toast(this._t.saved);
       } else if (formId === "add-form") {
@@ -1380,6 +1848,20 @@ class WeightTrackerPanel extends HTMLElement {
       this._clearForm(formId);
     } catch (err) {
       this._formErrors[formId] = this._errorText(err);
+    }
+    this._render();
+  }
+
+  async _deletePet(petId, count) {
+    const pet = this._pet(petId);
+    if (!pet || !confirm(this._t.deletePersonConfirm(pet.name, count))) return;
+    try {
+      await this._ws({ type: "weight_tracker/delete_pet", pet_id: petId });
+      this._clearForm(`pet-form-${petId}`);
+      this._editPet = null;
+      this._toast(this._t.saved);
+    } catch (err) {
+      this._toast(`${this._t.error}: ${this._errorText(err)}`);
     }
     this._render();
   }
@@ -1412,12 +1894,17 @@ class WeightTrackerPanel extends HTMLElement {
   _renderAddForm() {
     const t = this._t;
     const own = this._entry.persons.filter((p) => p.can_manage);
+    const pets = this._entry.pets || [];
+    const options = [
+      ...own.map((p) => ({ value: p.id, label: p.name })),
+      ...pets.map((p) => ({ value: p.id, label: `${this._speciesEmoji(p.species)} ${p.name}` })),
+    ];
     const fields = [
-      this._def("select", "person", t.person, { required: true, options: own.map((p) => ({ value: p.id, label: p.name })) }),
+      this._def("select", "person", t.person, { required: true, options }),
       this._def("number", "weight", t.weight, { required: true, min: 1, max: 500, step: 0.1, unit: "kg" }),
       this._def("datetime", "ts", t.date, { required: true }),
     ];
-    const defaults = { person: (own.find((p) => p.is_me) || own[0] || {}).id, weight: null, ts: this._nowString() };
+    const defaults = { person: (own.find((p) => p.is_me) || own[0] || pets[0] || {}).id, weight: null, ts: this._nowString() };
     return `
       <h2>${esc(t.add)}</h2>
       <div class="form" id="add-form">
@@ -1648,7 +2135,23 @@ class WeightTrackerPanel extends HTMLElement {
     const el = ev.composedPath().find((n) => n.dataset && n.dataset.action);
     if (!el || el.tagName === "SELECT") return;
     const { action } = el.dataset;
-    if (action === "more-info") {
+    if (action === "pet-start") {
+      this._ws({ type: "weight_tracker/pet_session", action: "start", pet_id: el.dataset.pet || null }).catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
+    } else if (action === "pet-cancel") {
+      this._ws({ type: "weight_tracker/pet_session", action: "cancel" }).catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
+    } else if (action === "pet-confirm" || action === "pet-reject") {
+      this._ws({
+        type: "weight_tracker/pet_candidate",
+        measurement_id: el.dataset.id,
+        action: action === "pet-confirm" ? "confirm" : "reject",
+        ...(el.dataset.pet ? { pet_id: el.dataset.pet } : {}),
+      }).catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
+    } else if (action === "pet-delete") {
+      const m = (this._entry.pet_measurements || []).find((x) => x.id === el.dataset.id);
+      if (m && confirm(this._t.deleteConfirm(this._kg(m.weight, { digits: 2 }), this._dateTime(m.ts)))) {
+        this._ws({ type: "weight_tracker/pet_measurement", measurement_id: m.id, action: "delete" }).catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
+      }
+    } else if (action === "more-info") {
       this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId: el.dataset.entity }, bubbles: true, composed: true }));
     } else if (action === "save-form") {
       this._saveForm(el.dataset.form);
@@ -1661,9 +2164,17 @@ class WeightTrackerPanel extends HTMLElement {
       this._render();
       const form = this.shadowRoot.getElementById(`person-form-${el.dataset.person}`);
       if (form) form.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    } else if (action === "edit-pet") {
+      this._editPet = el.dataset.pet;
+      this._render();
+      const form = this.shadowRoot.getElementById(`pet-form-${el.dataset.pet}`);
+      if (form) form.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    } else if (action === "delete-pet") {
+      this._deletePet(el.dataset.pet, Number(el.dataset.count) || 0);
     } else if (action === "cancel-edit") {
       this._clearForm(el.dataset.form);
       this._editPerson = null;
+      this._editPet = null;
       this._render();
     } else if (action === "delete-person") {
       this._deletePerson(el.dataset.person, Number(el.dataset.count) || 0);
@@ -1697,7 +2208,9 @@ class WeightTrackerPanel extends HTMLElement {
   _onChange(ev) {
     const el = ev.composedPath()[0];
     if (!el.dataset) return;
-    if (el.dataset.action === "reassign" && el.value) {
+    if (el.dataset.action === "pet-reassign") {
+      this._ws({ type: "weight_tracker/pet_measurement", measurement_id: el.dataset.id, action: "assign", pet_id: el.value }).catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
+    } else if (el.dataset.action === "reassign" && el.value) {
       this._call("assign_measurement", { measurement_id: el.dataset.id, person: el.value });
     } else if (el.dataset.action === "access") {
       const person = this._entry.persons.find((p) => p.id === el.dataset.person);

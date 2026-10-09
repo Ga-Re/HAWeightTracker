@@ -57,6 +57,11 @@
       "pending": {
         "name": "Pending measurements"
       }
+    },
+    "button": {
+      "weigh": {
+        "name": "Weigh"
+      }
     }
   },
   "services": {
@@ -88,7 +93,7 @@
         },
         "person": {
           "name": "Person",
-          "description": "Name of the person."
+          "description": "Name of the person or pet."
         },
         "weight": {
           "name": "Weight",
@@ -111,6 +116,20 @@
         "measurement_id": {
           "name": "Measurement ID",
           "description": "Empty = newest measurement."
+        }
+      }
+    },
+    "weigh_pet": {
+      "name": "Weigh pet",
+      "description": "Starts a pet weighing: the next two readings within 3 minutes (once alone, once holding the pet, in any order) give the pet's weight.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Scale",
+          "description": "Only needed with several scales."
+        },
+        "pet": {
+          "name": "Pet",
+          "description": "Name of the pet. Empty = recognized by its weight."
         }
       }
     }

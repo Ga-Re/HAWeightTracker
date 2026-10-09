@@ -16,8 +16,8 @@ Auf dem Home Assistant muss danach genau diese Struktur liegen. Wichtig ist der 
 
 ```
 /config/custom_components/weight_tracker/
-├── __init__.py, access.py, analytics.py, config_flow.py, const.py, detector.py,
-│   entity.py, manager.py, panel.py, sensor.py, services.py, settings.py
+├── __init__.py, access.py, analytics.py, button.py, config_flow.py, const.py,
+│   detector.py, entity.py, manager.py, panel.py, pets.py, sensor.py, services.py, settings.py
 ├── manifest.json, icons.json, services.yaml
 ├── brand/
 │   ├── icon.png
@@ -46,17 +46,33 @@ Das Panel hat drei Tabs. Der dritte heißt für Admins „Einstellungen“ und f
 - **Messliste** mit Filter pro Person. Die Person kann direkt umgestellt oder die Messung gelöscht werden.
 - **Messung eintragen** für manuelle Werte oder alte Daten.
 
-### Meine Daten (Personen ohne Admin-Rechte)
-Wer mit einer Person verknüpft ist, ändert hier **seine eigenen Daten**: Größe, Zielgewicht und Geburtsdatum.
+### Meine Daten
+Jeder, der mit einer Person verknüpft ist (auch Admins), hat hier seine eigene Seite:
+- **Kacheln** mit Alter, Größe, BMI und Ziel.
+- **Gesunder Bereich:** BMI-Skala mit deiner Position und dem Normalgewicht für deine Größe.
+- **Dein Ziel:** Fortschritt, Tempo und voraussichtliches Datum.
+- **Angaben ändern:** Größe, Zielgewicht und Geburtsmonat/-jahr. Alter und BMI rechnen schon beim Tippen mit.
 
 ### Einstellungen (nur Admins)
 - **Waage:** Name, Gewichtssensor, minimales und maximales Gewicht, Toleranz, Eindeutigkeits-Abstand und Wartezeit, bis ein Wert stabil ist.
-- **Personen:** anlegen, bearbeiten und löschen. Pro Person gibt es Name, Startgewicht, Größe, Zielgewicht, Geburtsdatum, Anwesenheits-Entität, verknüpften HA-Benutzer, wer zusätzlich ansehen darf und ob Sensoren angelegt werden. Beim Löschen einer Person werden auch ihre Messungen gelöscht.
+- **Personen:** anlegen, bearbeiten und löschen. Pro Person gibt es Name, Startgewicht, Größe, Zielgewicht, Geburtsmonat, Anwesenheits-Entität, verknüpften HA-Benutzer, wer zusätzlich ansehen darf und ob Sensoren angelegt werden. Beim Löschen einer Person werden auch ihre Messungen gelöscht.
 - **Freigaben:** Tabelle Benutzer × Personen, siehe unten.
 
 Die Formulare nutzen die Eingabefelder von Home Assistant selbst. Waagen-Sensor und Anwesenheit sind durchsuchbare Entitätsauswahlen mit Filter: Gewichtssensoren bzw. nur `person.*`-Entitäten. Speichern lädt die Integration kurz neu, das Panel aktualisiert sich dabei von selbst. Der Knopf *Konfigurieren* unter Geräte & Dienste verweist nur noch auf das Panel.
 
 Das Panel passt sich dem hellen oder dunklen Theme an, funktioniert auf dem Handy und lädt nichts aus dem Internet. Die Daten kommen live über die WebSocket-Verbindung von Home Assistant.
+
+## Haustiere wiegen
+
+Haustiere werden per **Differenzmessung** gewogen: einmal allein auf die Waage, einmal mit dem Tier auf dem Arm. Die Differenz ist das Gewicht des Tiers. Die Messung „allein“ zählt ganz normal für dich, die Messung „mit Tier“ wird dir nie zugerechnet.
+
+- **Per Knopf:** In der Übersicht hat jedes Haustier einen Knopf **„Mimi wiegen“**. Danach werden die nächsten zwei Messungen innerhalb von 3 Minuten gepaart, die Reihenfolge ist egal. Dieselbe Funktion gibt es als Taste `button.mimi_weigh` (z. B. für ein NFC-Tag an der Waage) und als Aktion `weight_tracker.weigh_pet`.
+- **Automatisch:** Wiegst du dich zweimal innerhalb von 3 Minuten und passt der Unterschied zu einem deiner Haustiere, fragt das Panel: *„War das eine Haustier-Messung?“*. Du bestätigst oder tippst *„Nein, das war ich“*. Zwei verschiedene Personen hintereinander oder eine Jacke (+1 kg) lösen keinen Vorschlag aus.
+- **Haustiere anlegen** (Admins): Einstellungen → Haustiere, mit Name, Tierart, ungefährem Gewicht, optionalem Ziel, Geburtsmonat und Sensoren.
+- **Sichtbarkeit:** Haustiere gehören zum Haushalt. Alle Benutzer sehen sie und dürfen sie wiegen. Wer ein Tier getragen hat, sieht man nur, wenn man diese Person sehen darf.
+- Haustier-Messungen lassen sich unter *Messungen* einem anderen Tier zuordnen oder löschen (Admins und die Person, die das Tier getragen hat). Über *Messung eintragen* kannst du ein Gewicht auch von Hand eintragen.
+
+Genauigkeit: Viele Personenwaagen messen auf 0,1 kg genau, die Differenz kann also um etwa ±0,2 kg schwanken. Der Trend gleicht das über mehrere Messungen aus.
 
 ## Datenschutz & Freigaben
 
@@ -65,7 +81,7 @@ Jede Person sieht standardmäßig **nur ihre eigenen Daten**.
 | Rolle | sieht | darf |
 |---|---|---|
 | **Admin** | alle Personen und alle Messungen | alles: zuordnen, verwerfen, löschen, eintragen, Freigaben ändern |
-| **Die Person selbst** (verknüpfter HA-Benutzer) | eigene Daten und offene Messungen, die zum eigenen Gewicht passen | offene Messungen übernehmen („Das war ich“), eigene Messungen eintragen und löschen, „Nicht ich“ (zurück zu offen), Größe, Zielgewicht und Geburtsdatum ändern |
+| **Die Person selbst** (verknüpfter HA-Benutzer) | eigene Daten und offene Messungen, die zum eigenen Gewicht passen | offene Messungen übernehmen („Das war ich“), eigene Messungen eintragen und löschen, „Nicht ich“ (zurück zu offen), Größe, Zielgewicht und Geburtsmonat ändern |
 | **Freigegebener Benutzer** | die freigegebene Person | nur ansehen |
 | **Alle anderen** | nichts | nichts |
 
@@ -163,6 +179,15 @@ automation:
 ```
 
 ## Fehlersuche
+
+**Kein Logo in der Updates-Liste:** Die Updates-Liste zeigt das Bild der HACS-Update-Entität. HACS verweist dafür noch auf das alte Brands-CDN und kennt den `brand/`-Ordner nicht, den Home Assistant seit 2026.3 nutzt. Unter Geräte & Dienste erscheint das Icon trotzdem. Für die Updates-Liste gibt es einen Umweg: Die Integration stellt ihr Icon unter `/weight_tracker_brand/icon.png` bereit. Trag in der `configuration.yaml` Folgendes ein und starte neu (den Entitätsnamen findest du unter Einstellungen → Entitäten, Suche „Weight Tracker update“):
+
+```yaml
+homeassistant:
+  customize:
+    update.weight_tracker_update:
+      entity_picture: /weight_tracker_brand/icon.png
+```
 
 **„Unable to load custom panel from …/weight-tracker-panel.js“**: Home Assistant findet die Panel-Datei nicht.
 1. Prüfe, ob `/config/custom_components/weight_tracker/frontend/weight-tracker-panel.js` existiert, z. B. im File-Editor oder in Studio Code Server.

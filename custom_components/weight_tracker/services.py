@@ -34,6 +34,8 @@ ATTR_TIMESTAMP = "timestamp"
 SERVICE_ASSIGN = "assign_measurement"
 SERVICE_ADD = "add_measurement"
 SERVICE_DELETE = "delete_measurement"
+SERVICE_WEIGH_PET = "weigh_pet"
+ATTR_PET = "pet"
 
 _BASE = {vol.Optional(ATTR_CONFIG_ENTRY_ID): cv.string}
 
@@ -53,6 +55,7 @@ ADD_SCHEMA = vol.Schema(
     }
 )
 DELETE_SCHEMA = vol.Schema({**_BASE, vol.Optional(ATTR_MEASUREMENT_ID): cv.string})
+WEIGH_PET_SCHEMA = vol.Schema({**_BASE, vol.Optional(ATTR_PET): cv.string})
 
 
 def _manager(hass: HomeAssistant, call: ServiceCall) -> WeightTrackerManager:
@@ -131,10 +134,16 @@ def async_setup_services(hass: HomeAssistant) -> None:
     async def add(call: ServiceCall) -> None:
         manager = _manager(hass, call)
         user = await _user(hass, call)
-        person_id = _person(manager, user, call.data[ATTR_PERSON])
         timestamp = call.data.get(ATTR_TIMESTAMP) or dt_util.now()
         if timestamp.tzinfo is None:
             timestamp = timestamp.replace(tzinfo=dt_util.get_default_time_zone())
+        # Pets belong to the household: every user may add their weight.
+        if (pet_id := manager.find_pet(call.data[ATTR_PERSON])) is not None:
+            manager.async_add_pet_measurement(
+                pet_id, call.data[ATTR_WEIGHT], dt_util.as_utc(timestamp)
+            )
+            return
+        person_id = _person(manager, user, call.data[ATTR_PERSON])
         manager.async_add(person_id, call.data[ATTR_WEIGHT], dt_util.as_utc(timestamp))
 
     async def delete(call: ServiceCall) -> None:
@@ -148,3 +157,15 @@ def async_setup_services(hass: HomeAssistant) -> None:
     hass.services.async_register(DOMAIN, SERVICE_ASSIGN, assign, schema=ASSIGN_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_ADD, add, schema=ADD_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_DELETE, delete, schema=DELETE_SCHEMA)
+
+    async def weigh_pet(call: ServiceCall) -> None:
+        manager = _manager(hass, call)
+        if not manager.pets:
+            raise ServiceValidationError("No pets configured")
+        pet_id = None
+        if value := call.data.get(ATTR_PET):
+            if (pet_id := manager.find_pet(value)) is None:
+                raise ServiceValidationError(f"Unknown pet '{value}'")
+        manager.async_start_pet_session(pet_id)
+
+    hass.services.async_register(DOMAIN, SERVICE_WEIGH_PET, weigh_pet, schema=WEIGH_PET_SCHEMA)

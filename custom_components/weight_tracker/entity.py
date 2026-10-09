@@ -35,13 +35,27 @@ class WeightTrackerEntity(Entity):
         platform: str,
         key: str,
         person_id: str | None = None,
+        pet_id: str | None = None,
     ) -> None:
         """Initialize."""
         self.manager = manager
         self._person_id = person_id
+        self._pet_id = pet_id
         self._attr_translation_key = key
         entry = manager.entry
-        if person_id is None:
+        if pet_id is not None:
+            name = manager.pets[pet_id][CONF_NAME]
+            self._attr_unique_id = f"{entry.entry_id}_pet_{pet_id}_{key}"
+            self._attr_device_info = DeviceInfo(
+                identifiers={(DOMAIN, f"{entry.entry_id}_pet_{pet_id}")},
+                name=name,
+                manufacturer="Weight Tracker",
+                model="Haustier",
+                entry_type=DeviceEntryType.SERVICE,
+                via_device=(DOMAIN, entry.entry_id),
+            )
+            object_id = f"{slugify(name)}_{key}"
+        elif person_id is None:
             self._attr_unique_id = f"{entry.entry_id}_{key}"
             self._attr_device_info = hub_device_info(entry)
             object_id = f"{slugify(entry.title)}_{key}"

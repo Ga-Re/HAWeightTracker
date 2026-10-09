@@ -32,23 +32,28 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from .access import async_assignable_users, can_manage, can_view, is_unrestricted
 from .settings import (
     PERSON_SCHEMA,
+    PET_SCHEMA,
     PROFILE_SCHEMA,
     SETTING_DEFAULTS,
     apply_profile,
+    build_pet,
     SETTINGS_SCHEMA,
     build_person,
     person_name_error,
     settings_error,
 )
 from .const import (
-    CONF_BIRTH_DATE,
+    CONF_BIRTH_MONTH,
     CONF_CREATE_SENSORS,
     CONF_GOAL_WEIGHT,
     CONF_HEIGHT,
     CONF_PERSON_ENTITY,
     CONF_PERSON_ID,
     CONF_PERSONS,
+    CONF_PET_ID,
+    CONF_PETS,
     CONF_SOURCE,
+    CONF_SPECIES,
     CONF_START_WEIGHT,
     CONF_USER_ID,
     CONF_VIEWERS,
@@ -60,6 +65,7 @@ from .const import (
     STATIC_URL,
     STATUS_ASSIGNED,
     STATUS_PENDING,
+    STATUS_PET_CANDIDATE,
 )
 
 
@@ -67,6 +73,8 @@ _LOGGER = logging.getLogger(__name__)
 
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 PANEL_FILE = FRONTEND_DIR / f"{PANEL_COMPONENT}.js"
+BRAND_DIR = Path(__file__).parent / "brand"
+BRAND_URL = "/weight_tracker_brand"
 DATA_PANEL_HASH = f"{DOMAIN}_panel_hash"
 
 
@@ -86,6 +94,11 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_save_person)
     websocket_api.async_register_command(hass, ws_delete_person)
     websocket_api.async_register_command(hass, ws_update_profile)
+    websocket_api.async_register_command(hass, ws_pet_session)
+    websocket_api.async_register_command(hass, ws_pet_candidate)
+    websocket_api.async_register_command(hass, ws_pet_measurement)
+    websocket_api.async_register_command(hass, ws_save_pet)
+    websocket_api.async_register_command(hass, ws_delete_pet)
     file_hash = await hass.async_add_executor_job(_panel_file_hash)
     hass.data[DATA_PANEL_HASH] = file_hash
     if file_hash is None:
@@ -107,9 +120,12 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
         )
         return
     if hass.http is not None:
-        await hass.http.async_register_static_paths(
-            [StaticPathConfig(STATIC_URL, str(FRONTEND_DIR), False)]
-        )
+        paths = [StaticPathConfig(STATIC_URL, str(FRONTEND_DIR), False)]
+        # The icon without authentication, e.g. as entity_picture of the HACS
+        # update entity (HACS still points it at the brands CDN).
+        if await hass.async_add_executor_job(BRAND_DIR.is_dir):
+            paths.append(StaticPathConfig(BRAND_URL, str(BRAND_DIR), True))
+        await hass.http.async_register_static_paths(paths)
 
 
 async def async_register_panel(hass: HomeAssistant) -> None:
@@ -147,6 +163,11 @@ def _person_sensor_ids(hass: HomeAssistant, entry_id: str) -> dict[str, dict[str
         if reg_entry.domain != "sensor" or reg_entry.disabled_by:
             continue
         rest = reg_entry.unique_id.removeprefix(prefix)
+        if rest.startswith("pet_"):
+            pet_id, _, key = rest.removeprefix("pet_").partition("_")
+            if key and hass.states.get(reg_entry.entity_id) is not None:
+                result.setdefault(f"pet:{pet_id}", {})[key] = reg_entry.entity_id
+            continue
         person_id, _, key = rest.partition("_")
         if key and hass.states.get(reg_entry.entity_id) is not None:
             result.setdefault(person_id, {})[key] = reg_entry.entity_id
@@ -192,7 +213,7 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                 "start_weight": person.get(CONF_START_WEIGHT),
                 "height": person.get(CONF_HEIGHT),
                 "goal": person.get(CONF_GOAL_WEIGHT),
-                "birth_date": person.get(CONF_BIRTH_DATE),
+                "birth_month": person.get(CONF_BIRTH_MONTH),
                 # entity ids of the person's sensors (for HA's more-info dialog)
                 "entities": sensor_ids.get(person_id, {}),
                 "stats": {k: _jsonable(v) for k, v in asdict(stats).items()} if stats else {},
@@ -206,7 +227,20 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
 
         measurements = []
         for m in manager.measurements:
-            if not admin:
+            extra: dict[str, Any] = {}
+            if m.status == STATUS_PET_CANDIDATE:
+                # Suggestion "was that a pet weighing?": only for whoever may
+                # manage the person of the "alone" reading.
+                alone = manager.candidate_pair(m)
+                owner = manager.persons.get(alone.person_id) if alone and alone.person_id else None
+                if alone is None or owner is None or not can_manage(user, owner):
+                    continue
+                extra = {
+                    "pet_id": m.pet_id,
+                    "pet_weight": round(m.weight - alone.weight, 2),
+                    "pair_person_id": alone.person_id,
+                }
+            elif not admin:
                 if m.status == STATUS_ASSIGNED:
                     if m.person_id not in visible:
                         continue
@@ -215,6 +249,8 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                         continue
                 else:
                     continue
+            elif m.status not in (STATUS_ASSIGNED, STATUS_PENDING, "discarded"):
+                continue  # readings "with pet" are part of the pet measurement
             measurements.append(
                 {
                     "id": m.id,
@@ -224,13 +260,60 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                     "status": m.status,
                     "method": m.method,
                     "trend": manager.trend_by_id.get(m.id),
+                    **extra,
                 }
             )
+
+        # Pets belong to the household: everybody with panel access sees them.
+        pets = []
+        for index, (pet_id, pet) in enumerate(manager.pets.items()):
+            stats = manager.pet_stats.get(pet_id)
+            pet_data = {
+                "id": pet_id,
+                "name": pet[CONF_NAME],
+                "species": pet.get(CONF_SPECIES, "other"),
+                "color_index": len(manager.persons) + index,
+                "start_weight": pet.get(CONF_START_WEIGHT),
+                "goal": pet.get(CONF_GOAL_WEIGHT),
+                "birth_month": pet.get(CONF_BIRTH_MONTH),
+                "entities": sensor_ids.get(f"pet:{pet_id}", {}),
+                "stats": {k: _jsonable(v) for k, v in asdict(stats).items()} if stats else {},
+            }
+            if admin:
+                pet_data["create_sensors"] = pet.get(CONF_CREATE_SENSORS, False)
+            pets.append(pet_data)
+        pet_measurements = []
+        for m in manager.pet_measurements:
+            carrier = manager.persons.get(m.by_person_id) if m.by_person_id else None
+            pet_measurements.append(
+                {
+                    "id": m.id,
+                    "ts": int(m.ts.timestamp() * 1000),
+                    "weight": m.weight,
+                    "pet_id": m.pet_id,
+                    "method": m.method,
+                    "trend": manager.trend_by_id.get(m.id),
+                    # who carried the pet, only if that person is visible
+                    "by": carrier[CONF_NAME] if carrier and can_view(user, carrier) else None,
+                    "can_edit": admin or bool(carrier and can_manage(user, carrier)),
+                }
+            )
+        session = manager.pet_session
+        pet_session = None
+        if session is not None:
+            pet_session = {
+                "pet_id": session.pet_id,
+                "expires": int(session.expires.timestamp() * 1000),
+                "readings": len(session.readings),
+            }
         entry_data: dict[str, Any] = {
             "entry_id": entry.entry_id,
             "title": entry.title,
             "persons": persons,
             "measurements": measurements,
+            "pets": pets,
+            "pet_measurements": pet_measurements,
+            "pet_session": pet_session,
         }
         if admin:
             entry_data["settings"] = {
@@ -392,7 +475,9 @@ async def ws_save_person(
     if person_id and index is None:
         connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Person not found")
         return
-    if error := person_name_error(data[CONF_NAME], persons, exclude_id=person_id):
+    if error := person_name_error(
+        data[CONF_NAME], persons + options.get(CONF_PETS, []), exclude_id=person_id
+    ):
         connection.send_error(msg["id"], error, error)
         return
     known_users = {u.id for u in await async_assignable_users(hass)}
@@ -465,3 +550,187 @@ def ws_update_profile(
     apply_profile(person, profile)
     hass.config_entries.async_update_entry(entry, options=options)
     connection.send_result(msg["id"])
+
+
+def _entry_manager(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> Any | None:
+    """The running manager of the requested scale (any user)."""
+    entry = hass.config_entries.async_get_entry(msg["entry_id"])
+    manager = getattr(entry, "runtime_data", None) if entry and entry.domain == DOMAIN else None
+    if manager is None or not getattr(manager, "active", False):
+        connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Scale not found")
+        return None
+    return manager
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/pet_session",
+        vol.Required("entry_id"): str,
+        vol.Required("action"): vol.In(["start", "cancel"]),
+        vol.Optional("pet_id"): vol.Any(None, str),
+    }
+)
+@callback
+def ws_pet_session(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Start or cancel a pet weighing (every user: pets belong to the household)."""
+    if (manager := _entry_manager(hass, connection, msg)) is None:
+        return
+    if msg["action"] == "cancel":
+        manager.async_cancel_pet_session()
+    else:
+        pet_id = msg.get("pet_id")
+        if not manager.pets or (pet_id and pet_id not in manager.pets):
+            connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Pet not found")
+            return
+        manager.async_start_pet_session(pet_id)
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/pet_candidate",
+        vol.Required("entry_id"): str,
+        vol.Required("measurement_id"): str,
+        vol.Required("action"): vol.In(["confirm", "reject"]),
+        vol.Optional("pet_id"): vol.Any(None, str),
+    }
+)
+@callback
+def ws_pet_candidate(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Confirm or reject a suggested pet weighing."""
+    if (manager := _entry_manager(hass, connection, msg)) is None:
+        return
+    candidate = manager.get_measurement(msg["measurement_id"])
+    alone = manager.candidate_pair(candidate) if candidate else None
+    owner = manager.persons.get(alone.person_id) if alone and alone.person_id else None
+    if (
+        candidate is None
+        or candidate.status != STATUS_PET_CANDIDATE
+        or owner is None
+        or not can_manage(connection.user, owner)
+    ):
+        connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Measurement not found")
+        return
+    if msg["action"] == "reject":
+        manager.async_reject_pet_candidate(candidate)
+    else:
+        pet_id = msg.get("pet_id")
+        if pet_id and pet_id not in manager.pets:
+            connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Pet not found")
+            return
+        manager.async_confirm_pet_candidate(candidate, pet_id)
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/pet_measurement",
+        vol.Required("entry_id"): str,
+        vol.Required("measurement_id"): str,
+        vol.Required("action"): vol.In(["delete", "assign"]),
+        vol.Optional("pet_id"): str,
+    }
+)
+@callback
+def ws_pet_measurement(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Delete a pet measurement or move it to another pet (admin or carrier)."""
+    if (manager := _entry_manager(hass, connection, msg)) is None:
+        return
+    measurement = manager.get_pet_measurement(msg["measurement_id"])
+    carrier = (
+        manager.persons.get(measurement.by_person_id)
+        if measurement and measurement.by_person_id
+        else None
+    )
+    allowed = is_unrestricted(connection.user) or (
+        carrier is not None and can_manage(connection.user, carrier)
+    )
+    if measurement is None or not allowed:
+        connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Measurement not found")
+        return
+    if msg["action"] == "delete":
+        manager.async_delete_pet_measurement(measurement)
+    else:
+        if msg.get("pet_id") not in manager.pets:
+            connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Pet not found")
+            return
+        manager.async_assign_pet_measurement(measurement, msg["pet_id"])
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/save_pet",
+        vol.Required("entry_id"): str,
+        vol.Required("pet"): dict,
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_save_pet(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Create or update a pet (admins only)."""
+    if (entry := _admin_entry(hass, connection, msg)) is None:
+        return
+    try:
+        data = PET_SCHEMA(msg["pet"])
+    except vol.Invalid as err:
+        connection.send_error(msg["id"], websocket_api.ERR_INVALID_FORMAT, str(err))
+        return
+    options = deepcopy(dict(entry.options))
+    pets: list[dict[str, Any]] = options.setdefault(CONF_PETS, [])
+    pet_id = data.get(CONF_PET_ID)
+    index = next((i for i, p in enumerate(pets) if p[CONF_PET_ID] == pet_id), None)
+    if pet_id and index is None:
+        connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Pet not found")
+        return
+    if error := person_name_error(
+        data[CONF_NAME], options.get(CONF_PERSONS, []) + pets, exclude_id=pet_id
+    ):
+        connection.send_error(msg["id"], error, error)
+        return
+    if index is None:
+        pet_id = uuid4().hex[:8]
+        pets.append(build_pet(data, pet_id))
+    else:
+        pets[index] = build_pet(data, pet_id)
+    hass.config_entries.async_update_entry(entry, options=options)
+    connection.send_result(msg["id"], {"pet_id": pet_id})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/delete_pet",
+        vol.Required("entry_id"): str,
+        vol.Required("pet_id"): str,
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_delete_pet(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Remove a pet and its measurements (admins only)."""
+    if (entry := _admin_entry(hass, connection, msg)) is None:
+        return
+    options = deepcopy(dict(entry.options))
+    pets = options.get(CONF_PETS, [])
+    remaining = [p for p in pets if p[CONF_PET_ID] != msg["pet_id"]]
+    if len(remaining) == len(pets):
+        connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Pet not found")
+        return
+    deleted = 0
+    if getattr(getattr(entry, "runtime_data", None), "active", False):
+        deleted = entry.runtime_data.async_delete_pet_data(msg["pet_id"])
+    options[CONF_PETS] = remaining
+    hass.config_entries.async_update_entry(entry, options=options)
+    connection.send_result(msg["id"], {"deleted_measurements": deleted})

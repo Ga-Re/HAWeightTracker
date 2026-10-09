@@ -37,6 +37,11 @@
       "pending": {
         "default": "mdi:account-question"
       }
+    },
+    "button": {
+      "weigh": {
+        "default": "mdi:paw"
+      }
     }
   },
   "services": {
@@ -48,6 +53,9 @@
     },
     "delete_measurement": {
       "service": "mdi:delete-outline"
+    },
+    "weigh_pet": {
+      "service": "mdi:paw"
     }
   }
 }

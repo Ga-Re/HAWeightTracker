@@ -21,7 +21,14 @@ CONF_START_WEIGHT = "start_weight"
 CONF_HEIGHT = "height"
 CONF_GOAL_WEIGHT = "goal_weight"
 CONF_PERSON_ENTITY = "person_entity"
-CONF_BIRTH_DATE = "birth_date"
+CONF_BIRTH_MONTH = "birth_month"  # "YYYY-MM"
+LEGACY_BIRTH_DATE = "birth_date"  # before 1.5.0: "YYYY-MM-DD"
+
+# Pets
+CONF_PETS = "pets"
+CONF_PET_ID = "pet_id"
+CONF_SPECIES = "species"
+SPECIES = ("cat", "dog", "rabbit", "guinea_pig", "other")
 # Access control
 CONF_USER_ID = "user_id"
 CONF_VIEWERS = "viewers"
@@ -41,6 +48,17 @@ SAME_WEIGHT_EPSILON = 0.05
 STATUS_ASSIGNED = "assigned"
 STATUS_PENDING = "pending"
 STATUS_DISCARDED = "discarded"
+# Higher reading of a "person alone / person with pet" pair, waiting for the
+# person to confirm that it was a pet weighing.
+STATUS_PET_CANDIDATE = "pet_candidate"
+# Reading "person with pet" that was used to compute a pet's weight.
+STATUS_PET_COMBINED = "pet_combined"
+
+# Explicit pet weighing ("weigh Mimi" button): the next two readings within
+# this window are paired. Automatic suggestions use the same window.
+PET_WINDOW = timedelta(minutes=3)
+METHOD_PET_SESSION = "pet_session"
+METHOD_PET_AUTO = "pet_auto"
 
 METHOD_MANUAL = "manual"
 

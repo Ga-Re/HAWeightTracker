@@ -57,6 +57,11 @@
       "pending": {
         "name": "Offene Messungen"
       }
+    },
+    "button": {
+      "weigh": {
+        "name": "Wiegen"
+      }
     }
   },
   "services": {
@@ -88,7 +93,7 @@
         },
         "person": {
           "name": "Person",
-          "description": "Name der Person."
+          "description": "Name der Person oder des Haustiers."
         },
         "weight": {
           "name": "Gewicht",
@@ -111,6 +116,20 @@
         "measurement_id": {
           "name": "Messungs-ID",
           "description": "Leer = neueste Messung."
+        }
+      }
+    },
+    "weigh_pet": {
+      "name": "Haustier wiegen",
+      "description": "Startet eine Haustier-Messung: Die nächsten zwei Messungen innerhalb von 3 Minuten (einmal allein, einmal mit dem Tier auf dem Arm, egal in welcher Reihenfolge) ergeben das Gewicht des Tiers.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Waage",
+          "description": "Nur nötig, wenn mehrere Waagen eingerichtet sind."
+        },
+        "pet": {
+          "name": "Haustier",
+          "description": "Name des Haustiers. Leer = wird anhand des Gewichts erkannt."
         }
       }
     }

@@ -23,6 +23,12 @@ from homeassistant.helpers.typing import StateType
 from . import WeightTrackerConfigEntry
 from .analytics import PersonStats
 from .const import CONF_CREATE_SENSORS, CONF_GOAL_WEIGHT, CONF_HEIGHT
+
+# Sensors that make sense for pets (no BMI)
+PET_SENSOR_KEYS = {
+    "weight", "trend", "change_last", "change_7d", "change_30d",
+    "change_total", "rate", "goal_distance", "goal_eta", "last_measured",
+}
 from .entity import WeightTrackerEntity
 from .manager import WeightTrackerManager
 
@@ -136,6 +142,13 @@ async def async_setup_entry(
         for description in PERSON_SENSORS
         if description.exists_fn(person)
     )
+    entities.extend(
+        PersonSensor(manager, None, description, pet_id=pet_id)
+        for pet_id, pet in manager.pets.items()
+        if pet.get(CONF_CREATE_SENSORS)
+        for description in PERSON_SENSORS
+        if description.key in PET_SENSOR_KEYS and description.exists_fn(pet)
+    )
 
     # Remove sensors that are no longer configured (e.g. goal removed).
     entity_registry = er.async_get(hass)
@@ -155,15 +168,18 @@ class PersonSensor(WeightTrackerEntity, SensorEntity):
     def __init__(
         self,
         manager: WeightTrackerManager,
-        person_id: str,
+        person_id: str | None,
         description: PersonSensorDescription,
+        pet_id: str | None = None,
     ) -> None:
-        """Initialize."""
-        super().__init__(manager, SENSOR_DOMAIN, description.key, person_id)
+        """Initialize (for a person or, with pet_id, for a pet)."""
+        super().__init__(manager, SENSOR_DOMAIN, description.key, person_id, pet_id)
         self.entity_description = description
 
     @property
     def _stats(self) -> PersonStats | None:
+        if self._pet_id is not None:
+            return self.manager.pet_stats.get(self._pet_id)
         return self.manager.stats.get(self._person_id or "")
 
     @property

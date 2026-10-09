@@ -48,3 +48,14 @@ delete_measurement:
       example: "3f9a1c2b7d4e"
       selector:
         text:
+
+weigh_pet:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: weight_tracker
+    pet:
+      example: "Mimi"
+      selector:
+        text:

@@ -14,12 +14,13 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.typing import ConfigType
 
 from .const import CONF_CREATE_SENSORS, DOMAIN, SIGNAL_UPDATED
+from .settings import migrate_options
 from .entity import hub_device_info
 from .manager import WeightTrackerManager
 from .panel import async_register_panel, async_remove_panel, async_setup_frontend
 from .services import async_setup_services
 
-PLATFORMS = [Platform.SENSOR]
+PLATFORMS = [Platform.BUTTON, Platform.SENSOR]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -35,6 +36,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: WeightTrackerConfigEntry) -> bool:
     """Set up a scale."""
+    if (migrated := migrate_options(dict(entry.options))) is not None:
+        # Before the update listener exists, so this does not trigger a reload.
+        hass.config_entries.async_update_entry(entry, options=migrated)
     manager = WeightTrackerManager(hass, entry)
     await manager.async_setup()
     entry.runtime_data = manager
@@ -48,7 +52,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: WeightTrackerConfigEntry
         (DOMAIN, f"{entry.entry_id}_{person_id}")
         for person_id, person in manager.persons.items()
         if person.get(CONF_CREATE_SENSORS)
-    }
+    } | {(DOMAIN, f"{entry.entry_id}_pet_{pet_id}") for pet_id in manager.pets}
     for device in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
         if not device.identifiers & valid:
             device_registry.async_update_device(
