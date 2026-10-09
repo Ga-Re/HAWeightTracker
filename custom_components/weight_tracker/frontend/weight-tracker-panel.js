@@ -1417,6 +1417,9 @@ class WeightTrackerPanel extends HTMLElement {
     el.value = value === null ? undefined : value;
     el.addEventListener("value-changed", (ev) => {
       ev.stopPropagation();
+      // <ha-selector> is controlled: it only shows what is in .value, so the
+      // new value has to be handed back (otherwise e.g. a select stays empty).
+      el.value = ev.detail.value;
       this._setValue(formId, def, ev.detail.value);
     });
     return el;
