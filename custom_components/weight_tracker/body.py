@@ -324,18 +324,26 @@ def normal_bmr(weight: float, age: int, sex: str) -> float:
     return weight * next(factor for max_age, factor in table if age < max_age)
 
 
-BODY_TYPES = (
-    "obese", "overweight", "thick_set",
-    "lack_exercise", "balanced", "balanced_muscular",
-    "skinny", "balanced_skinny", "skinny_muscular",
+# Body type from BMI (rows) and body fat (columns), like a 4x4 map:
+# BMI <18.5 / 18.5-21.7 / 21.7-25 / >=25; body fat in four bands per sex.
+BMI_ROWS = (18.5, 21.7, 25.0)
+FAT_COLUMNS = {MALE: (10.0, 15.0, 20.0), FEMALE: (20.0, 25.0, 30.0)}
+BODY_TYPE_MAP = (  # top row = highest BMI
+    ("athletic", "athletic", "overweight", "obese"),
+    ("muscular", "muscular", "fit", "overweight"),
+    ("lean_muscular", "lean", "fit", "skinny_fat"),
+    ("thin", "underweight", "underweight", "skinny_fat"),
 )
+BODY_TYPES = tuple(dict.fromkeys(t for row in BODY_TYPE_MAP for t in row))
 
 
-def body_type(fat: float, muscle: float, fats: tuple[float, ...], muscles: tuple[float, float]) -> str:
-    """One of BODY_TYPES: rows by body fat (high, normal, low), columns by muscle (low, normal, high)."""
-    fat_row = 0 if fat > fats[2] else 2 if fat < fats[1] else 1
-    muscle_col = 2 if muscle > muscles[1] else 0 if muscle < muscles[0] else 1
-    return BODY_TYPES[fat_row * 3 + muscle_col]
+def body_type(bmi: float, fat: float, sex: str) -> str | None:
+    """One of BODY_TYPES from BMI and body fat percentage."""
+    if sex not in FAT_COLUMNS:
+        return None
+    row = 3 - sum(bmi >= limit for limit in BMI_ROWS)
+    col = sum(fat >= limit for limit in FAT_COLUMNS[sex])
+    return BODY_TYPE_MAP[row][col]
 
 
 def _malus(value: float, value1: float, value2: float, malus1: float, malus2: float) -> float:
@@ -466,8 +474,8 @@ def analyze(
             out["fat_control"] = round(weight * (fats[2] - c.body_fat) / 100, 1)
         if c.muscle_mass is not None and muscles:
             out["muscle_control"] = round(max(0.0, muscles[0] - c.muscle_mass), 1)
-        if c.body_fat is not None and c.muscle_mass is not None and fats and muscles:
-            out["body_type"] = body_type(c.body_fat, c.muscle_mass, fats, muscles)
+        if c.body_fat is not None:
+            out["body_type"] = body_type(bmi, c.body_fat, sex)
         needed = (c.body_fat, c.muscle_mass, c.water, c.bone_mass, c.bmr, out.get("protein"))
         if adult and fats and muscles and all(v is not None for v in needed):
             out["body_score"] = body_score(

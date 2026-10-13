@@ -72,15 +72,15 @@ _INSTRUCTIONS = {
 _WORDS = {
     "de": {
         "low": "niedrig", "standard": "normal", "good": "gut", "high": "hoch", "very_high": "sehr hoch",
-        "obese": "fettleibig", "overweight": "übergewichtig", "thick_set": "kräftig",
-        "lack_exercise": "Bewegungsmangel", "balanced": "ausgewogen", "balanced_muscular": "ausgewogen muskulös",
-        "skinny": "dünn", "balanced_skinny": "schlank", "skinny_muscular": "schlank und muskulös",
+        "obese": "fettleibig", "overweight": "übergewichtig", "athletic": "athletisch", "muscular": "muskulös",
+        "fit": "fit", "lean_muscular": "schlank und muskulös", "lean": "schlank", "skinny_fat": "unsichtbar fettleibig (normales Gewicht, viel Fett)",
+        "thin": "mager", "underweight": "untergewichtig",
     },
     "en": {
         "low": "low", "standard": "normal", "good": "good", "high": "high", "very_high": "very high",
-        "obese": "obese", "overweight": "overweight", "thick_set": "thick-set",
-        "lack_exercise": "lack of exercise", "balanced": "balanced", "balanced_muscular": "balanced muscular",
-        "skinny": "skinny", "balanced_skinny": "balanced skinny", "skinny_muscular": "skinny muscular",
+        "obese": "obese", "overweight": "overweight", "athletic": "athletic", "muscular": "muscular",
+        "fit": "fit", "lean_muscular": "lean and muscular", "lean": "lean", "skinny_fat": "skinny fat (normal weight, high body fat)",
+        "thin": "thin", "underweight": "underweight",
     },
 }
 

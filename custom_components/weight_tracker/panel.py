@@ -1026,7 +1026,8 @@ def ws_pet_event(
         vol.Required("type"): f"{DOMAIN}/set_sensors",
         vol.Required("entry_id"): str,
         vol.Required("kind"): vol.In(["person", "pet"]),
-        vol.Required("id"): str,
+        # not "id": that is the number of the websocket message itself
+        vol.Required("subject_id"): str,
         vol.Required("sensors"): [str],
     }
 )
@@ -1041,7 +1042,7 @@ def ws_set_sensors(
     allowed = set(valid_sensor_keys(msg["kind"]))
     options = deepcopy(dict(entry.options))
     key, id_key = (CONF_PERSONS, CONF_PERSON_ID) if msg["kind"] == "person" else (CONF_PETS, CONF_PET_ID)
-    subject = next((s for s in options.get(key, []) if s[id_key] == msg["id"]), None)
+    subject = next((s for s in options.get(key, []) if s[id_key] == msg["subject_id"]), None)
     if subject is None:
         connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Not found")
         return

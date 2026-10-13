@@ -149,6 +149,8 @@ class BodySensorDescription(SensorEntityDescription):
     zone: str | None = None
     # what the scale must provide: "impedance" (body composition), "heart_rate" or nothing
     needs: str = "impedance"
+    # what the person must have entered (height, birth_month, sex)
+    requires: tuple[str, ...] = ("height", "birth_month", "sex")
 
 
 BODY_SENSORS: tuple[BodySensorDescription, ...] = (
@@ -198,7 +200,7 @@ BODY_SENSORS: tuple[BodySensorDescription, ...] = (
     ),
     BodySensorDescription(
         key="heart_rate", field="value", source="heart_rate", native_unit_of_measurement="bpm",
-        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0, needs="heart_rate",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0, needs="heart_rate", requires=(),
     ),
     # values derived from the basic values
     BodySensorDescription(
@@ -215,19 +217,19 @@ BODY_SENSORS: tuple[BodySensorDescription, ...] = (
     ),
     BodySensorDescription(
         key="ponderal_index", field="ponderal_index", source="metrics", native_unit_of_measurement="kg/m³",
-        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=2, needs="",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=2, needs="", requires=("height",),
     ),
     BodySensorDescription(
         key="bsa", field="bsa", source="metrics", native_unit_of_measurement="m²",
-        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=2, needs="",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=2, needs="", requires=("height",),
     ),
     BodySensorDescription(
         key="broca_weight", field="broca_weight", source="metrics", device_class=SensorDeviceClass.WEIGHT,
-        native_unit_of_measurement=KG, state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1, needs="",
+        native_unit_of_measurement=KG, state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1, needs="", requires=("height", "sex"),
     ),
     BodySensorDescription(
         key="bmr_mifflin", field="bmr_mifflin", source="metrics", native_unit_of_measurement="kcal",
-        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0, needs="",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0, needs="", requires=("height", "birth_month", "sex"),
     ),
     BodySensorDescription(
         key="bmr_katch", field="bmr_katch", source="metrics", native_unit_of_measurement="kcal",
@@ -235,26 +237,26 @@ BODY_SENSORS: tuple[BodySensorDescription, ...] = (
     ),
     BodySensorDescription(
         key="tdee", field="tdee", source="metrics", native_unit_of_measurement="kcal",
-        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0, needs="",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0, needs="", requires=("height", "birth_month", "sex"),
     ),
     BodySensorDescription(
         key="hr_max", field="hr_max", source="metrics", native_unit_of_measurement="bpm",
-        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0, needs="",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0, needs="", requires=("birth_month",),
     ),
     BodySensorDescription(
         key="hr_reserve", field="hr_reserve", source="metrics", native_unit_of_measurement="bpm",
-        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0, needs="heart_rate",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0, needs="heart_rate", requires=("birth_month",),
     ),
     BodySensorDescription(
         key="vo2max", field="vo2max", source="metrics", native_unit_of_measurement="mL/kg/min",
-        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1, needs="heart_rate",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1, needs="heart_rate", requires=("birth_month",),
     ),
     BodySensorDescription(
         key="impedance_index", field="impedance_index", source="metrics", native_unit_of_measurement="cm²/Ω",
-        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1,
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1, requires=("height",),
     ),
     *(
-        BodySensorDescription(key=f"zone_{zone}", field="zones", source="metrics", zone=zone, needs="heart_rate")
+        BodySensorDescription(key=f"zone_{zone}", field="zones", source="metrics", zone=zone, needs="heart_rate", requires=("birth_month",))
         for zone in ("health", "fat_burn", "aerobic", "anaerobic")
     ),
 )
@@ -290,6 +292,12 @@ async def async_setup_entry(
         for person_id, person in manager.persons.items()
         for description in BODY_SENSORS
         if description.key in person.get(CONF_SENSORS, [])
+        # only what can be calculated for this person (a value the scale reports
+        # directly needs no profile data)
+        and (
+            all(person.get(field) for field in description.requires)
+            or (not has_impedance and bool(manager.options.get(direct.get(description.key, ""))))
+        )
         and (
             True if not description.needs
             else bool(manager.options.get(CONF_HEART_RATE_ENTITY)) if description.needs == "heart_rate"

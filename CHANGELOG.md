@@ -7,6 +7,15 @@ Alle Versionen der Integration. Die Nummern folgen [Semantic Versioning](https:/
 Jeder Abschnitt wird beim Push automatisch zu einem [GitHub-Release](https://github.com/Ga-Re/HAWeightTracker/releases)
 (siehe `.github/workflows/release.yml`). HACS zeigt diese Releases als Updates an.
 
+## [2.9.0] – 2026-10-13
+
+### Geändert
+- **Körpertyp als Karte aus BMI und Körperfettanteil** (wie in den Waagen-Apps): zehn Felder von „Mager“ über „Fit“ bis „Fettleibig“, darunter „Unsichtbar fettleibig“ für normales Gewicht mit viel Fett; das eigene Feld ist hervorgehoben, ein Punkt zeigt die genaue Lage. Ersetzt die 3×3-Matrix aus Fett und Muskeln.
+- **Werte als HA-Sensoren:** Auswählbar ist nur noch, was sich auch berechnen lässt – passend zu den Sensoren der Waage und den Angaben der Person. Nicht verfügbare Werte stehen gesammelt darunter mit der fehlenden Angabe (z. B. „Braucht Geburtsmonat, Geschlecht: …“). „Alle“ wählt nur verfügbare Werte. Home Assistant legt solche Sensoren auch nicht mehr an.
+
+### Behoben
+- Sensoren ließen sich im Panel nicht an- oder abwählen („expected str at 'id'“): Das Feld für die Person hieß `id` und wurde von der Nachrichtennummer der Verbindung überschrieben.
+
 ## [2.8.0] – 2026-10-13
 
 ### Neu

@@ -338,7 +338,7 @@ const TEXT = {
       bsa: "Die Oberfläche deiner Haut in Quadratmetern. Ärztinnen und Ärzte nutzen sie zum Beispiel, um manche Medikamente zu dosieren.",
       broca_weight: "Ein einfacher Richtwert fürs Gewicht: Größe in cm minus 100, bei Männern mal 0,9 und bei Frauen mal 0,85. Muskeln und Körperbau berücksichtigt er nicht.",
       impedance_index: "Größe zum Quadrat geteilt durch den Widerstand, den die Waage misst. Die Grundlage, aus der Fett, Wasser und Muskeln berechnet werden. Höher heißt meist mehr fettfreie Masse.",
-      body_type: "Ergibt sich aus Körperfett (Zeilen) und Muskelmasse (Spalten), jeweils niedrig, normal oder hoch. Ziel ist meist „Ausgewogen“ oder „Ausgewogen muskulös“.",
+      body_type: "Ordnet dich nach BMI (senkrecht) und Körperfettanteil (waagerecht) ein. Ein hoher BMI mit wenig Fett bedeutet viele Muskeln (athletisch, muskulös). Ein normaler BMI mit viel Fett heißt „unsichtbar fettleibig“: von außen schlank, aber wenig Muskeln und viel Fett. Ein gutes Ziel ist meist „Fit“ oder „Muskulös“. Der Punkt zeigt, wo du genau liegst.",
       suggestions: "Das Standardgewicht ist ein Richtwert aus Größe und Geschlecht. Die Gewichtskontrolle zeigt den Abstand dazu. Die Fettkontrolle zeigt, wie viel Fett über der Obergrenze des Normalbereichs liegt (oder wie viel Luft noch ist). Die Muskelkontrolle zeigt, wie viel Muskelmasse bis zum Normalbereich fehlt.",
       ai: "Eine KI bewertet deine Werte und gibt dir Empfehlungen. Welche Werte sie sieht, legst du unter „Meine Daten“ fest. Die Hinweise können Fehler enthalten und ersetzen keine ärztliche Beratung.",
     },
@@ -373,14 +373,10 @@ const TEXT = {
     status: { low: "Niedrig", standard: "Standard", good: "Gut", high: "Hoch", very_high: "Sehr hoch" },
     bodyType: "Körpertyp",
     bodyTypes: {
-      obese: "Fettleibig", overweight: "Übergewichtig", thick_set: "Kräftig",
-      lack_exercise: "Bewegungsmangel", balanced: "Ausgewogen", balanced_muscular: "Ausgewogen muskulös",
-      skinny: "Dünn", balanced_skinny: "Schlank", skinny_muscular: "Schlank und muskulös",
+      athletic: "Athletisch", overweight: "Übergewichtig", obese: "Fettleibig", muscular: "Muskulös", fit: "Fit",
+      lean_muscular: "Schlank und muskulös", lean: "Schlank", skinny_fat: "Unsichtbar fettleibig", thin: "Mager", underweight: "Untergewichtig",
     },
-    axisFat: "Körperfett",
-    axisMuscle: "Muskeln",
-    fatLevels: ["hoch", "normal", "niedrig"],
-    muscleLevels: ["wenig", "normal", "viel"],
+    axisFat: "Körperfettanteil",
     suggestions: "Vorschläge zum Gewicht",
     idealWeight: "Standardgewicht",
     weightControl: "Gewichtskontrolle",
@@ -449,7 +445,8 @@ const TEXT = {
     sensorSettingsHint: "Wähle pro Person, Haustier und Kind, welche Werte als Sensor in Home Assistant angelegt werden – z. B. für Automationen oder eigene Dashboards.",
     sensorAll: "Alle",
     sensorNone: "Keine",
-    sensorNeeds: { height: "braucht Größe", goal: "braucht Zielgewicht" },
+    sensorNeeds: (fields) => `braucht ${fields}`,
+    sensorNeedFields: { height: "Größe", birth_month: "Geburtsmonat", sex: "Geschlecht", goal: "Zielgewicht" },
     sensorLabels: {
       weight: "Gewicht", trend: "Trend", change_last: "Veränderung letzte Messung", change_7d: "Veränderung 7 Tage",
       change_30d: "Veränderung 30 Tage", change_total: "Veränderung gesamt", rate: "Tempo pro Woche", bmi: "BMI",
@@ -771,7 +768,7 @@ const TEXT = {
       bsa: "The area of your skin in square metres. Doctors use it, for example, to dose some medicines.",
       broca_weight: "A simple guide weight: height in cm minus 100, times 0.9 for men and 0.85 for women. It does not consider muscle or build.",
       impedance_index: "Height squared divided by the resistance the scale measures. The basis from which fat, water and muscle are calculated. Higher usually means more fat-free mass.",
-      body_type: "Combines body fat (rows) and muscle mass (columns), each low, normal or high. The goal is usually “Balanced” or “Balanced muscular”.",
+      body_type: "Places you by BMI (vertical) and body fat (horizontal). A high BMI with little fat means a lot of muscle (athletic, muscular). A normal BMI with a lot of fat is called “skinny fat”: slim from the outside, but little muscle and much fat. A good goal is usually “Fit” or “Muscular”. The dot shows exactly where you are.",
       suggestions: "The standard weight is a guide value from height and sex. Weight control shows the distance to it. Fat control shows how much fat is above the upper limit of the normal range (or how much room is left). Muscle control shows how much muscle mass is missing to the normal range.",
       ai: "An AI assesses your values and gives you recommendations. You choose under “My details” which values it sees. The hints may contain mistakes and do not replace medical advice.",
     },
@@ -806,14 +803,10 @@ const TEXT = {
     status: { low: "Low", standard: "Standard", good: "Good", high: "High", very_high: "Very high" },
     bodyType: "Body type",
     bodyTypes: {
-      obese: "Obese", overweight: "Overweight", thick_set: "Thick-set",
-      lack_exercise: "Lack of exercise", balanced: "Balanced", balanced_muscular: "Balanced muscular",
-      skinny: "Skinny", balanced_skinny: "Slim", skinny_muscular: "Slim and muscular",
+      athletic: "Athletic", overweight: "Overweight", obese: "Obese", muscular: "Muscular", fit: "Fit",
+      lean_muscular: "Lean and muscular", lean: "Lean", skinny_fat: "Skinny fat", thin: "Thin", underweight: "Underweight",
     },
     axisFat: "Body fat",
-    axisMuscle: "Muscle",
-    fatLevels: ["high", "normal", "low"],
-    muscleLevels: ["low", "normal", "high"],
     suggestions: "Weight suggestions",
     idealWeight: "Standard weight",
     weightControl: "Weight control",
@@ -882,7 +875,8 @@ const TEXT = {
     sensorSettingsHint: "Choose per person, pet and child which values become sensors in Home Assistant – e.g. for automations or your own dashboards.",
     sensorAll: "All",
     sensorNone: "None",
-    sensorNeeds: { height: "needs height", goal: "needs goal weight" },
+    sensorNeeds: (fields) => `needs ${fields}`,
+    sensorNeedFields: { height: "height", birth_month: "birth month", sex: "sex", goal: "goal weight" },
     sensorLabels: {
       weight: "Weight", trend: "Trend", change_last: "Change since last", change_7d: "Change 7 days",
       change_30d: "Change 30 days", change_total: "Total change", rate: "Rate per week", bmi: "BMI",
@@ -1215,14 +1209,22 @@ const STYLE = `
   .mtile { background: var(--wt-card); border: 1px solid var(--wt-border); border-radius: var(--wt-radius); padding: 14px 16px; min-width: 0; }
   .mtile .mv { font-size: 24px; font-weight: 500; line-height: 1.2; }
   .mtile .ml { margin: 2px 0 4px; }
-  .bt { display: grid; grid-template-columns: auto 1fr; gap: 6px 8px; margin-top: 12px; }
-  .bt-rows { display: grid; grid-template-rows: repeat(3, 1fr); gap: 4px; font-size: 11px; color: var(--wt-muted); text-align: right; }
-  .bt-rows span { display: grid; align-items: center; }
-  .bt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-  .bt-cell { display: grid; place-items: center; min-height: 44px; padding: 6px 4px; border-radius: 6px; background: rgba(127,127,127,.12); color: var(--wt-muted); font-size: 11px; text-align: center; line-height: 1.2; }
-  .bt-cell.on { background: var(--primary-color, #03a9f4); color: var(--text-primary-color, #fff); font-weight: 500; }
-  .bt-cols { grid-column: 2; display: grid; grid-template-columns: repeat(3, 1fr); font-size: 11px; color: var(--wt-muted); text-align: center; }
-  .bt-axis { grid-column: 1 / -1; display: flex; justify-content: space-between; font-size: 11px; color: var(--wt-muted); }
+  .bt2 { display: grid; grid-template-columns: 40px 1fr; grid-template-rows: auto 22px auto; column-gap: 8px; margin-top: 14px; }
+  .bt2-y, .bt2-x { position: relative; font-size: 12px; color: var(--wt-muted); }
+  .bt2-y span { position: absolute; right: 0; transform: translateY(-50%); }
+  .bt2-x { grid-column: 2; }
+  .bt2-x span { position: absolute; top: 4px; transform: translateX(-50%); }
+  .bt2-ycap { grid-row: 2 / 4; align-self: end; font-size: 12px; text-align: right; }
+  .bt2-xcap { font-size: 12px; margin-top: 4px; }
+  .bt2-grid { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(52px, auto)); gap: 4px;
+    grid-template-areas: "ath ath ow1 ob" "mus mus fit ow2" "lm ln fit sf" "th uw uw sf";
+    border-left: 1px solid var(--wt-grid); border-bottom: 1px solid var(--wt-grid); padding: 0 0 4px 4px; }
+  .bt2-cell { display: grid; place-items: center; padding: 6px 4px; border-radius: 6px; background: rgba(127,127,127,.12);
+    color: var(--wt-muted); font-size: 12px; line-height: 1.25; text-align: center; hyphens: auto; overflow-wrap: anywhere; }
+  /* the dot marks the exact spot, so the label of that field moves to the top */
+  .bt2-cell.on { color: #fff; font-weight: 600; align-content: start; padding-top: 8px; }
+  .bt2-dot { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #fff;
+    box-shadow: 0 0 0 2px rgba(0,0,0,.55); pointer-events: none; }
   .sugg { display: grid; gap: 14px; margin-top: 12px; }
   .sg { display: flex; align-items: center; gap: 12px; }
   .sg .ic { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: rgba(127,127,127,.12); font-size: 17px; }
@@ -2077,15 +2079,43 @@ class WeightTrackerPanel extends HTMLElement {
           </div>`).join("")}
       </div>` : "";
 
-    const types = ["obese", "overweight", "thick_set", "lack_exercise", "balanced", "balanced_muscular", "skinny", "balanced_skinny", "skinny_muscular"];
-    const bodyType = a && a.body_type ? `
+    // Body type map: BMI (rows, top = high) x body fat (columns), like the scale apps.
+    let bodyType = "";
+    if (a && a.body_type && s.bmi && b.body_fat !== null && b.body_fat !== undefined) {
+      const female = person.sex === "female";
+      const fatEdges = female ? [12, 20, 25, 30, 42] : [4, 10, 15, 20, 32];
+      const bmiEdges = [32, 25, 21.7, 18.5, 15];  // top to bottom
+      const areas = [["ath", "ath", "ow1", "ob"], ["mus", "mus", "fit", "ow2"], ["lm", "ln", "fit", "sf"], ["th", "uw", "uw", "sf"]];
+      const typeOf = { ath: "athletic", ow1: "overweight", ob: "obese", mus: "muscular", fit: "fit", ow2: "overweight", lm: "lean_muscular", ln: "lean", sf: "skinny_fat", th: "thin", uw: "underweight" };
+      const band = (value, edges, descending) => {
+        for (let i = 0; i < edges.length - 1; i++) {
+          const [hi, lo] = descending ? [edges[i], edges[i + 1]] : [edges[i + 1], edges[i]];
+          const last = i === edges.length - 2;
+          if (descending ? value >= lo || last : value < hi || last) {
+            const frac = (value - lo) / (hi - lo);
+            return [i, Math.min(0.9, Math.max(0.1, descending ? 1 - frac : frac))];
+          }
+        }
+        return [0, 0.5];
+      };
+      const [col, fx] = band(b.body_fat, fatEdges, false);
+      const [row, fy] = band(s.bmi, bmiEdges, true);
+      const here = areas[row][col];
+      const accent = this._color(1);
+      const pct = (v) => `${this._num(v, { digits: 0 })} %`;
+      bodyType = `
         <h2>${term("body_type", t.bodyType)}: ${esc(t.bodyTypes[a.body_type])}</h2>
-        <div class="bt" role="img" aria-label="${esc(`${t.bodyType}: ${t.bodyTypes[a.body_type]}`)}">
-          <div class="bt-rows">${t.fatLevels.map((l) => `<span>${esc(l)}</span>`).join("")}</div>
-          <div class="bt-grid">${types.map((k) => `<div class="bt-cell ${k === a.body_type ? "on" : ""}">${esc(t.bodyTypes[k])}</div>`).join("")}</div>
-          <div class="bt-cols">${t.muscleLevels.map((l) => `<span>${esc(l)}</span>`).join("")}</div>
-          <div class="bt-axis"><span>↕ ${esc(t.axisFat)}</span><span>${esc(t.axisMuscle)} ↔</span></div>
-        </div>` : "";
+        <div class="bt2" role="img" aria-label="${esc(`${t.bodyType}: ${t.bodyTypes[a.body_type]} (BMI ${num(s.bmi)}, ${t.axisFat} ${num(b.body_fat)} %)`)}">
+          <div class="bt2-y"><span style="top:25%">${this._num(25, { digits: 1 })}</span><span style="top:75%">${this._num(18.5, { digits: 1 })}</span></div>
+          <div class="bt2-grid">
+            ${[...new Set(areas.flat())].map((area) => `<div class="bt2-cell ${area === here ? "on" : ""}" style="grid-area:${area}${area === here ? `;background:${accent}` : ""}" title="${esc(t.bodyTypes[typeOf[area]])}">${esc(t.bodyTypes[typeOf[area]])}</div>`).join("")}
+            <span class="bt2-dot" style="left:${((col + fx) * 25).toFixed(1)}%;top:${((row + fy) * 25).toFixed(1)}%"></span>
+          </div>
+          <div class="bt2-ycap">BMI</div>
+          <div class="bt2-x"><span style="left:25%">${pct(fatEdges[1])}</span><span style="left:75%">${pct(fatEdges[3])}</span></div>
+          <div></div><div class="bt2-xcap">${esc(t.axisFat)}</div>
+        </div>`;
+    }
 
     const sugg = (icon, label, value) => value === null || value === undefined ? "" : `<div class="sg"><span class="ic" aria-hidden="true">${icon}</span><div><div class="sl">${esc(label)}</div><div class="sv num">${value}</div></div></div>`;
     const suggestions = a && a.ideal_weight !== undefined ? `
@@ -2376,8 +2406,8 @@ class WeightTrackerPanel extends HTMLElement {
   }
 
   _sensorCount(person) {
-    const keys = ["weight", "trend", "change_last", "change_7d", "change_30d", "change_total", "rate", "bmi", "goal_distance", "goal_eta", "last_measured"];
-    return keys.filter((k) => this._entityFor(person, k)).length;
+    const keys = new Set(["weight", "trend", "change_last", "change_7d", "change_30d", "change_total", "rate", "bmi", "goal_distance", "goal_eta", "last_measured", ...(person.sensors || [])]);
+    return [...keys].filter((k) => this._entityFor(person, k)).length;
   }
 
   _link(person, key, label, html) {
@@ -3470,10 +3500,13 @@ class WeightTrackerPanel extends HTMLElement {
     ];
     if (!subjects.length) return "";
     const rows = subjects.map(({ kind, s, icon }) => {
-      const chosen = new Set(s.sensors || []);
       const keys = this._sensorKeys(kind);
-      const needs = (key) => key === "bmi" && !s.height ? t.sensorNeeds.height
-        : (key === "goal_distance" || key === "goal_eta") && !s.goal ? t.sensorNeeds.goal : "";
+      const available = new Set(this._availableSensorKeys(kind, s));
+      const chosen = new Set((s.sensors || []).filter((key) => available.has(key)));
+      const needs = (key) => {
+        const missing = this._sensorMissing(kind, s, key);
+        return missing.length ? t.sensorNeeds(missing.map((f) => t.sensorNeedFields[f]).join(", ")) : "";
+      };
       const found = this._sensorCount(s);
       return `
         <div class="person-row" style="align-items:flex-start">
@@ -3481,9 +3514,13 @@ class WeightTrackerPanel extends HTMLElement {
           <div class="info">
             <b>${esc(s.name)}</b>
             ${chosen.size ? `<div class="hint">${esc(found ? t.sensorsFound(found) : t.sensorsMissing)}</div>` : ""}
-            <div class="checks" style="margin-top:8px">${keys.map((key) => `
-              <label class="check" title="${esc(needs(key))}"><input type="checkbox" data-action="sensor-toggle" data-kind="${kind}" data-id="${esc(s.id)}" data-key="${key}" ${chosen.has(key) ? "checked" : ""}>
-                ${esc(t.sensorLabels[key])}${needs(key) && chosen.has(key) ? ` <span class="hint">(${esc(needs(key))})</span>` : ""}</label>`).join("")}</div>
+            <div class="checks" style="margin-top:8px">${keys.filter((key) => available.has(key)).map((key) => `
+              <label class="check"><input type="checkbox" data-action="sensor-toggle" data-kind="${kind}" data-id="${esc(s.id)}" data-key="${key}" ${chosen.has(key) ? "checked" : ""}>
+                ${esc(t.sensorLabels[key])}</label>`).join("")}</div>
+            ${Object.entries(keys.filter((key) => !available.has(key)).reduce((groups, key) => {
+              (groups[needs(key)] = groups[needs(key)] || []).push(t.sensorLabels[key]);
+              return groups;
+            }, {})).map(([reason, labels]) => `<div class="hint" style="margin-top:6px">${esc(reason.charAt(0).toUpperCase() + reason.slice(1))}: ${esc(labels.join(", "))}</div>`).join("")}
           </div>
           <div class="chips" style="flex:none">
             <button class="chip" data-action="sensor-all" data-kind="${kind}" data-id="${esc(s.id)}">${esc(t.sensorAll)}</button>
@@ -3497,13 +3534,36 @@ class WeightTrackerPanel extends HTMLElement {
         <div style="margin-top:8px">${rows}</div>`);
   }
 
+  // Profile fields a sensor needs for this person/pet (missing ones are listed).
+  _sensorMissing(kind, s, key) {
+    const cfg = this._entry.settings || {};
+    const impedance = cfg.impedance_entity || cfg.impedance_high_entity;
+    const direct = { body_fat: cfg.body_fat_entity, muscle_mass: cfg.muscle_mass_entity, body_water: cfg.water_entity, bone_mass: cfg.bone_mass_entity, bmr: cfg.bmr_entity };
+    let fields = [];
+    if (key === "bmi" || key === "ponderal_index" || key === "bsa" || key === "impedance_index") fields = ["height"];
+    else if (key === "broca_weight") fields = ["height", "sex"];
+    else if (key === "bmr_mifflin" || key === "tdee") fields = ["height", "birth_month", "sex"];
+    else if (["hr_max", "hr_reserve", "vo2max"].includes(key) || key.startsWith("zone_")) fields = ["birth_month"];
+    else if (key === "goal_distance" || key === "goal_eta") fields = ["goal"];
+    else if (kind === "person" && (key in direct || ["body_score", "visceral_fat", "protein", "metabolic_age", "skeletal_muscle", "fat_mass", "lean_mass", "water_mass", "bmr_katch"].includes(key))) {
+      // values the scale reports itself need no profile data
+      fields = !impedance && direct[key] ? [] : ["height", "birth_month", "sex"];
+    }
+    return fields.filter((f) => !s[f]);
+  }
+
+  _availableSensorKeys(kind, s) {
+    return this._sensorKeys(kind).filter((key) => !this._sensorMissing(kind, s, key).length);
+  }
+
   _subjectById(kind, id) {
     return kind === "person" ? this._entry.persons.find((p) => p.id === id) : (this._entry.pets || []).find((p) => p.id === id);
   }
 
   async _saveSensors(kind, id, sensors) {
     try {
-      await this._ws({ type: "weight_tracker/set_sensors", kind, id, sensors });
+      // "id" is taken by the websocket message number, hence subject_id
+      await this._ws({ type: "weight_tracker/set_sensors", kind, subject_id: id, sensors });
       this._toast(this._t.saved);
     } catch (err) {
       this._toast(`${this._t.error}: ${this._errorText(err)}`);
@@ -3514,7 +3574,8 @@ class WeightTrackerPanel extends HTMLElement {
   _toggleSensor(kind, id, key, on) {
     const subject = this._subjectById(kind, id);
     if (!subject) return;
-    const set = new Set(subject.sensors || []);
+    const available = new Set(this._availableSensorKeys(kind, subject));
+    const set = new Set((subject.sensors || []).filter((k) => available.has(k)));
     if (on) set.add(key); else set.delete(key);
     this._saveSensors(kind, id, [...set]);
   }
@@ -4135,7 +4196,8 @@ class WeightTrackerPanel extends HTMLElement {
       return;
     }
     if (action === "sensor-all" || action === "sensor-none") {
-      this._saveSensors(el.dataset.kind, el.dataset.id, action === "sensor-all" ? this._sensorKeys(el.dataset.kind) : []);
+      const subject = this._subjectById(el.dataset.kind, el.dataset.id);
+      this._saveSensors(el.dataset.kind, el.dataset.id, action === "sensor-all" && subject ? this._availableSensorKeys(el.dataset.kind, subject) : []);
       return;
     }
     if (action === "pet-notes") {
