@@ -284,6 +284,26 @@ const TEXT = {
     pulseMissingAdmin: "Kein Puls: Unter Einstellungen → Sensoren der Waage ist noch kein Herzfrequenz-Sensor eingetragen.",
     pulseWaiting: "Der Puls erscheint ab der nächsten Messung.",
     pulseMissing: "Kein Puls – die Waage misst ihn nicht oder er ist noch nicht eingerichtet.",
+    tabHistory: "Verlauf",
+    settingsTitle: "Einstellungen",
+    personalSettings: "Persönlich",
+    adminSettings: "Verwaltung",
+    settingsFor: (name) => `für ${name}`,
+    shareTitle: "Wer darf mich sehen",
+    shareHint: "Wähle, wer deine Werte im Panel sehen darf. Admins sehen alle Daten. Freigegebene Personen können nur ansehen, nichts ändern.",
+    shareNone: "Es gibt keine weiteren Benutzer.",
+    dataTitle: "Daten exportieren und importieren",
+    pendingBar: (n) => n === 1 ? "1 Messung wartet auf Zuordnung" : `${n} Messungen warten auf Zuordnung`,
+    petBar: (n) => n === 1 ? "1 Haustier-Messung erkannt" : `${n} Haustier-Messungen erkannt`,
+    showItems: "Anzeigen",
+    hideItems: "Ausblenden",
+    addOpen: "Eintragen",
+    addTabMeasure: "Messung eintragen",
+    addTabPet: "Haustier oder Kind wiegen",
+    addPetHint: "Die nächsten zwei Wägungen gehören zusammen: einmal allein, einmal mit dem Tier oder Kind auf dem Arm.",
+    closeLabel: "Schließen",
+    last30: "Letzte 30 Tage",
+    noHistory: "Noch kein Verlauf – dafür braucht es Messungen von Personen.",
     valuesTitle: "Körperwerte",
     valueGroupsExtra: { heart: "Herz und Fitness", indices: "Weitere Kennzahlen" },
     bmrMifflin: "Grundumsatz (Mifflin-St Jeor)",
@@ -722,6 +742,26 @@ const TEXT = {
     pulseMissingAdmin: "No pulse: no heart rate sensor is set under Settings → Scale sensors yet.",
     pulseWaiting: "The pulse appears from the next measurement.",
     pulseMissing: "No pulse – the scale does not measure it or it is not set up yet.",
+    tabHistory: "History",
+    settingsTitle: "Settings",
+    personalSettings: "Personal",
+    adminSettings: "Administration",
+    settingsFor: (name) => `for ${name}`,
+    shareTitle: "Who may see me",
+    shareHint: "Choose who may see your values in the panel. Admins see all data. People you share with can only look, not change anything.",
+    shareNone: "There are no other users.",
+    dataTitle: "Export and import data",
+    pendingBar: (n) => n === 1 ? "1 measurement waits to be assigned" : `${n} measurements wait to be assigned`,
+    petBar: (n) => n === 1 ? "1 pet weighing detected" : `${n} pet weighings detected`,
+    showItems: "Show",
+    hideItems: "Hide",
+    addOpen: "Add",
+    addTabMeasure: "Add measurement",
+    addTabPet: "Weigh pet or child",
+    addPetHint: "The next two weighings belong together: once alone, once holding the pet or child.",
+    closeLabel: "Close",
+    last30: "Last 30 days",
+    noHistory: "No history yet – it needs measurements of persons.",
     valuesTitle: "Body values",
     valueGroupsExtra: { heart: "Heart and fitness", indices: "More figures" },
     bmrMifflin: "Basal metabolic rate (Mifflin-St Jeor)",
@@ -1070,6 +1110,8 @@ const STYLE = `
   }
   .tab:hover { opacity: 1; }
   .tab[aria-selected="true"] { opacity: 1; font-weight: 500; border-bottom-color: currentColor; }
+  /* phones: the four tabs share the width instead of scrolling */
+  @media (max-width: 520px) { .tabs { padding: 0 4px; } .tab { flex: 1 1 auto; padding: 0 6px; font-size: 13px; } }
   .scroller { flex: 1; overflow-y: auto; }
   .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(220px, calc((100% - 32px) / 3)), 1fr)); gap: 16px; margin-top: 12px; align-items: start; }
   .flabel { font-size: 12px; color: var(--wt-muted); margin: 0 0 4px 2px; min-height: 16px; }
@@ -1286,6 +1328,38 @@ const STYLE = `
   .zones { margin-top: 4px; }
   .zbar { display: flex; gap: 2px; height: 10px; border-radius: 5px; overflow: hidden; margin: 6px 0 10px; }
   .zbar span { display: block; height: 100%; }
+  .toolbar-end { display: inline-flex; align-items: center; gap: 4px; }
+  .gear { display: inline-grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 50%; background: transparent;
+    color: var(--app-header-text-color, #fff); font-size: 20px; cursor: pointer; --mdc-icon-size: 22px; }
+  .gear:hover, .gear[aria-pressed="true"] { background: rgba(255,255,255,.14); }
+  .gear:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
+  .page-title { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 500; margin: 4px 0 -4px; }
+  .pending-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; border-radius: var(--wt-radius);
+    background: color-mix(in srgb, var(--warning-color, #ffa600) 14%, var(--wt-card)); border: 1px solid color-mix(in srgb, var(--warning-color, #ffa600) 40%, transparent); }
+  .pending-bar .what { flex: 1 1 200px; font-size: 14px; }
+  .rh-mini { margin-top: 10px; }
+  .rh-mini .ml { font-size: 12px; color: var(--wt-muted); margin-bottom: 2px; }
+  .vtabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .vtab { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--wt-border); background: transparent; color: var(--primary-text-color);
+    font: inherit; font-size: 13px; cursor: pointer; }
+  .vtab[aria-selected="true"] { background: color-mix(in srgb, var(--primary-color, #03a9f4) 16%, var(--wt-card)); border-color: var(--primary-color, #03a9f4); font-weight: 500; }
+  .vtab:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: 2px; }
+  .fab { position: fixed; right: 24px; bottom: 24px; z-index: 5; display: inline-flex; align-items: center; gap: 8px; height: 52px; padding: 0 20px 0 16px;
+    border: 0; border-radius: 26px; background: var(--primary-color, #03a9f4); color: var(--text-primary-color, #fff); font: inherit; font-size: 15px; font-weight: 500;
+    box-shadow: 0 4px 14px rgba(0,0,0,.3); cursor: pointer; }
+  .fab b { font-size: 24px; font-weight: 400; line-height: 1; }
+  .content:has(.fab) { padding-bottom: 96px; }  /* room so the button never hides the last card */
+  .fab:focus-visible { outline: 3px solid var(--primary-text-color); outline-offset: 2px; }
+  .sheet-bg { position: fixed; inset: 0; z-index: 6; background: rgba(0,0,0,.35); }
+  .sheet { position: fixed; z-index: 7; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100vw - 24px)); max-height: calc(100vh - 48px);
+    overflow: auto; padding: 20px 22px; border-radius: 22px; background: var(--wt-card); box-shadow: 0 12px 40px rgba(0,0,0,.3); }
+  .sheet .ih { display: flex; align-items: center; gap: 12px; }
+  .sheet .ih h2 { flex: 1; font-size: 17px; }
+  .sheet .ix { width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: var(--wt-muted); font-size: 20px; cursor: pointer; }
+  .sheet .ix:hover { background: rgba(127,127,127,.14); }
+  .sheet .add-form h2 { display: none; }
+  .pet-pick { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  @media (max-width: 600px) { .fab { right: 16px; bottom: 16px; } .fab span { display: none; } .fab { padding: 0 16px; } }
   .suggest-box { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 12px; padding: 12px 14px; border-radius: 12px;
     background: color-mix(in srgb, var(--primary-color, #03a9f4) 10%, var(--wt-card)); }
   .suggest-box > div { flex: 1 1 260px; }
@@ -1504,6 +1578,13 @@ class WeightTrackerPanel extends HTMLElement {
     root.addEventListener("click", (ev) => this._onClick(ev));
     root.addEventListener("change", (ev) => this._onChange(ev));
     root.addEventListener("submit", (ev) => this._onSubmit(ev));
+    root.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape" && this._addOpen) {
+        this._addOpen = false;
+        this._clearForm("add-form");
+        this._render();
+      }
+    });
     // "toggle" does not bubble: listen in the capture phase.
     root.addEventListener("toggle", (ev) => this._onSectionToggle(ev), true);
     root.addEventListener("pointermove", (ev) => this._onPointer(ev));
@@ -1720,16 +1801,19 @@ class WeightTrackerPanel extends HTMLElement {
     const t = this._t;
     const entries = this._data.entries;
     const unitSlot = this.shadowRoot.getElementById("unit");
-    if (unitSlot) unitSlot.innerHTML = `<select class="unit-select" data-action="unit" aria-label="${esc(t.unit)}">${["kg", "lb", "st"].map((u) => `<option value="${u}" ${u === this._unit ? "selected" : ""}>${u}</option>`).join("")}</select>`;
+    if (unitSlot) unitSlot.innerHTML = `<span class="toolbar-end"><select class="unit-select" data-action="unit" aria-label="${esc(t.unit)}">${["kg", "lb", "st"].map((u) => `<option value="${u}" ${u === this._unit ? "selected" : ""}>${u}</option>`).join("")}</select>
+      ${entries.length ? `<button class="gear" data-action="tab" data-tab="settings" aria-label="${esc(t.settingsTitle)}" title="${esc(t.settingsTitle)}" aria-pressed="${this._tab === "settings"}">${customElements.get("ha-icon") ? '<ha-icon icon="mdi:cog"></ha-icon>' : "⚙"}</button>` : ""}</span>`;
     const scaleSlot = this.shadowRoot.getElementById("scale");
     scaleSlot.innerHTML = entries.length > 1
       ? `<select data-action="scale">${entries.map((e) => `<option value="${esc(e.entry_id)}" ${e === this._entry ? "selected" : ""}>${esc(e.title)}</option>`).join("")}</select>`
       : "";
-    const tabs = [["overview", t.tabOverview], ["measurements", t.tabMeasurements]];
+    // Settings are behind the gear in the header, not a tab.
     const myPersons = entries.length ? this._entry.persons.filter((p) => p.is_me) : [];
+    const tabs = [["overview", t.tabOverview]];
+    if (entries.length && this._entry.persons.length) tabs.push(["history", t.tabHistory]);
+    tabs.push(["measurements", t.tabMeasurements]);
     if (myPersons.length) tabs.push(["mydata", t.myData]);
-    if (this._isAdmin) tabs.push(["settings", t.tabSettings]);
-    if (!tabs.some(([key]) => key === this._tab)) this._tab = "overview";
+    if (this._tab !== "settings" && !tabs.some(([key]) => key === this._tab)) this._tab = "overview";
     this.shadowRoot.getElementById("tabs").innerHTML = entries.length
       ? tabs.map(([key, label]) => `<button class="tab" role="tab" data-action="tab" data-tab="${key}" aria-selected="${this._tab === key}">${esc(label)}</button>`).join("")
       : "";
@@ -1741,38 +1825,39 @@ class WeightTrackerPanel extends HTMLElement {
     this._forms = {};
     const noteInput = this.shadowRoot.getElementById("note-input");
     if (noteInput && this._editNote) this._editNote.draft = noteInput.value;  // survive live updates
+    const canAdd = this._entry.persons.some((p) => p.can_manage) || (this._entry.pets || []).length;
+    // "+": add a measurement / weigh a pet from every page (not where the form is already).
+    const fab = canAdd && this._tab !== "measurements" && this._tab !== "settings" ? `
+      <button class="fab" data-action="add-open" aria-haspopup="dialog"><b aria-hidden="true">+</b><span>${esc(t.addOpen)}</span></button>
+      ${this._addOpen ? this._renderAddSheet() : ""}` : "";
     if (this._tab === "settings") {
-      this._content(this._renderSettings());
+      this._content(this._renderSettingsPage(myPersons));
+    } else if (this._tab === "history") {
+      this._content(this._renderHistory() + fab);
     } else if (this._tab === "mydata") {
-      this._content(myPersons.map((p) => this._renderMyData(p)).join(""));
+      this._content(myPersons.map((p) => this._renderMyData(p)).join("") + fab);
     } else if (!this._entry.persons.length && !(this._entry.pets || []).length) {
       this._content(this._isAdmin
         ? `<div class="card message">${esc(t.noPersonsAdmin)}<div class="actions" style="justify-content:center"><button class="btn primary" data-action="tab" data-tab="settings">${esc(t.toSettings)}</button></div></div>`
         : `<div class="message">${esc(t.noAccess)}</div>`);
     } else if (this._tab === "measurements") {
-      const canAdd = this._entry.persons.some((p) => p.can_manage) || (this._entry.pets || []).length;
       // The form comes first so it stays reachable however long the lists get.
       this._content(`
         ${this._renderPetSession()}
         ${this._renderPending()}
         ${canAdd ? `<div class="card">${this._renderAddForm()}</div>` : ""}
         ${this._entry.persons.length ? `<div class="card">${this._renderList()}</div>` : ""}
-        ${this._renderPetList()}
-        ${this._renderImportExport()}`);
+        ${this._renderPetList()}`);
     } else {
       // One person, child or pet at a time; the switcher lists all you may see.
       const current = this._overviewSubject();
       const person = current.kind === "person" ? current.subject : null;
       this._content(`
         ${this._renderPetSession()}
-        ${this._renderPending()}
+        ${this._renderPendingBar()}
         ${this._renderSwitcher(current)}
-        ${person ? `<div class="report">${this._renderReport(person)}</div>
-        <div class="card">
-          ${this._renderChartHead()}
-          <div class="chart" id="chart"></div>
-        </div>
-        ${this._renderMonthly()}` : `<div class="report single">${current.kind === "child" ? this._renderChildCard(current.subject) : this._renderPetCard(current.subject)}</div>`}`);
+        ${person ? `<div class="report">${this._renderReport(person)}</div>` : `<div class="report single">${current.kind === "child" ? this._renderChildCard(current.subject) : this._renderPetCard(current.subject)}</div>`}
+        ${fab}`);
     }
     this._syncCountdown();
     this._mountFields();
@@ -1783,6 +1868,88 @@ class WeightTrackerPanel extends HTMLElement {
       this._resizeObserver.observe(chart);
       this._renderChart();
     }
+  }
+
+  // Open items on the overview: one slim bar, the list only when opened.
+  _renderPendingBar() {
+    const t = this._t;
+    const pending = this._entry.measurements.filter((m) => m.status === "pending").length;
+    const pets = this._entry.measurements.filter((m) => m.status === "pet_candidate").length;
+    if (!pending && !pets) return "";
+    const text = [pets ? t.petBar(pets) : "", pending ? t.pendingBar(pending) : ""].filter(Boolean).join(" · ");
+    return `
+      <div class="pending-bar" role="status">
+        <span class="what">⚠️ ${esc(text)}</span>
+        <button class="btn" data-action="pending-toggle" aria-expanded="${Boolean(this._pendingOpen)}">${esc(this._pendingOpen ? t.hideItems : t.showItems)}</button>
+      </div>
+      ${this._pendingOpen ? this._renderPending() : ""}`;
+  }
+
+  // History tab: the big chart, monthly values and the calendar.
+  _renderHistory() {
+    const t = this._t;
+    if (!this._entry.persons.length) return `<div class="message">${esc(t.noHistory)}</div>`;
+    const current = this._overviewSubject();
+    const person = current && current.kind === "person" ? current.subject
+      : this._entry.persons.find((p) => p.is_me) || this._entry.persons[0];
+    return `
+      <div class="card">
+        ${this._renderChartHead()}
+        <div class="chart" id="chart"></div>
+      </div>
+      ${this._renderMonthly()}
+      ${person ? this._renderCalendar(person) : ""}`;
+  }
+
+  // Settings behind the gear: personal ones for everybody, administration for admins.
+  _renderSettingsPage(myPersons) {
+    const t = this._t;
+    const own = this._entry.persons.filter((p) => p.can_manage && (p.is_me || !this._isAdmin));
+    const many = own.length > 1;
+    const suffix = (p) => (many ? ` – ${t.settingsFor(p.name)}` : "");
+    const personal = [
+      ...own.map((p) => this._section(`me-notify-${p.id}`, "mdi:bell-outline", "🔔", t.notifications + suffix(p), this._renderNotifySettings(p))),
+      ...(this._entry.ai_available ? own.map((p) => this._section(`me-ai-${p.id}`, "mdi:robot-outline", "🤖", t.aiTitle + suffix(p), this._renderAiSettings(p))) : []),
+      ...own.map((p) => this._section(`me-share-${p.id}`, "mdi:account-eye-outline", "👁", t.shareTitle + suffix(p), this._renderShareSettings(p))),
+      this._section("me-data", "mdi:swap-vertical", "⇅", t.dataTitle, this._renderImportExport()),
+    ].join("");
+    return `
+      <div class="page-title">${customElements.get("ha-icon") ? '<ha-icon icon="mdi:cog"></ha-icon>' : "⚙"} ${esc(t.settingsTitle)}</div>
+      <div class="section-title">${esc(t.personalSettings)}</div>
+      ${personal}
+      ${this._isAdmin ? `<div class="section-title">${esc(t.adminSettings)}</div>${this._renderSettings()}` : ""}`;
+  }
+
+  // Who may see this person (the person itself decides; admins see all).
+  _renderShareSettings(person) {
+    const t = this._t;
+    const viewers = new Set(person.viewers || []);
+    const users = (this._data.users || []).filter((u) => !u.is_admin && u.id !== this._data.user.id && u.id !== person.user_id);
+    return `
+      <div class="hint">${esc(t.shareHint)}</div>
+      ${users.length ? `<div class="checks" style="margin-top:10px">${users.map((u) => `
+        <label class="check"><input type="checkbox" data-action="viewer-toggle" data-person="${esc(person.id)}" data-user="${esc(u.id)}" ${viewers.has(u.id) ? "checked" : ""}>${esc(u.name)}</label>`).join("")}</div>`
+        : `<div class="hint" style="margin-top:10px">${esc(t.shareNone)}</div>`}`;
+  }
+
+  // "+" dialog: add a measurement or weigh a pet / child.
+  _renderAddSheet() {
+    const t = this._t;
+    const pets = this._entry.pets || [];
+    const tab = this._addTab === "pet" && pets.length ? "pet" : "measure";
+    const session = this._entry.pet_session;
+    return `
+      <div class="sheet-bg" data-action="add-close"></div>
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+        <div class="ih"><h2 id="sheet-title">${esc(tab === "pet" ? t.addTabPet : t.addTabMeasure)}</h2>
+          <button class="ix" type="button" data-action="add-close" aria-label="${esc(t.closeLabel)}">×</button></div>
+        ${pets.length ? `<div class="vtabs" role="tablist">
+          <button class="vtab" role="tab" data-action="add-tab" data-tab="measure" aria-selected="${tab === "measure"}">${esc(t.addTabMeasure)}</button>
+          <button class="vtab" role="tab" data-action="add-tab" data-tab="pet" aria-selected="${tab === "pet"}">${esc(t.addTabPet)}</button></div>` : ""}
+        ${tab === "measure" ? `<div class="add-form">${this._renderAddForm()}</div>` : `
+          <div class="hint" style="margin-top:8px">${esc(t.addPetHint)}</div>
+          <div class="pet-pick">${pets.map((p) => `<button class="btn ${session ? "" : "primary"}" data-action="pet-start" data-pet="${esc(p.id)}" ${session ? "disabled" : ""}>${this._emoji(p)} ${esc(p.name)}</button>`).join("")}</div>`}
+      </div>`;
   }
 
   _renderPending() {
@@ -1966,6 +2133,7 @@ class WeightTrackerPanel extends HTMLElement {
         <div class="rh-label">${term("weight", t.weight)}</div>
         <div class="rh-weight">${link("weight", t.weight, this._bigWeight(s.latest_weight))}</div>
         <div class="rh-class">${bmiStatus ? `<span class="st st-${bmiStatus}">${esc(t.bmiCat(s.bmi))}</span>` : ""}${s.change_last !== null && s.change_last !== undefined ? `${bmiStatus ? " · " : ""}<span class="muted num">${link("change_last", t.weight, this._kg(s.change_last, { signed: true }))} ${esc(t.sinceLast)}</span>` : ""}</div>
+        ${this._personMini(person, color)}
         <div class="stats">
           ${stat("trend", t.trend, this._kg(s.trend), "trend", trendStatus)}
           ${stat("change_7d", t.d7, this._kg(s.change_7d, { signed: true }), "changes", pace(s.change_7d))}
@@ -2117,11 +2285,22 @@ class WeightTrackerPanel extends HTMLElement {
     const groups = ["fat", "muscle", "metabolism", "heart", "indices"]
       .map((group) => [group, tiles.filter((tile) => tile[0] === group)])
       .filter(([, items]) => items.length);
+    // One group at a time (sub tabs), remembered per browser.
+    if (this._valuesTab === undefined) {
+      try {
+        this._valuesTab = localStorage.getItem("wt-values-tab");
+      } catch (err) {
+        this._valuesTab = null;
+      }
+    }
+    const shown = groups.find(([group]) => group === this._valuesTab) ? this._valuesTab : groups.length ? groups[0][0] : null;
     const tileGrid = groups.length ? `
       <div class="card span">
         <h2>${esc(t.valuesTitle)}</h2>
-        ${groups.map(([group, items]) => `
-          <div class="vgroup"><h3>${esc(groupNames[group])}</h3>
+        <div class="vtabs" role="tablist">${groups.map(([group]) => `
+          <button class="vtab" role="tab" data-action="values-tab" data-group="${group}" aria-selected="${group === shown}">${esc(groupNames[group])}</button>`).join("")}</div>
+        ${groups.filter(([group]) => group === shown).map(([group, items]) => `
+          <div class="vgroup" role="tabpanel">
             <div class="vgrid">${items.map(([, key, label, value, fmt, status, infoKey, note]) => `
               <div class="vt"><div class="mv num">${key ? link(key, label, fmt(value)) : fmt(value)}</div><div class="ml">${term(infoKey, label)}</div>${this._status(status)}${note ? `<div class="ml">${esc(note)}</div>` : ""}</div>`).join("")}</div>
             ${group === "heart" ? zones + pulseNote : ""}
@@ -2377,6 +2556,16 @@ class WeightTrackerPanel extends HTMLElement {
   }
 
   // Small history chart of one pet (last 180 days): dots + trend line.
+  // Last 30 days of a person, same small chart as for pets.
+  _personMini(person, color) {
+    const now = Date.now();
+    const pts = this._entry.measurements
+      .filter((m) => m.person_id === person.id && m.status === "assigned" && m.ts >= now - 30 * DAY)
+      .map((m) => ({ ...m, weight: m.weight - (m.clothes_kg || 0) }));
+    if (pts.length < 2) return "";
+    return `<div class="rh-mini"><div class="ml">${esc(this._t.last30)}</div>${this._spark(`person-${person.id}`, (W) => this._miniChartSvg(person, color, pts, now, W, `person-${person.id}`))}</div>`;
+  }
+
   _miniChart(pet, color) {
     const now = Date.now();
     const pts = (this._entry.pet_measurements || []).filter((m) => m.pet_id === pet.id && m.ts >= now - 180 * DAY);
@@ -2384,7 +2573,7 @@ class WeightTrackerPanel extends HTMLElement {
     return this._spark(`pet-${pet.id}`, (W) => this._miniChartSvg(pet, color, pts, now, W));
   }
 
-  _miniChartSvg(pet, color, pts, now, W) {
+  _miniChartSvg(pet, color, pts, now, W, key = `pet-${pet.id}`) {
     const H = 96, padL = 34, padR = 8, padT = 8, padB = 8;
     const values = pts.flatMap((m) => [m.weight, m.trend ?? m.weight]);
     let lo = Math.min(...values), hi = Math.max(...values);
@@ -2394,8 +2583,8 @@ class WeightTrackerPanel extends HTMLElement {
     const y = (v) => padT + (1 - (v - lo) / (hi - lo)) * (H - padT - padB);
     const trend = pts.map((m, i) => `${i ? "L" : "M"}${x(m.ts).toFixed(1)},${y(m.trend ?? m.weight).toFixed(1)}`).join("");
     this._miniData = this._miniData || {};
-    this._miniData[`pet-${pet.id}`] = { W, H, padT, padB, color, points: pts.map((m) => ({ px: x(m.ts), py: y(m.weight), m })) };
-    return `<div class="mini-wrap"><svg class="mini" data-mini="pet-${esc(pet.id)}" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(this._t.history)}">
+    this._miniData[key] = { W, H, padT, padB, color, points: pts.map((m) => ({ px: x(m.ts), py: y(m.weight), m })) };
+    return `<div class="mini-wrap"><svg class="mini" data-mini="${esc(key)}" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(this._t.history)}">
       <text x="0" y="${padT + 8}">${esc(this._kg(hi, { unit: false }))}</text>
       <text x="0" y="${H - padB}">${esc(this._kg(lo, { unit: false }))}</text>
       ${pts.map((m) => `<circle cx="${x(m.ts).toFixed(1)}" cy="${y(m.weight).toFixed(1)}" r="3" fill="${color}" fill-opacity="0.35"/>`).join("")}
@@ -2533,14 +2722,11 @@ class WeightTrackerPanel extends HTMLElement {
         <div><h2>${esc(person.name)}</h2><div class="hint" style="margin-top:2px">${esc(t.myDataHint)}</div></div>
       </div>
       <div class="tiles">${this._myDataTiles(person, facts, defaults)}</div>
-      ${this._renderBody(person, facts)}
-      ${this._renderCalendar(person)}
       <div class="two">
         <div class="card" data-preview="health-${esc(person.id)}">${this._myDataHealth(facts)}</div>
         <div class="card" data-preview="goal-${esc(person.id)}">${this._myDataGoal(person, facts)}</div>
       </div>
-      ${person.can_manage ? this._renderNotifySettings(person) : ""}
-      ${person.can_manage && this._entry.ai_available ? this._renderAiSettings(person) : ""}`;
+`;
   }
 
   _renderAiFields(formId) {
@@ -2568,16 +2754,13 @@ class WeightTrackerPanel extends HTMLElement {
     const state = entity && this._hass.states[entity];
     const name = (state && state.attributes.friendly_name) || entity || "AI Task";
     return `
-      <div class="card">
-        <h2>🤖 ${esc(t.aiTitle)}</h2>
-        <div class="hint" style="margin-top:4px">${esc(t.aiExplain(name))}</div>
+        <div class="hint">${esc(t.aiExplain(name))}</div>
         <div class="form" id="${esc(formId)}">
           ${this._formFields(formId, [this._def("boolean", "ai_insights", t.aiSwitch, { wide: true })],
             { ai_insights: Boolean(person.ai_insights), ai_fields: person.ai_fields ? [...person.ai_fields] : [...AI_FIELD_KEYS] })}
           ${this._renderAiFields(formId)}
           ${this._formActions(formId)}
-        </div>
-      </div>`;
+        </div>`;
   }
 
   _notifyServices() {
@@ -2604,15 +2787,12 @@ class WeightTrackerPanel extends HTMLElement {
     ];
     const defaults = { notify_weigh: Boolean(n.weigh), notify_pet_warnings: Boolean(n.pet_warnings), reminder_days: n.reminder_days || 0 };
     return `
-      <div class="card">
-        <h2>🔔 ${esc(t.notifications)}</h2>
-        <div class="hint" style="margin-top:4px">${esc(t.notificationsHint)}</div>
+        <div class="hint">${esc(t.notificationsHint)}</div>
         <div style="margin-top:8px">${n.service ? esc(t.notifyTarget(this._serviceLabel(n.service))) : `<span class="hint">${esc(t.notifyNoDevice)}</span>`}</div>
         <div class="form" id="${esc(formId)}">
           ${this._formFields(formId, fields, defaults)}
           ${this._formActions(formId, n.service ? `<button class="btn" type="button" data-action="notify-test" data-person="${esc(person.id)}" data-form="${esc(formId)}">${esc(t.sendTest)}</button>` : "")}
-        </div>
-      </div>`;
+        </div>`;
   }
 
   // Live update while a tile is edited; the tile being edited keeps its field.
@@ -2951,15 +3131,12 @@ class WeightTrackerPanel extends HTMLElement {
       }
     }
     return `
-      <div class="card">
-        <h2>⇅ ${esc(t.importExport)}</h2>
-        <div class="hint" style="margin-top:4px">${esc(t.importExportHint)}</div>
+        <div class="hint">${esc(t.importExportHint)}</div>
         <div class="actions">
           <button class="btn" data-action="export-csv">${esc(t.exportCsv)}</button>
           ${targets.length ? `<label class="btn file-btn">${esc(t.importCsv)}<input type="file" accept=".csv,.txt,text/csv" data-action="import-file"></label>` : ""}
         </div>
-        ${preview}
-      </div>`;
+        ${preview}`;
   }
 
   _exportCsv() {
@@ -3861,6 +4038,7 @@ class WeightTrackerPanel extends HTMLElement {
           ...(m.note && String(m.note).trim() ? { note: String(m.note).trim() } : {}),
           ...(m.clothes ? { clothes: true } : {}),
         });
+        this._addOpen = false;  // saved: close the "+" dialog (on errors it stays open)
       }
       this._clearForm(formId);
     } catch (err) {
@@ -4244,6 +4422,33 @@ class WeightTrackerPanel extends HTMLElement {
       this._render();
       return;
     }
+    if (action === "pending-toggle") {
+      this._pendingOpen = !this._pendingOpen;
+      this._render();
+      return;
+    }
+    if (action === "values-tab") {
+      this._valuesTab = el.dataset.group;
+      try {
+        localStorage.setItem("wt-values-tab", this._valuesTab);
+      } catch (err) {
+        // only a convenience
+      }
+      this._render();
+      return;
+    }
+    if (action === "add-open" || action === "add-close") {
+      this._addOpen = action === "add-open";
+      if (!this._addOpen) this._clearForm("add-form");
+      this._render();
+      if (this._addOpen) this.shadowRoot.querySelector(".sheet .ix")?.focus();
+      return;
+    }
+    if (action === "add-tab") {
+      this._addTab = el.dataset.tab;
+      this._render();
+      return;
+    }
     if (action === "scale-suggest") {
       const cfg = this._entry.settings || {};
       const model = this._models["scale-sensors-form"] || (this._models["scale-sensors-form"] = { ...cfg });
@@ -4334,6 +4539,10 @@ class WeightTrackerPanel extends HTMLElement {
         .catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
     } else if (action === "pet-start") {
       this._ws({ type: "weight_tracker/pet_session", action: "start", pet_id: el.dataset.pet || null }).catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
+      if (this._addOpen) {
+        this._addOpen = false;
+        this._render();
+      }
     } else if (action === "pet-cancel") {
       this._ws({ type: "weight_tracker/pet_session", action: "cancel" }).catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
     } else if (action === "pet-confirm" || action === "pet-reject") {
@@ -4423,6 +4632,19 @@ class WeightTrackerPanel extends HTMLElement {
         this._import = { name: file.name, parsed: parseWeightCsv(text, this._lang), target: me ? `person:${me.id}` : firstPet ? `pet:${firstPet.id}` : "", busy: false };
         this._render();
       });
+      return;
+    }
+    if (el.dataset.action === "viewer-toggle") {
+      const person = this._entry.persons.find((p) => p.id === el.dataset.person);
+      if (!person) return;
+      const viewers = new Set(person.viewers || []);
+      if (el.checked) viewers.add(el.dataset.user); else viewers.delete(el.dataset.user);
+      this._ws({ type: "weight_tracker/set_viewers", person_id: person.id, viewers: [...viewers] })
+        .then(() => this._toast(this._t.saved))
+        .catch((err) => {
+          this._toast(`${this._t.error}: ${this._errorText(err)}`);
+          this._render();
+        });
       return;
     }
     if (el.dataset.action === "ai-field") {

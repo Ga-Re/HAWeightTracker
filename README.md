@@ -38,15 +38,15 @@ Nach der Einrichtung erscheint in der Seitenleiste der Eintrag **Gewicht** (bzw.
 
 ## Das Panel „Gewicht“
 
-Das Panel hat drei Tabs. Der dritte heißt für Admins „Einstellungen“ und für alle anderen „Meine Daten“.
+Das Panel hat die Tabs **Übersicht**, **Verlauf**, **Messungen** und **Meine Daten** (für alle, die mit einer Person verknüpft sind). Die **Einstellungen** öffnet das Zahnrad ⚙ oben rechts. Ein **„+ Eintragen“**-Knopf unten rechts trägt von überall eine Messung ein oder startet das Wiegen eines Haustiers oder Kindes.
 
 ### Übersicht
-- **Offene Messungen** stehen ganz oben. Ein Klick auf den Namen ordnet die Messung zu.
+- **Offene Messungen** zeigt eine schmale Leiste oben („1 Messung wartet auf Zuordnung“); *Anzeigen* klappt die Liste auf, ein Klick auf den Namen ordnet die Messung zu.
 - **Körperanalyse pro Person** im Stil der Xiaomi-App. Oben wählst du Person, Kind oder Haustier (alle, die du sehen darfst), das Panel merkt sich die Wahl. Kinder und Tiere zeigen ihre Karte mit Verlauf, Perzentilen bzw. Notizen.
-  - **Kopf:** großes Gewicht mit BMI-Einstufung, Trend, Veränderung über 7 und 30 Tage und insgesamt, Tempo pro Woche, Min/Max und Fortschritt zum Zielgewicht.
+  - **Kopf:** großes Gewicht mit BMI-Einstufung, darunter der Verlauf der letzten 30 Tage, Trend, Veränderung über 7 und 30 Tage, Tempo pro Woche und Fortschritt zum Zielgewicht.
   - **Körperbewertung** (Punkte von 100) mit kurzer Einschätzung, BMI und Körperfett mit Bewertung.
   - **Körperzusammensetzung als Figur:** männliche oder weibliche Silhouette nach dem eingetragenen Geschlecht, gefüllt mit Bändern für Muskelgewebe (Skelettmuskulatur), essentielles Fett (3 % bzw. 12 % des Gewichts), Speicherfett, Knochen und Sonstiges (Organe, Blut, Haut, Wasser). Jedes Band ist so hoch wie sein Anteil.
-  - **Körperwerte**, gruppiert:
+  - **Körperwerte** in fünf Reitern (das Panel merkt sich den zuletzt gewählten):
     - **Fett und Wasser:** Viszeralfett, Fettmasse, Körperwasser in % und Litern, Taille-zu-Größe, fettfreie Masse.
     - **Muskeln und Knochen:** Muskelmasse und -anteil, Skelettmuskelmasse, Eiweiß, Knochenanteil.
     - **Stoffwechsel:** Grundumsatz nach Mifflin-St Jeor und nach Katch-McArdle, Gesamtumsatz (mit deinem Aktivitätslevel), Körperalter.
@@ -57,8 +57,10 @@ Das Panel hat drei Tabs. Der dritte heißt für Admins „Einstellungen“ und f
   - **KI-Hinweise**, falls eingeschaltet (siehe [KI-Hinweise](#ki-hinweise)).
   - **Erklärungen:** Die Beschriftung jedes Werts (gepunktet unterstrichen) ist antippbar und erklärt, wie der Wert entsteht, was er bedeutet und welcher Bereich normal ist.
   - Die Körperwerte erscheinen nur, wenn die Waage Impedanz oder direkte Werte liefert. Sind für die Person Sensoren angelegt, öffnet ein Klick auf einen Wert die Entitätsansicht von Home Assistant.
-- **Verlauf als Graph:** Jede Messung ist ein Punkt, dazu kommt die geglättete Trendlinie und das Zielgewicht als gestrichelte Linie. Zeiträume: 30 Tage, 90 Tage, 1 Jahr, alles. Mit *Veränderung* starten alle Personen bei 0, das ist praktisch für den Vergleich. Personen lassen sich ein- und ausblenden, beim Überfahren zeigt ein Tooltip die Details.
+### Verlauf
+- **Graph:** Jede Messung ist ein Punkt, dazu kommt die geglättete Trendlinie und das Zielgewicht als gestrichelte Linie. Zeiträume: 30 Tage, 90 Tage, 1 Jahr, alles. Mit *Veränderung* starten alle Personen bei 0, das ist praktisch für den Vergleich. Personen lassen sich ein- und ausblenden, beim Überfahren zeigt ein Tooltip die Details.
 - **Monatsdurchschnitt** pro Person mit Veränderung zum Vormonat.
+- **Kalender** der letzten 12 Monate für die in der Übersicht gewählte Person.
 
 ### Messungen
 - **Messliste** mit Filter pro Person. Die Person kann direkt umgestellt oder die Messung gelöscht werden.
@@ -66,14 +68,21 @@ Das Panel hat drei Tabs. Der dritte heißt für Admins „Einstellungen“ und f
 
 ### Meine Daten
 Jeder, der mit einer Person verknüpft ist (auch Admins), hat hier seine eigene Seite:
-- **Kacheln** mit Alter, Größe, BMI und Ziel.
+- **Kacheln** mit Alter, Größe, BMI, Ziel, Geschlecht, Taille, Aktivität und Kleidung.
 - **Gesunder Bereich:** BMI-Skala mit deiner Position und dem Normalgewicht für deine Größe.
 - **Dein Ziel:** Fortschritt, Tempo und voraussichtliches Datum.
 - **Bearbeiten:** Ein Klick auf den Stift ✎ in den Kacheln Alter (Geburtsmonat/-jahr), Größe oder Ziel öffnet das Feld direkt in der Kachel. BMI und Gesunder Bereich rechnen schon beim Tippen mit.
 
 Vor jedem Namen steht das **Bild der Home-Assistant-Person**. Es stammt von der gewählten Anwesenheits-Entität (`person.*`) oder, falls keine gewählt ist, von der Person des verknüpften Benutzers. Ein Ring in der Personenfarbe zeigt die Zuordnung zum Graphen. Ohne Bild erscheint die Initiale.
 
-### Einstellungen (nur Admins)
+### Einstellungen (Zahnrad ⚙)
+**Persönlich** – für jeden, der mit einer Person verknüpft ist:
+- **Benachrichtigungen:** welche Nachrichten du bekommst (das Gerät wählt der Admin).
+- **KI-Hinweise:** einschalten und auswählen, welche Werte die KI sieht (wenn ein Admin eine KI eingerichtet hat).
+- **Wer darf mich sehen:** du gibst deine Werte selbst für andere Benutzer frei oder nimmst die Freigabe zurück. Admins sehen ohnehin alles; freigegebene Benutzer können nur ansehen.
+- **Daten exportieren und importieren:** CSV-Export deiner sichtbaren Messungen und Import für dich bzw. für Haustiere.
+
+**Verwaltung** – nur für Admins:
 - **Waage:** Name, minimales und maximales Gewicht, Toleranz, Eindeutigkeits-Abstand und Wartezeit, bis ein Wert stabil ist.
 - **Sensoren der Waage:** welche Werte deine Waage an Home Assistant meldet. Nötig ist nur der Gewichtssensor. Optional kommen Impedanz (bei Waagen mit zwei Frequenzen beide), Herzfrequenz, Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz dazu, falls deine Waage sie liefert. Direkt gemessene Werte haben Vorrang vor der Schätzung aus der Impedanz. Hat die Waage einen **Stabilisiert-Sensor** (z. B. Xiaomi „Stabilized“), wird er beim Wählen des Gewichtssensors zusammen mit der Impedanz vom selben Gerät vorgeschlagen (siehe [Waagen mit „Stabilized“](#waagen-mit-stabilized-z-b-xiaomi-s400)).
 - **Personen:** anlegen, bearbeiten und löschen. Pro Person gibt es Name, Startgewicht, Größe, Zielgewicht, Geburtsmonat, Anwesenheits-Entität, verknüpften HA-Benutzer, wer zusätzlich ansehen darf und ob Sensoren angelegt werden. Beim Löschen einer Person werden auch ihre Messungen gelöscht.

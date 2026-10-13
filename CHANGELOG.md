@@ -7,6 +7,21 @@ Alle Versionen der Integration. Die Nummern folgen [Semantic Versioning](https:/
 Jeder Abschnitt wird beim Push automatisch zu einem [GitHub-Release](https://github.com/Ga-Re/HAWeightTracker/releases)
 (siehe `.github/workflows/release.yml`). HACS zeigt diese Releases als Updates an.
 
+## [2.12.0] – 2026-10-14
+
+### Neu
+- **Einstellungen hinter dem Zahnrad** oben rechts, für alle: *Persönlich* (Benachrichtigungen, KI-Hinweise, „Wer darf mich sehen“, Daten exportieren und importieren) und für Admins *Verwaltung* (Waage, Sensoren, KI, Personen, Kinder, Haustiere, Freigaben, HA-Sensoren).
+- **„Wer darf mich sehen“:** Jede Person gibt ihre Werte selbst für andere Benutzer frei oder nimmt die Freigabe zurück (bisher nur der Admin).
+- **Neuer Tab „Verlauf“** mit dem großen Graphen, den Monatswerten und dem Kalender.
+- **„+ Eintragen“** unten rechts: Messung eintragen oder Haustier/Kind wiegen, von jeder Seite aus.
+- **Übersicht:** kleiner Verlauf der letzten 30 Tage direkt unter dem Gewicht; Körperwerte als Reiter (Fett und Wasser, Muskeln und Knochen, Stoffwechsel, Herz und Fitness, weitere Kennzahlen).
+
+### Geändert
+- Offene Messungen und erkannte Haustier-Wägungen erscheinen in der Übersicht als schmale Leiste zum Aufklappen statt als große Karten (im Tab *Messungen* weiterhin ausgeklappt).
+- *Meine Daten* enthält nur noch Profil und Ziel; Benachrichtigungen und KI sind in die Einstellungen gewandert, Kalender in den Verlauf, die doppelte Körperkarte entfällt.
+- Import/Export ist von *Messungen* in die Einstellungen gewandert.
+- Auf dem Handy passen alle Tabs in eine Zeile.
+
 ## [2.11.0] – 2026-10-14
 
 ### Neu

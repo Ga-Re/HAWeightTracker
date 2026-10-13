@@ -131,6 +131,7 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_set_sensors)
     websocket_api.async_register_command(hass, ws_set_clothes)
     websocket_api.async_register_command(hass, ws_ai_refresh)
+    websocket_api.async_register_command(hass, ws_set_viewers)
     file_hash = await hass.async_add_executor_job(_panel_file_hash)
     hass.data[DATA_PANEL_HASH] = file_hash
     if file_hash is None:
@@ -287,6 +288,7 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                 },
             }
             if data["can_manage"]:
+                data["viewers"] = person.get(CONF_VIEWERS, [])
                 learned, samples = manager.clothes_estimate(person_id)
                 data["clothes"] = {
                     "enabled": bool(person.get(CONF_CLOTHES, False)),
@@ -434,6 +436,13 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
         users = [
             {"id": u.id, "name": u.name or u.id, "is_admin": u.is_admin}
             for u in await async_assignable_users(hass)
+        ]
+    elif any(p.get("can_manage") for e in entries for p in e["persons"]):
+        # to choose who may see you: the other users (admins see everything anyway)
+        users = [
+            {"id": u.id, "name": u.name or u.id, "is_admin": False}
+            for u in await async_assignable_users(hass)
+            if not u.is_admin and u.id != user.id
         ]
     return {
         "user": {"id": user.id, "name": user.name, "is_admin": user.is_admin},
@@ -1101,4 +1110,35 @@ def ws_ai_refresh(
         connection.send_error(msg["id"], "ai_disabled", "AI hints are not switched on")
         return
     manager.async_request_ai(msg["person_id"])
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/set_viewers",
+        vol.Required("entry_id"): str,
+        vol.Required("person_id"): str,
+        vol.Required("viewers"): [str],
+    }
+)
+@websocket_api.async_response
+async def ws_set_viewers(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Who may see a person: the person itself (or an admin) decides."""
+    if (manager := _entry_manager(hass, connection, msg)) is None:
+        return
+    entry = manager.entry
+    current = manager.persons.get(msg["person_id"])
+    if current is None or not can_manage(connection.user, current):
+        connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Person not found")
+        return
+    # Admins see everything anyway; the person itself needs no permission.
+    allowed = {u.id for u in await async_assignable_users(hass) if not u.is_admin}
+    options = deepcopy(dict(entry.options))
+    person = next(p for p in options[CONF_PERSONS] if p[CONF_PERSON_ID] == msg["person_id"])
+    person[CONF_VIEWERS] = sorted(
+        {u for u in msg["viewers"] if u in allowed and u != person.get(CONF_USER_ID)}
+    )
+    hass.config_entries.async_update_entry(entry, options=options)
     connection.send_result(msg["id"])
