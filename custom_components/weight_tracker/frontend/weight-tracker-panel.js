@@ -238,7 +238,9 @@ const TEXT = {
     bmrEntity: "Grundumsatz-Sensor",
     directHint: "Falls deine Waage diesen Wert direkt liefert – er ersetzt dann die Schätzung aus der Impedanz.",
     impedanceEntity: "Impedanz-Sensor",
-    impedanceHint: "Nur falls deine Waage die Impedanz liefert (z. B. Xiaomi Body Composition Scale). Daraus werden Körperfett, Muskeln usw. geschätzt.",
+    impedanceHint: "Nur falls deine Waage die Impedanz liefert (z. B. Xiaomi Body Composition Scale). Daraus werden Körperfett, Muskeln usw. geschätzt. Xiaomi S400: „Impedance Low“ wählen.",
+    stableEntity: "Stabilisiert-Sensor",
+    stableHint: "Empfohlen, wenn deine Waage ihn hat (z. B. Xiaomi „Stabilized“): Jedes Umschalten auf „an“ zählt als Messung – auch wenn das Gewicht gleich geblieben ist. Wird beim Wählen des Gewichtssensors vorgeschlagen.",
     bodyFatEntity: "Körperfett-Sensor",
     bodyFatEntityHint: "Falls die Integration deiner Waage schon Körperfett in % liefert.",
     myDataHint: "Deine Angaben. Sehen können sie nur du und Admins.",
@@ -527,7 +529,9 @@ const TEXT = {
     bmrEntity: "Basal metabolic rate sensor",
     directHint: "If your scale reports this value directly – it then replaces the estimate from the impedance.",
     impedanceEntity: "Impedance sensor",
-    impedanceHint: "Only if your scale reports impedance (e.g. Xiaomi Body Composition Scale). Body fat, muscles etc. are estimated from it.",
+    impedanceHint: "Only if your scale reports impedance (e.g. Xiaomi Body Composition Scale). Body fat, muscles etc. are estimated from it. Xiaomi S400: choose “Impedance Low”.",
+    stableEntity: "Stabilized sensor",
+    stableHint: "Recommended if your scale has one (e.g. Xiaomi “Stabilized”): every switch to “on” counts as a measurement – even if the weight stayed the same. Suggested when you pick the weight sensor.",
     bodyFatEntity: "Body fat sensor",
     bodyFatEntityHint: "If your scale's integration already reports body fat in %.",
     myDataHint: "Your details. Only you and admins can see them.",
@@ -2574,7 +2578,8 @@ class WeightTrackerPanel extends HTMLElement {
       this._def("number", "debounce_seconds", t.debounce, { required: true, min: 0, max: 120, step: 1, unit: "s", helper: t.debounceHint }),
     ];
     const sensors = [
-      this._def("entity", "source_entity", t.source, { required: true, filter }),
+      this._def("entity", "source_entity", t.source, { required: true, filter, onChange: (id) => this._suggestScaleSensors(id) }),
+      this._def("entity", "stable_entity", t.stableEntity, { filter: { domain: "binary_sensor" }, helper: t.stableHint }),
       this._def("entity", "impedance_entity", t.impedanceEntity, { filter: { domain: "sensor" }, helper: t.impedanceHint }),
       this._def("entity", "body_fat_entity", t.bodyFatEntity, { filter: { domain: "sensor" }, helper: t.bodyFatEntityHint }),
       this._def("entity", "muscle_mass_entity", t.muscleEntity, { filter: { domain: "sensor" }, helper: t.directHint }),
@@ -2594,6 +2599,30 @@ class WeightTrackerPanel extends HTMLElement {
           ${this._formFields("scale-sensors-form", sensors, defaults)}
           ${this._formActions("scale-sensors-form")}
         </div>`, { open: !cfg.source_entity });
+  }
+
+  // After picking the weight sensor: fill in "stabilized" and impedance from the
+  // same device (e.g. Xiaomi scales), if those fields are still empty.
+  _suggestScaleSensors(sourceId) {
+    const registry = (this._hass && this._hass.entities) || {};
+    const device = sourceId && registry[sourceId] && registry[sourceId].device_id;
+    if (!device) return;
+    const siblings = Object.keys(registry).filter((id) => id !== sourceId && registry[id].device_id === device && !registry[id].disabled_by);
+    const model = this._models["scale-sensors-form"];
+    const current = { ...(this._entry.settings || {}), ...model };
+    let changed = false;
+    const stable = siblings.find((id) => id.startsWith("binary_sensor.") && /stabili[sz]/i.test(id));
+    if (stable && !current.stable_entity) {
+      model.stable_entity = stable;
+      changed = true;
+    }
+    const impedance = siblings.filter((id) => id.startsWith("sensor.") && /impedanc/i.test(id));
+    const preferred = impedance.find((id) => /low/i.test(id)) || impedance.find((id) => !/high/i.test(id));
+    if (preferred && !current.impedance_entity) {
+      model.impedance_entity = preferred;
+      changed = true;
+    }
+    if (changed) this._render();
   }
 
   _renderPersonsSettings() {
@@ -2859,6 +2888,7 @@ class WeightTrackerPanel extends HTMLElement {
             tolerance: Number(m.tolerance),
             ambiguity_margin: Number(m.ambiguity_margin),
             debounce_seconds: Math.round(Number(m.debounce_seconds)),
+            stable_entity: m.stable_entity || null,
             impedance_entity: m.impedance_entity || null,
             body_fat_entity: m.body_fat_entity || null,
             muscle_mass_entity: m.muscle_mass_entity || null,

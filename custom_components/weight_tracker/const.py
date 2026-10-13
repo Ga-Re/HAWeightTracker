@@ -8,6 +8,12 @@ DOMAIN = "weight_tracker"
 
 # Settings (stored in entry.options)
 CONF_SOURCE = "source_entity"
+# Optional "stabilized" binary sensor of the scale: every switch to "on" is a
+# weighing, even if the weight is the same as last time (no state change).
+CONF_STABLE_ENTITY = "stable_entity"
+STABLE_DELAY = 2  # s: let the weight sensor catch up with the flag
+STABLE_MAX_AGE = timedelta(minutes=2)  # weight must have been reported recently
+STABLE_REPEAT_WINDOW = timedelta(seconds=45)  # one weighing may flip the flag twice
 # Optional extra sensors of the scale (only used when the scale provides them)
 CONF_IMPEDANCE_ENTITY = "impedance_entity"
 CONF_BODY_FAT_ENTITY = "body_fat_entity"

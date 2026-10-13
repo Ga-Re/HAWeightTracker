@@ -15,6 +15,7 @@ from homeassistant.const import (
     ATTR_UNIT_OF_MEASUREMENT,
     CONF_NAME,
     STATE_HOME,
+    STATE_ON,
     STATE_UNAVAILABLE,
     STATE_UNKNOWN,
     UnitOfMass,
@@ -82,6 +83,10 @@ from .const import (
     CONF_SEX,
     CONF_SPECIES,
     CONF_SOURCE,
+    CONF_STABLE_ENTITY,
+    STABLE_DELAY,
+    STABLE_MAX_AGE,
+    STABLE_REPEAT_WINDOW,
     CONF_START_WEIGHT,
     CONF_TOLERANCE,
     DEFAULT_AMBIGUITY_MARGIN,
@@ -321,6 +326,7 @@ class WeightTrackerManager:
         self._last_source: tuple[float, datetime] | None = None
         self._pending_weight: float | None = None
         self._debounce_unsub: CALLBACK_TYPE | None = None
+        self._stable_unsub: CALLBACK_TYPE | None = None
         self._unsubs: list[CALLBACK_TYPE] = []
         self._listeners: list[Callable[[], None]] = []
         # True between async_setup and async_unload. The config entry state is
@@ -403,6 +409,10 @@ class WeightTrackerManager:
                 self.hass, [self.options[CONF_SOURCE]], self._async_source_changed
             )
         )
+        if stable := self.options.get(CONF_STABLE_ENTITY):
+            self._unsubs.append(
+                async_track_state_change_event(self.hass, [stable], self._async_stable_changed)
+            )
         # Time based values (7/30 day change, goal ETA) move on without new data.
         self._unsubs.append(
             async_track_time_change(
@@ -427,6 +437,9 @@ class WeightTrackerManager:
         if self._debounce_unsub:
             self._debounce_unsub()
             self._debounce_unsub = None
+        if self._stable_unsub:
+            self._stable_unsub()
+            self._stable_unsub = None
         if self._pet_session_unsub:
             self._pet_session_unsub()
             self._pet_session_unsub = None
@@ -475,6 +488,8 @@ class WeightTrackerManager:
     @callback
     def _async_source_changed(self, event: Event[EventStateChangedData]) -> None:
         """Handle a new value of the scale sensor."""
+        if self.options.get(CONF_STABLE_ENTITY):
+            return  # readings are taken when the scale reports "stabilized"
         weight = self._parse_weight(event.data["new_state"])
         if weight is None:
             return
@@ -519,6 +534,46 @@ class WeightTrackerManager:
         ):
             _LOGGER.debug("Ignoring duplicate value %.2f kg", weight)
             self._save()
+            return
+        self._async_register(weight, now)
+
+    @callback
+    def _async_stable_changed(self, event: Event[EventStateChangedData]) -> None:
+        """The scale reports a finished weighing ("stabilized" switched on).
+
+        Scales like the Xiaomi S400 only send the final weight. If it equals the
+        previous one the weight sensor does not change, so this flag is the only
+        sign of a new weighing.
+        """
+        new_state, old_state = event.data["new_state"], event.data["old_state"]
+        if new_state is None or new_state.state != STATE_ON:
+            return
+        if old_state is None or old_state.state == STATE_ON:
+            return  # restored at startup / no real switch
+        if self._stable_unsub:
+            self._stable_unsub()
+        self._stable_unsub = async_call_later(self.hass, STABLE_DELAY, self._async_stable_done)
+
+    @callback
+    def _async_stable_done(self, _now: datetime) -> None:
+        """Take the weight that belongs to the "stabilized" flag."""
+        self._stable_unsub = None
+        state = self.hass.states.get(self.options[CONF_SOURCE])
+        weight = self._parse_weight(state)
+        if state is None or weight is None:
+            return
+        now = dt_util.utcnow()
+        reported = getattr(state, "last_reported", None) or state.last_updated
+        if now - reported > STABLE_MAX_AGE:
+            _LOGGER.debug("Stabilized without a recent weight (%s), ignored", reported)
+            return
+        last, self._last_source = self._last_source, (weight, now)
+        if (
+            last is not None
+            and abs(weight - last[0]) < SAME_WEIGHT_EPSILON
+            and now - last[1] < STABLE_REPEAT_WINDOW
+        ):
+            _LOGGER.debug("Same weighing reported twice (%.2f kg)", weight)
             return
         self._async_register(weight, now)
 
@@ -579,7 +634,8 @@ class WeightTrackerManager:
                 value = float(state.state)
             except (TypeError, ValueError):
                 continue
-            updated = getattr(state, "last_updated", None)
+            # An unchanged value only moves last_reported (scale sent the same value).
+            updated = getattr(state, "last_reported", None) or getattr(state, "last_updated", None)
             if not isinstance(updated, datetime) or abs(now - updated) > EXTRA_READING_MAX_AGE or value <= 0:
                 continue
             extras[key] = value

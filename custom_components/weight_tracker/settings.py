@@ -43,6 +43,7 @@ from .const import (
     CONF_SENSORS,
     CONF_SEX,
     CONF_SOURCE,
+    CONF_STABLE_ENTITY,
     CONF_SPECIES,
     CONF_START_WEIGHT,
     CONF_TOLERANCE,
@@ -129,6 +130,7 @@ SETTINGS_SCHEMA = vol.Schema(
     {
         vol.Optional(CONF_NAME): vol.All(cv.string, vol.Strip, vol.Length(min=1, max=50)),
         vol.Required(CONF_SOURCE): cv.entity_domain("sensor"),
+        vol.Optional(CONF_STABLE_ENTITY): vol.Any(None, "", cv.entity_domain("binary_sensor")),
         vol.Required(CONF_MIN_WEIGHT): _number(1, 300),
         vol.Required(CONF_MAX_WEIGHT): _number(1, 500),
         vol.Required(CONF_TOLERANCE): _number(0.5, 20),

@@ -65,6 +65,7 @@ from .const import (
     CONF_REMINDER_DAYS,
     CONF_SEX,
     CONF_SOURCE,
+    CONF_STABLE_ENTITY,
     CONF_SPECIES,
     CONF_START_WEIGHT,
     CONF_USER_ID,
@@ -405,6 +406,7 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
         if admin:
             entry_data["settings"] = {
                 CONF_SOURCE: entry.options.get(CONF_SOURCE),
+                CONF_STABLE_ENTITY: entry.options.get(CONF_STABLE_ENTITY) or None,
                 **{conf: entry.options.get(conf) or None for conf in EXTRA_ENTITIES.values()},
                 **{k: entry.options.get(k, v) for k, v in SETTING_DEFAULTS.items()},
             }

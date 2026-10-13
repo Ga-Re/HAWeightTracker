@@ -60,13 +60,22 @@ Vor jedem Namen steht das **Bild der Home-Assistant-Person**. Es stammt von der 
 
 ### Einstellungen (nur Admins)
 - **Waage:** Name, minimales und maximales Gewicht, Toleranz, Eindeutigkeits-Abstand und Wartezeit, bis ein Wert stabil ist.
-- **Sensoren der Waage:** welche Werte deine Waage an Home Assistant meldet. Nötig ist nur der Gewichtssensor. Optional kommen Impedanz, Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz dazu, falls deine Waage sie liefert. Direkt gemessene Werte haben Vorrang vor der Schätzung aus der Impedanz.
+- **Sensoren der Waage:** welche Werte deine Waage an Home Assistant meldet. Nötig ist nur der Gewichtssensor. Optional kommen Impedanz, Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz dazu, falls deine Waage sie liefert. Direkt gemessene Werte haben Vorrang vor der Schätzung aus der Impedanz. Hat die Waage einen **Stabilisiert-Sensor** (z. B. Xiaomi „Stabilized“), wird er beim Wählen des Gewichtssensors zusammen mit der Impedanz vom selben Gerät vorgeschlagen (siehe [Waagen mit „Stabilized“](#waagen-mit-stabilized-z-b-xiaomi-s400)).
 - **Personen:** anlegen, bearbeiten und löschen. Pro Person gibt es Name, Startgewicht, Größe, Zielgewicht, Geburtsmonat, Anwesenheits-Entität, verknüpften HA-Benutzer, wer zusätzlich ansehen darf und ob Sensoren angelegt werden. Beim Löschen einer Person werden auch ihre Messungen gelöscht.
 - **Freigaben:** Tabelle Benutzer × Personen, siehe unten.
 
 Die Formulare nutzen die Eingabefelder von Home Assistant selbst. Waagen-Sensor und Anwesenheit sind durchsuchbare Entitätsauswahlen mit Filter: Gewichtssensoren bzw. nur `person.*`-Entitäten. Speichern lädt die Integration kurz neu, das Panel aktualisiert sich dabei von selbst. Der Knopf *Konfigurieren* unter Geräte & Dienste verweist nur noch auf das Panel.
 
 Das Panel passt sich dem hellen oder dunklen Theme an, funktioniert auf dem Handy und lädt nichts aus dem Internet. Die Daten kommen live über die WebSocket-Verbindung von Home Assistant.
+
+### Waagen mit „Stabilized“ (z. B. Xiaomi S400)
+
+Manche Waagen, etwa die **Xiaomi Body Composition Scale S400**, schicken pro Wiegen nur das fertige Gewicht. Ist es gleich wie beim letzten Mal, ändert sich der Gewichtssensor in Home Assistant nicht, und ohne weiteren Hinweis würde die Messung fehlen. Deshalb unter *Einstellungen → Sensoren der Waage*:
+- **Gewichtssensor:** „… Gewicht“ bzw. „… Mass“ der Waage.
+- **Stabilisiert-Sensor:** „… Stabilized“. Jedes Umschalten auf „an“ zählt als Messung, auch bei gleichem Gewicht. Die Wartezeit („Beruhigungszeit“) entfällt dann.
+- **Impedanz:** bei der S400 „Impedance Low“ (50 kHz, wie bei der Mi Scale 2, für die die Formeln gemacht sind).
+
+Stabilisiert- und Impedanz-Sensor werden automatisch vorgeschlagen, sobald du den Gewichtssensor wählst. Ohne Stabilisiert-Sensor arbeitet die Integration wie bisher mit Änderungen des Gewichts.
 
 ## Auswertung
 
