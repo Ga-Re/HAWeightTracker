@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, replace
+import asyncio
 from datetime import datetime
 import logging
 from typing import Any
@@ -42,7 +43,8 @@ from homeassistant.util.unit_conversion import MassConverter
 from .analytics import PersonStats, Point, compute_stats, trend_series
 from .clothes import DEFAULT_CLOTHES_KG, learned_clothes, offset_samples
 from .growth import curves, percentile, z_score
-from .body import Composition, age_from_birth_month, body_fat_class, body_fat_range, from_impedance
+from .ai import build_prompt, parse_answer
+from .body import Composition, age_from_birth_month, analyze, body_fat_class, body_fat_range, from_impedance, waist_to_height
 from .notifications import (
     clothes_answer,
     clothes_question,
@@ -56,6 +58,10 @@ from .pets import closest_pet, health_warning, match_pet, split_pair
 from .const import (
     CONF_AMBIGUITY_MARGIN,
     CONF_BIRTH_DATE,
+    AI_MIN_INTERVAL,
+    AI_TIMEOUT,
+    CONF_AI_ENTITY,
+    CONF_AI_INSIGHTS,
     CONF_BIRTH_MONTH,
     CLOTHES_ACTION_PREFIX,
     NO_CLOTHES_ACTION_PREFIX,
@@ -136,6 +142,8 @@ class Measurement:
     pair_id: str | None = None
     # Extra values of the scale at the time of the reading (if it provides them)
     impedance: float | None = None
+    impedance_high: float | None = None  # second frequency (dual-frequency scales)
+    heart_rate: float | None = None
     body_fat: float | None = None
     # values a scale reports directly (instead of the impedance estimate)
     muscle_mass: float | None = None
@@ -145,6 +153,16 @@ class Measurement:
     note: str | None = None
     # Weighed with clothes: the clothes weight deducted (None = without clothes)
     clothes_kg: float | None = None
+
+    @property
+    def body_impedance(self) -> float | None:
+        """Impedance for the body formulas: the larger value (50 kHz) of dual-frequency scales.
+
+        The Xiaomi S400 integration names its values by size, not frequency:
+        "Impedance High" is the larger, physically the 50 kHz reading.
+        """
+        values = [v for v in (self.impedance, self.impedance_high) if v]
+        return max(values) if values else None
 
     @property
     def effective(self) -> float:
@@ -165,7 +183,7 @@ class Measurement:
             data["pet_id"] = self.pet_id
         if self.pair_id:
             data["pair_id"] = self.pair_id
-        for key in ("impedance", "body_fat", "muscle_mass", "water", "bone_mass", "bmr", "note", "clothes_kg"):
+        for key in ("impedance", "impedance_high", "heart_rate", "body_fat", "muscle_mass", "water", "bone_mass", "bmr", "note", "clothes_kg"):
             if getattr(self, key) is not None:
                 data[key] = getattr(self, key)
         return data
@@ -183,6 +201,8 @@ class Measurement:
             pet_id=data.get("pet_id"),
             pair_id=data.get("pair_id"),
             impedance=data.get("impedance"),
+            impedance_high=data.get("impedance_high"),
+            heart_rate=data.get("heart_rate"),
             body_fat=data.get("body_fat"),
             muscle_mass=data.get("muscle_mass"),
             water=data.get("water"),
@@ -318,6 +338,9 @@ class WeightTrackerManager:
         self.body: dict[str, dict[str, Any]] = {}
         # person id -> ISO time of the last reminder
         self._reminders: dict[str, str] = {}
+        # person id -> last AI hint {"ts", "summary", "tips"} or {"ts", "error"}
+        self.ai: dict[str, dict[str, Any]] = {}
+        self.ai_busy: set[str] = set()
         self._pet_session_unsub: CALLBACK_TYPE | None = None
         self.last_detection: Detection | None = None
         self._store: Store[dict[str, Any]] = Store(
@@ -398,6 +421,7 @@ class WeightTrackerManager:
             (PetEvent.from_dict(e) for e in data.get("pet_events", [])), key=lambda e: e.ts
         )
         self._reminders = data.get("reminders", {})
+        self.ai = data.get("ai", {})
         self._recalculate()
         # Warnings that already existed before are not sent again.
         self._check_pet_warnings(notify=False)
@@ -676,6 +700,7 @@ class WeightTrackerManager:
         self._fire_event(measurement)
         if measurement.person_id:
             self._notify_weighing(measurement)
+            self._maybe_ai(measurement)
         return measurement
 
     # --------------------------------------------------- personal notifications
@@ -1024,6 +1049,7 @@ class WeightTrackerManager:
         self._fire_event(measurement)
         if was_pending and person_id:
             self._notify_weighing(measurement)
+            self._maybe_ai(measurement)
 
     @callback
     def async_unassign(self, measurement: Measurement) -> None:
@@ -1282,13 +1308,12 @@ class WeightTrackerManager:
         """Body composition per person, only from readings that carry scale data."""
         local = dt_util.as_local(now)
         self.body = {}
+        composition_keys = [key for key in EXTRA_ENTITIES if key != "heart_rate"]
         for person_id, person in self.persons.items():
-            assigned = [
-                m for m in self.measurements
-                if m.person_id == person_id and m.status == STATUS_ASSIGNED
-                and any(getattr(m, key) is not None for key in EXTRA_ENTITIES)
-            ]
-            if not assigned:
+            own = [m for m in self.measurements if m.person_id == person_id and m.status == STATUS_ASSIGNED]
+            assigned = [m for m in own if any(getattr(m, key) is not None for key in composition_keys)]
+            pulse = next((m for m in reversed(own) if m.heart_rate), None)
+            if not assigned and pulse is None:
                 continue  # the scale does not provide composition data
             sex = person.get(CONF_SEX)
             age = age_from_birth_month(person.get(CONF_BIRTH_MONTH), local.year, local.month)
@@ -1296,8 +1321,8 @@ class WeightTrackerManager:
             history: list[tuple[Measurement, Composition]] = []
             for m in assigned:
                 composition = None
-                if m.impedance is not None and sex and age and height:
-                    composition = from_impedance(m.effective, height, age, sex, m.impedance)
+                if m.body_impedance is not None and sex and age and height:
+                    composition = from_impedance(m.effective, height, age, sex, m.body_impedance)
                 direct = {
                     key: round(getattr(m, key), 1 if key != "bmr" else 0)
                     for key in ("body_fat", "muscle_mass", "water", "bone_mass", "bmr")
@@ -1310,17 +1335,24 @@ class WeightTrackerManager:
             missing = [
                 key for key, value in (("sex", sex), ("birth_month", age), ("height", height))
                 if not value
-            ] if any(m.impedance is not None for m in assigned) else []
+            ] if any(m.body_impedance is not None for m in assigned) else []
             data: dict[str, Any] = {
                 "missing": missing,
-                "source": "scale" if any(getattr(m, k) is not None for m in assigned for k in ("body_fat", "muscle_mass", "water")) and not any(m.impedance for m in assigned) else "impedance",
+                "source": "scale" if any(getattr(m, k) is not None for m in assigned for k in ("body_fat", "muscle_mass", "water")) and not any(m.body_impedance for m in assigned) else "impedance",
             }
+            if pulse is not None:
+                data["heart_rate"] = {"value": round(pulse.heart_rate), "ts": pulse.ts.isoformat()}
             if history:
                 latest_m, latest = history[-1]
                 month_ago = [c for m, c in history if (latest_m.ts - m.ts).days >= 28 and c.body_fat is not None]
+                analysis = analyze(latest_m.effective, height, age, sex, latest, latest_m.body_impedance)
+                if pulse is not None:
+                    analysis["status"]["heart_rate"] = "low" if pulse.heart_rate < 60 else "standard" if pulse.heart_rate <= 100 else "high"
                 data.update(
                     {
                         "latest": asdict(latest),
+                        "analysis": analysis,
+                        "weight": latest_m.effective,
                         "ts": latest_m.ts.isoformat(),
                         "fat_class": body_fat_class(latest.body_fat, sex, age),
                         "fat_range": body_fat_range(sex, age),
@@ -1329,6 +1361,112 @@ class WeightTrackerManager:
                     }
                 )
             self.body[person_id] = data
+
+    # ------------------------------------------------------------- AI hints
+
+    @property
+    def ai_entity(self) -> str | None:
+        """AI Task entity chosen by the admin (None = AI hints off)."""
+        return self.options.get(CONF_AI_ENTITY) or None
+
+    def ai_enabled(self, person_id: str) -> bool:
+        person = self.persons.get(person_id)
+        return bool(self.ai_entity and person and person.get(CONF_AI_INSIGHTS))
+
+    @callback
+    def _maybe_ai(self, measurement: Measurement) -> None:
+        """Automatic analysis after a weighing (at most once per AI_MIN_INTERVAL)."""
+        person_id = measurement.person_id
+        if not person_id or not self.ai_enabled(person_id):
+            return
+        last = dt_util.parse_datetime((self.ai.get(person_id) or {}).get("ts") or "")
+        if last is not None and measurement.ts - last < AI_MIN_INTERVAL:
+            return
+        self.async_request_ai(person_id)
+
+    @callback
+    def async_request_ai(self, person_id: str) -> bool:
+        """Start an analysis in the background; False if not possible right now."""
+        if not self.ai_enabled(person_id) or person_id in self.ai_busy:
+            return False
+        self.ai_busy.add(person_id)
+        self._notify()
+        self.hass.async_create_task(self._async_run_ai(person_id))
+        return True
+
+    def ai_facts(self, person_id: str) -> dict[str, Any]:
+        """The numbers sent to the AI (no name, no user, no birth date)."""
+        person = self.persons[person_id]
+        now = dt_util.utcnow()
+        local = dt_util.as_local(now)
+        stats = self.stats.get(person_id)
+        body = self.body.get(person_id) or {}
+        analysis = body.get("analysis") or {}
+        latest = body.get("latest") or {}
+        facts: dict[str, Any] = {
+            "sex": person.get(CONF_SEX),
+            "age": age_from_birth_month(person.get(CONF_BIRTH_MONTH), local.year, local.month),
+            "height": person.get(CONF_HEIGHT),
+            "goal": person.get(CONF_GOAL_WEIGHT),
+        }
+        if stats:
+            facts.update(
+                weight=stats.latest_weight, trend=stats.trend, change_7d=stats.change_7d,
+                change_30d=stats.change_30d, change_total=stats.change_total,
+                rate=stats.rate_per_week, bmi=stats.bmi,
+            )
+        for key in ("body_fat", "muscle_mass", "water", "bone_mass", "bmr"):
+            facts[key] = latest.get(key)
+        for key in ("protein", "visceral_fat", "metabolic_age", "skeletal_muscle", "body_score", "body_type"):
+            facts[key] = analysis.get(key)
+        facts["heart_rate"] = (body.get("heart_rate") or {}).get("value")
+        waist = [w for w in self.waist if w.person_id == person_id]
+        if waist and person.get(CONF_HEIGHT):
+            facts["whtr"] = waist_to_height(waist[-1].cm, person.get(CONF_HEIGHT))
+        assigned, trends = self._person_history(person_id)
+        weekly: list[float] = []
+        for weeks in range(8, -1, -1):
+            cutoff = now.timestamp() - weeks * 7 * 86400
+            values = [t for m, t in zip(assigned, trends) if m.ts.timestamp() <= cutoff]
+            if values:
+                weekly.append(round(values[-1], 1))
+        facts["weekly"] = weekly or None
+        facts["status"] = analysis.get("status") or {}
+        return facts
+
+    async def _async_run_ai(self, person_id: str) -> None:
+        """Ask the AI Task entity for hints and store them."""
+        result: dict[str, Any] = {"ts": dt_util.utcnow().isoformat()}
+        try:
+            if not self.hass.services.has_service("ai_task", "generate_data"):
+                raise RuntimeError("AI Task is not available (Home Assistant 2025.7 or newer with an AI integration)")
+            prompt = build_prompt(self._german(), self.ai_facts(person_id))
+            async with asyncio.timeout(AI_TIMEOUT):
+                response = await self.hass.services.async_call(
+                    "ai_task",
+                    "generate_data",
+                    {"task_name": "Weight Tracker", "entity_id": self.ai_entity, "instructions": prompt},
+                    blocking=True,
+                    return_response=True,
+                )
+            answer = parse_answer((response or {}).get("data"))
+            if not answer["summary"] and not answer["tips"]:
+                raise RuntimeError("Empty answer")
+            result.update(answer)
+        except Exception as err:  # noqa: BLE001 - any failure of the AI is shown in the panel
+            _LOGGER.warning("AI hints for %s failed: %s", self.person_name(person_id), err)
+            result["error"] = str(err) or type(err).__name__
+            previous = self.ai.get(person_id) or {}
+            if previous.get("summary") or previous.get("tips"):
+                # keep the last good hints visible, mark the failed attempt
+                result = {**previous, "error": result["error"], "error_ts": result["ts"]}
+        finally:
+            self.ai_busy.discard(person_id)
+        if not self.active:
+            return
+        self.ai[person_id] = result
+        self._save()
+        self._notify()
 
     @callback
     def _notify(self) -> None:
@@ -1344,6 +1482,7 @@ class WeightTrackerManager:
             "pet_warning_sent": self._pet_warning_sent,
             "pet_events": [e.as_dict() for e in self.pet_events],
             "reminders": self._reminders,
+            "ai": self.ai,
         }
         if self._last_source:
             data["last_source"] = {

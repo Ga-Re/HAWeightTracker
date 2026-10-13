@@ -71,6 +71,24 @@
       },
       "bmr": {
         "name": "Basal metabolic rate"
+      },
+      "body_score": {
+        "name": "Body score"
+      },
+      "visceral_fat": {
+        "name": "Visceral fat"
+      },
+      "protein": {
+        "name": "Protein"
+      },
+      "metabolic_age": {
+        "name": "Body age"
+      },
+      "skeletal_muscle": {
+        "name": "Skeletal muscle mass"
+      },
+      "heart_rate": {
+        "name": "Heart rate"
       }
     },
     "button": {

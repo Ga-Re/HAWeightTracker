@@ -238,7 +238,70 @@ const TEXT = {
     bmrEntity: "Grundumsatz-Sensor",
     directHint: "Falls deine Waage diesen Wert direkt liefert – er ersetzt dann die Schätzung aus der Impedanz.",
     impedanceEntity: "Impedanz-Sensor",
-    impedanceHint: "Nur falls deine Waage die Impedanz liefert (z. B. Xiaomi Body Composition Scale). Daraus werden Körperfett, Muskeln usw. geschätzt. Xiaomi S400: „Impedance Low“ wählen.",
+    impedanceHint: "Nur falls deine Waage die Impedanz liefert (z. B. Xiaomi Body Composition Scale). Daraus werden Körperfett, Muskeln usw. geschätzt. Xiaomi S400: hier „Impedance Low“, unten „Impedance High“.",
+    ovPersons: "Person wählen",
+    sinceLast: "seit der letzten Messung",
+    bodyReport: "Körperbewertung",
+    points: "Punkte",
+    composition: "Körperzusammensetzung",
+    waterMass: "Masse des Körperwassers",
+    fatMass: "Fettmasse",
+    boneMineral: "Knochenmineral",
+    proteinMass: "Eiweißmasse",
+    musclePct: "Muskelanteil",
+    waterPct: "Körperwasser",
+    proteinPct: "Eiweißanteil",
+    bonePct: "Anteil Knochenmineral",
+    skeletalMuscle: "Skelettmuskelmasse",
+    visceral: "Viszeralfett",
+    bodyAge: "Körperalter",
+    leanMass: "Fettfreie Masse",
+    heartRate: "Herzfrequenz",
+    yearsUnit: "Jahre",
+    status: { low: "Niedrig", standard: "Standard", good: "Gut", high: "Hoch", very_high: "Sehr hoch" },
+    bodyType: "Körpertyp",
+    bodyTypes: {
+      obese: "Fettleibig", overweight: "Übergewichtig", thick_set: "Kräftig",
+      lack_exercise: "Bewegungsmangel", balanced: "Ausgewogen", balanced_muscular: "Ausgewogen muskulös",
+      skinny: "Dünn", balanced_skinny: "Schlank", skinny_muscular: "Schlank und muskulös",
+    },
+    axisFat: "Körperfett",
+    axisMuscle: "Muskeln",
+    fatLevels: ["hoch", "normal", "niedrig"],
+    muscleLevels: ["wenig", "normal", "viel"],
+    suggestions: "Vorschläge zum Gewicht",
+    idealWeight: "Standardgewicht",
+    weightControl: "Gewichtskontrolle",
+    fatControl: "Fettkontrolle",
+    muscleControl: "Muskelkontrolle",
+    keepUp: "Weiter beibehalten",
+    advice: {
+      fat: "Dein Körperfett liegt über dem Standard. Etwas weniger Kalorien, mehr Eiweiß und regelmäßige Bewegung helfen, es langsam zu senken.",
+      visceral: "Das Viszeralfett ist erhöht. Ausdauer- und Krafttraining sowie weniger Zucker und Alkohol senken es am wirksamsten.",
+      muscle: "Deine Muskelmasse ist niedrig. Zwei- bis dreimal Krafttraining pro Woche und genug Eiweiß bauen sie auf.",
+      water: "Dein Körperwasser ist niedrig. Trink über den Tag verteilt genug Wasser.",
+      thin: "Dein Gewicht liegt unter dem Normalbereich. Achte auf ausreichend Energie und Eiweiß.",
+      good: "Deine Werte liegen im Normalbereich. Weiter so!",
+    },
+    analysisNote: "Schätzwerte aus der Impedanz nach den Xiaomi-Formeln (wie bodymiscale) – keine medizinische Diagnose. Sie können von der Mi-Fitness-App abweichen.",
+    aiTitle: "KI-Hinweise",
+    aiRefresh: "Neu auswerten",
+    aiBusy: "Wird ausgewertet …",
+    aiNone: "Noch keine Auswertung – sie startet nach der nächsten Messung oder mit „Neu auswerten“.",
+    aiError: (e) => `Auswertung fehlgeschlagen: ${e}`,
+    aiAt: (when) => `Stand: ${when}`,
+    aiDisclaimer: "Von einer KI erstellt – kann Fehler enthalten und ersetzt keine ärztliche Beratung.",
+    aiOffHint: "KI-Hinweise sind aus. Einschalten unter „Meine Daten“.",
+    aiSwitch: "Meine Werte von der KI auswerten lassen",
+    aiExplain: (entity) => `Nach jeder Messung (höchstens einmal pro Stunde) und auf Knopfdruck gehen deine Werte an „${entity}“: Gewicht, Trend, Körperwerte, Alter, Größe und Geschlecht – ohne Namen. Bei einer Cloud-KI verlassen diese Gesundheitsdaten dein Zuhause.`,
+    aiEntity: "KI für Hinweise (AI Task)",
+    aiEntityHint: "Optional. Eine AI-Task-Entität (ab Home Assistant 2025.7, z. B. OpenAI, Anthropic, Google oder Ollama). Jede Person entscheidet unter „Meine Daten“ selbst, ob ihre Werte ausgewertet werden.",
+    aiSection: "KI-Hinweise",
+    aiSectionHint: "Eine KI wertet die Messwerte aus und schreibt kurze Empfehlungen in die Übersicht.",
+    impedanceHighEntity: "Impedanz-Sensor (zweite Frequenz)",
+    impedanceHighHint: "Nur bei Waagen mit zwei Frequenzen (Xiaomi S400: „Impedance High“). Für die Formeln zählt der größere der beiden Werte.",
+    heartRateEntity: "Herzfrequenz-Sensor",
+    heartRateHint: "Falls deine Waage den Puls misst (z. B. Xiaomi S400).",
     stableEntity: "Stabilisiert-Sensor",
     stableHint: "Empfohlen, wenn deine Waage ihn hat (z. B. Xiaomi „Stabilized“): Jedes Umschalten auf „an“ zählt als Messung – auch wenn das Gewicht gleich geblieben ist. Wird beim Wählen des Gewichtssensors vorgeschlagen.",
     bodyFatEntity: "Körperfett-Sensor",
@@ -280,6 +343,7 @@ const TEXT = {
       change_30d: "Veränderung 30 Tage", change_total: "Veränderung gesamt", rate: "Tempo pro Woche", bmi: "BMI",
       goal_distance: "Abstand zum Ziel", goal_eta: "Ziel voraussichtlich", last_measured: "Letzte Messung",
       body_fat: "Körperfett", muscle_mass: "Muskelmasse", body_water: "Körperwasser", bone_mass: "Knochenmasse", bmr: "Grundumsatz",
+      body_score: "Körperbewertung", visceral_fat: "Viszeralfett", protein: "Protein", metabolic_age: "Körperalter", skeletal_muscle: "Skelettmuskelmasse", heart_rate: "Herzfrequenz",
     },
     notifyDevice: "Gerät",
     notifyDeviceHint: "Die Home-Assistant-App auf deinem Handy (notify-Dienst).",
@@ -529,7 +593,70 @@ const TEXT = {
     bmrEntity: "Basal metabolic rate sensor",
     directHint: "If your scale reports this value directly – it then replaces the estimate from the impedance.",
     impedanceEntity: "Impedance sensor",
-    impedanceHint: "Only if your scale reports impedance (e.g. Xiaomi Body Composition Scale). Body fat, muscles etc. are estimated from it. Xiaomi S400: choose “Impedance Low”.",
+    impedanceHint: "Only if your scale reports impedance (e.g. Xiaomi Body Composition Scale). Body fat, muscles etc. are estimated from it. Xiaomi S400: “Impedance Low” here, “Impedance High” below.",
+    ovPersons: "Choose person",
+    sinceLast: "since last measurement",
+    bodyReport: "Body score",
+    points: "points",
+    composition: "Body composition",
+    waterMass: "Body water mass",
+    fatMass: "Fat mass",
+    boneMineral: "Bone mineral",
+    proteinMass: "Protein mass",
+    musclePct: "Muscle rate",
+    waterPct: "Body water",
+    proteinPct: "Protein rate",
+    bonePct: "Bone mineral rate",
+    skeletalMuscle: "Skeletal muscle mass",
+    visceral: "Visceral fat",
+    bodyAge: "Body age",
+    leanMass: "Fat-free mass",
+    heartRate: "Heart rate",
+    yearsUnit: "years",
+    status: { low: "Low", standard: "Standard", good: "Good", high: "High", very_high: "Very high" },
+    bodyType: "Body type",
+    bodyTypes: {
+      obese: "Obese", overweight: "Overweight", thick_set: "Thick-set",
+      lack_exercise: "Lack of exercise", balanced: "Balanced", balanced_muscular: "Balanced muscular",
+      skinny: "Skinny", balanced_skinny: "Slim", skinny_muscular: "Slim and muscular",
+    },
+    axisFat: "Body fat",
+    axisMuscle: "Muscle",
+    fatLevels: ["high", "normal", "low"],
+    muscleLevels: ["low", "normal", "high"],
+    suggestions: "Weight suggestions",
+    idealWeight: "Standard weight",
+    weightControl: "Weight control",
+    fatControl: "Fat control",
+    muscleControl: "Muscle control",
+    keepUp: "Keep it up",
+    advice: {
+      fat: "Your body fat is above standard. Slightly fewer calories, more protein and regular exercise help to lower it slowly.",
+      visceral: "Visceral fat is increased. Endurance and strength training plus less sugar and alcohol lower it most effectively.",
+      muscle: "Your muscle mass is low. Strength training two to three times a week and enough protein build it up.",
+      water: "Your body water is low. Drink enough water throughout the day.",
+      thin: "Your weight is below the normal range. Make sure you get enough energy and protein.",
+      good: "Your values are in the normal range. Keep it up!",
+    },
+    analysisNote: "Estimates from impedance using the Xiaomi formulas (as in bodymiscale) – not a medical diagnosis. They can differ from the Mi Fitness app.",
+    aiTitle: "AI hints",
+    aiRefresh: "Analyse again",
+    aiBusy: "Analysing …",
+    aiNone: "No analysis yet – it starts after the next measurement or with “Analyse again”.",
+    aiError: (e) => `Analysis failed: ${e}`,
+    aiAt: (when) => `As of ${when}`,
+    aiDisclaimer: "Written by an AI – may contain mistakes and does not replace medical advice.",
+    aiOffHint: "AI hints are off. Switch them on under “My details”.",
+    aiSwitch: "Let the AI analyse my values",
+    aiExplain: (entity) => `After every measurement (at most once an hour) and on request your values go to “${entity}”: weight, trend, body values, age, height and sex – without your name. With a cloud AI this health data leaves your home.`,
+    aiEntity: "AI for hints (AI Task)",
+    aiEntityHint: "Optional. An AI Task entity (Home Assistant 2025.7+, e.g. OpenAI, Anthropic, Google or Ollama). Every person decides under “My details” whether their values are analysed.",
+    aiSection: "AI hints",
+    aiSectionHint: "An AI analyses the measurements and writes short recommendations into the overview.",
+    impedanceHighEntity: "Impedance sensor (second frequency)",
+    impedanceHighHint: "Only for dual-frequency scales (Xiaomi S400: “Impedance High”). The formulas use the larger of the two values.",
+    heartRateEntity: "Heart rate sensor",
+    heartRateHint: "If your scale measures the pulse (e.g. Xiaomi S400).",
     stableEntity: "Stabilized sensor",
     stableHint: "Recommended if your scale has one (e.g. Xiaomi “Stabilized”): every switch to “on” counts as a measurement – even if the weight stayed the same. Suggested when you pick the weight sensor.",
     bodyFatEntity: "Body fat sensor",
@@ -571,6 +698,7 @@ const TEXT = {
       change_30d: "Change 30 days", change_total: "Total change", rate: "Rate per week", bmi: "BMI",
       goal_distance: "Distance to goal", goal_eta: "Goal expected", last_measured: "Last measurement",
       body_fat: "Body fat", muscle_mass: "Muscle mass", body_water: "Body water", bone_mass: "Bone mass", bmr: "Basal metabolic rate",
+      body_score: "Body score", visceral_fat: "Visceral fat", protein: "Protein", metabolic_age: "Body age", skeletal_muscle: "Skeletal muscle mass", heart_rate: "Heart rate",
     },
     notifyDevice: "Device",
     notifyDeviceHint: "The Home Assistant app on your phone (notify service).",
@@ -707,6 +835,12 @@ const STYLE = `
     --wt-radius: var(--ha-card-border-radius, 12px);
     --wt-border: var(--ha-card-border-color, var(--divider-color, #e0e0e0));
     --wt-muted: var(--secondary-text-color, #727272);
+    /* ratings of body values */
+    --wt-st-low: var(--info-color, #039be5);
+    --wt-st-standard: var(--success-color, #2e9d5b);
+    --wt-st-good: var(--success-color, #2e9d5b);
+    --wt-st-high: var(--warning-color, #e58a00);
+    --wt-st-very_high: var(--error-color, #db4437);
     --wt-grid: var(--divider-color, #e0e0e0);
   }
   * { box-sizing: border-box; }
@@ -845,6 +979,61 @@ const STYLE = `
   .section[open] > summary .sec-chevron { transform: translateY(4px) rotate(-135deg); }
   .sec-body { padding: 0 20px 20px; }
   @media (prefers-reduced-motion: reduce) { .sec-chevron { transition: none; } }
+  .switcher { display: flex; gap: 8px; flex-wrap: wrap; }
+  .sw { display: inline-flex; align-items: center; gap: 8px; padding: 4px 14px 4px 4px; min-height: 36px; border-radius: 999px; border: 1px solid var(--wt-border); background: var(--wt-card); color: var(--primary-text-color); font: inherit; font-size: 14px; cursor: pointer; }
+  .sw[aria-selected="true"] { border-color: var(--primary-color, #03a9f4); background: color-mix(in srgb, var(--primary-color, #03a9f4) 14%, var(--wt-card)); font-weight: 500; }
+  .sw:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: 2px; }
+  .report { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; }
+  .report .span { grid-column: 1 / -1; }
+  .report-hero { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 24%, var(--wt-card)) 0%, var(--wt-card) 75%); }
+  .rh-head { display: flex; align-items: center; gap: 12px; }
+  .rh-name { font-size: 16px; font-weight: 500; }
+  .rh-weight { text-align: center; margin-top: 8px; line-height: 1; white-space: nowrap; }
+  .rh-weight .int { font-size: 64px; font-weight: 500; letter-spacing: -1px; }
+  .rh-weight .dec { font-size: 32px; font-weight: 500; }
+  .rh-weight .u { font-size: 16px; color: var(--wt-muted); margin-left: 4px; vertical-align: top; }
+  .rh-class { text-align: center; margin-top: 6px; min-height: 18px; font-size: 13px; }
+  .st { font-size: 12px; font-weight: 500; color: var(--wt-muted); }
+  .st-low { color: var(--wt-st-low); }
+  .st-standard { color: var(--wt-st-standard); }
+  .st-good { color: var(--wt-st-good); }
+  .st-high { color: var(--wt-st-high); }
+  .st-very_high { color: var(--wt-st-very_high); }
+  .score-row { display: flex; gap: 16px; align-items: flex-start; margin-top: 12px; }
+  .score { white-space: nowrap; }
+  .score b { font-size: 44px; font-weight: 500; line-height: 1; }
+  .score span { font-size: 13px; color: var(--wt-muted); margin-left: 4px; }
+  .score-text { flex: 1; font-size: 13px; line-height: 1.45; color: var(--wt-muted); }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--wt-grid); }
+  .pair > div + div { border-left: 1px solid var(--wt-grid); padding-left: 16px; }
+  .pv { font-size: 24px; font-weight: 500; }
+  .pv small, .cv small, .mtile .mv small, .sg .sv small { font-size: 13px; font-weight: 400; color: var(--wt-muted); }
+  .pl, .cl, .mtile .ml, .sg .sl { font-size: 12px; color: var(--wt-muted); }
+  .comp { display: grid; grid-template-columns: minmax(80px, 130px) 1fr; gap: 20px; align-items: center; margin-top: 12px; }
+  .figure { width: 100%; height: auto; max-height: 230px; }
+  .comp-values { display: grid; gap: 12px; }
+  .cv b { font-size: 22px; font-weight: 500; }
+  .mtiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .mtile { background: var(--wt-card); border: 1px solid var(--wt-border); border-radius: var(--wt-radius); padding: 14px 16px; min-width: 0; }
+  .mtile .mv { font-size: 24px; font-weight: 500; line-height: 1.2; }
+  .mtile .ml { margin: 2px 0 4px; }
+  .bt { display: grid; grid-template-columns: auto 1fr; gap: 6px 8px; margin-top: 12px; }
+  .bt-rows { display: grid; grid-template-rows: repeat(3, 1fr); gap: 4px; font-size: 11px; color: var(--wt-muted); text-align: right; }
+  .bt-rows span { display: grid; align-items: center; }
+  .bt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .bt-cell { display: grid; place-items: center; min-height: 44px; padding: 6px 4px; border-radius: 6px; background: rgba(127,127,127,.12); color: var(--wt-muted); font-size: 11px; text-align: center; line-height: 1.2; }
+  .bt-cell.on { background: var(--primary-color, #03a9f4); color: var(--text-primary-color, #fff); font-weight: 500; }
+  .bt-cols { grid-column: 2; display: grid; grid-template-columns: repeat(3, 1fr); font-size: 11px; color: var(--wt-muted); text-align: center; }
+  .bt-axis { grid-column: 1 / -1; display: flex; justify-content: space-between; font-size: 11px; color: var(--wt-muted); }
+  .sugg { display: grid; gap: 14px; margin-top: 12px; }
+  .sg { display: flex; align-items: center; gap: 12px; }
+  .sg .ic { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: rgba(127,127,127,.12); font-size: 17px; }
+  .sg .sv { font-size: 20px; font-weight: 500; }
+  .ai-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .ai-head h2 { flex: 1; }
+  .ai-summary { margin: 10px 0 8px; line-height: 1.45; }
+  .ai-tips { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; line-height: 1.4; }
+  .report-note { font-size: 12px; color: var(--wt-muted); line-height: 1.4; }
   .card { background: var(--wt-card); border: 1px solid var(--wt-border); border-radius: var(--wt-radius); box-shadow: var(--ha-card-box-shadow, none); padding: 16px; min-width: 0; }
   h2 { font-size: 16px; font-weight: 500; margin: 0; }
   .muted { color: var(--wt-muted); }
@@ -1302,7 +1491,8 @@ class WeightTrackerPanel extends HTMLElement {
       this._content(`
         ${this._renderPetSession()}
         ${this._renderPending()}
-        ${persons.length ? `<div class="persons">${persons.map((p) => this._renderPerson(p, p.color_index)).join("")}</div>
+        ${persons.length ? `${this._renderSwitcher(this._overviewPerson())}
+        <div class="report">${this._renderReport(this._overviewPerson())}</div>
         <div class="card">
           ${this._renderChartHead()}
           <div class="chart" id="chart"></div>
@@ -1370,49 +1560,201 @@ class WeightTrackerPanel extends HTMLElement {
       </div>`;
   }
 
-  _renderPerson(person, index) {
+  // The person shown on the overview: last choice, else yourself, else the first.
+  _overviewPerson() {
+    const persons = this._entry.persons;
+    let id = this._subject;
+    if (id === undefined) {
+      try {
+        id = localStorage.getItem("wt-subject");
+      } catch (err) {
+        id = null;
+      }
+    }
+    return persons.find((p) => p.id === id) || persons.find((p) => p.is_me) || persons[0];
+  }
+
+  _renderSwitcher(current) {
+    const persons = this._entry.persons;
+    if (persons.length < 2) return "";
+    return `<div class="switcher" role="tablist" aria-label="${esc(this._t.ovPersons)}">${persons.map((p) => `
+      <button class="sw" role="tab" data-action="subject" data-person="${esc(p.id)}" aria-selected="${p === current}">${this._avatar(p, 26)}<span>${esc(p.name)}</span></button>`).join("")}</div>`;
+  }
+
+  _status(status) {
+    return status ? `<span class="st st-${esc(status)}">${esc(this._t.status[status] || status)}</span>` : "";
+  }
+
+  // 85,9 kg like the Xiaomi app: big integer part, smaller decimals.
+  _bigWeight(value) {
+    if (value === null || value === undefined) return `<span class="int">–</span>`;
+    if (this._unit === "st") return this._hero(value);
+    const match = /^(.*?)([.,]\d+)?$/.exec(this._kg(value, { unit: false }));
+    return `<span class="int num">${esc(match[1])}</span><span class="dec num">${esc(match[2] || "")}</span><span class="u">${esc(this._unitLabel)}</span>`;
+  }
+
+  _goalHtml(person, color) {
     const t = this._t;
     const s = person.stats || {};
-    const color = this._color(index);
-    const latestTs = s.latest_ts ? Date.parse(s.latest_ts) : null;
-    let goalHtml = "";
-    if (person.goal !== null && person.goal !== undefined && s.trend !== null && s.trend !== undefined) {
-      const start = s.first_weight ?? person.start_weight;
-      const span = start - person.goal;
-      const progress = span ? Math.min(1, Math.max(0, (start - s.trend) / span)) : 1;
-      const eta = s.goal_reached ? t.goalReached : s.goal_eta ? t.goalEta(this._date(Date.parse(s.goal_eta))) : t.goalNoEta;
-      goalHtml = `
-        <div class="goal">
-          <div class="row"><span>${esc(t.goal)} ${this._kg(person.goal)}</span><span class="num">${s.goal_reached ? "" : this._link(person, "goal_distance", t.goal, esc(t.goalLeft(this._kg(Math.abs(s.goal_remaining)))))}</span></div>
-          <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(progress * 100)}"><div style="width:${(progress * 100).toFixed(1)}%;background:${color}"></div></div>
-          <div class="muted small">${this._link(person, "goal_eta", t.goal, esc(eta))} · ${Math.round(progress * 100)} %</div>
-        </div>`;
-    }
-    // With sensors in HA, values open HA's own more-info dialog on click.
-    const link = (key, label, html) => this._link(person, key, label, html);
-    const stat = (key, label, value) => `<div class="stat"><div class="label">${esc(label)}</div><div class="val num">${link(key, label, value)}</div></div>`;
-    const age = this._age(person.birth_month);
-    const bmiText = s.bmi
-      ? `${this._kg(s.bmi, { unit: false })}${age === null || age >= 18 ? ` <span class="muted small">${esc(t.bmiCat(s.bmi))}</span>` : ""}`
-      : "–";
+    if (person.goal === null || person.goal === undefined || s.trend === null || s.trend === undefined) return "";
+    const start = s.first_weight ?? person.start_weight;
+    const span = start - person.goal;
+    const progress = span ? Math.min(1, Math.max(0, (start - s.trend) / span)) : 1;
+    const eta = s.goal_reached ? t.goalReached : s.goal_eta ? t.goalEta(this._date(Date.parse(s.goal_eta))) : t.goalNoEta;
     return `
-      <div class="card person-card">
-        <div class="person-head">${this._avatar(person, 36)}
-          <h2>${esc(person.name)}${age !== null ? ` <span class="muted small" style="font-weight:400">· ${esc(t.years(age))}</span>` : ""}</h2>
-          <span class="muted small">${latestTs ? link("last_measured", t.measured, `${esc(t.measured)} ${esc(this._relative(latestTs))}`) : esc(t.noData)}</span></div>
-        <div class="hero">${link("weight", t.weight, this._hero(s.latest_weight))}
-          ${s.change_last !== null && s.change_last !== undefined ? `<span class="muted small num">${link("change_last", t.weight, this._kg(s.change_last, { signed: true }))}</span>` : ""}</div>
+      <div class="goal">
+        <div class="row"><span>${esc(t.goal)} ${this._kg(person.goal)}</span><span class="num">${s.goal_reached ? "" : this._link(person, "goal_distance", t.goal, esc(t.goalLeft(this._kg(Math.abs(s.goal_remaining)))))}</span></div>
+        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(progress * 100)}"><div style="width:${(progress * 100).toFixed(1)}%;background:${color}"></div></div>
+        <div class="muted small">${this._link(person, "goal_eta", t.goal, esc(eta))} · ${Math.round(progress * 100)} %</div>
+      </div>`;
+  }
+
+  // Overview of one person in the style of the Xiaomi app.
+  _renderReport(person) {
+    const t = this._t;
+    const s = person.stats || {};
+    const body = person.body || {};
+    const a = body.analysis || null;
+    const b = body.latest || {};
+    const st = (a && a.status) || {};
+    const color = this._color(person.color_index);
+    const link = (key, label, html) => this._link(person, key, label, html);
+    const age = this._age(person.birth_month);
+    const adult = age === null || age >= 18;
+    const latestTs = s.latest_ts ? Date.parse(s.latest_ts) : null;
+    const num = (v, digits = 1) => this._kg(v, { unit: false, digits });
+    const kg = (v) => `${num(v)} <small>${esc(this._unitLabel)}</small>`;
+    const signedKg = (v) => `${this._kg(v, { signed: true, unit: false })} <small>${esc(this._unitLabel)}</small>`;
+    const stat = (key, label, value) => `<div class="stat"><div class="label">${esc(label)}</div><div class="val num">${link(key, label, value)}</div></div>`;
+    const bmiStatus = s.bmi && adult ? (s.bmi < 18.5 ? "low" : s.bmi < 25 ? "standard" : s.bmi < 30 ? "high" : "very_high") : null;
+
+    const hero = `
+      <div class="card report-hero span" style="--accent:${color}">
+        <div class="rh-head">${this._avatar(person, 44)}
+          <div><div class="rh-name">${esc(person.name)}${age !== null ? ` <span class="muted small" style="font-weight:400">· ${esc(t.years(age))}</span>` : ""}</div>
+          <div class="muted small">${latestTs ? link("last_measured", t.measured, esc(this._dateTime(latestTs))) : esc(t.noData)}</div></div></div>
+        <div class="rh-weight">${link("weight", t.weight, this._bigWeight(s.latest_weight))}</div>
+        <div class="rh-class">${bmiStatus ? `<span class="st st-${bmiStatus}">${esc(t.bmiCat(s.bmi))}</span>` : ""}${s.change_last !== null && s.change_last !== undefined ? `${bmiStatus ? " · " : ""}<span class="muted num">${link("change_last", t.weight, this._kg(s.change_last, { signed: true }))} ${esc(t.sinceLast)}</span>` : ""}</div>
         <div class="stats">
           ${stat("trend", t.trend, this._kg(s.trend))}
           ${stat("change_7d", t.d7, this._kg(s.change_7d, { signed: true }))}
           ${stat("change_30d", t.d30, this._kg(s.change_30d, { signed: true }))}
           ${stat("rate", t.perWeek, this._kg(s.rate_per_week, { signed: true, digits: 2 }))}
           ${stat("change_total", t.total, this._kg(s.change_total, { signed: true }))}
-          ${person.height ? stat("bmi", t.bmi, bmiText) : `<div class="stat"><div class="label">Min / Max</div><div class="val num">${s.min_weight ? `${this._kg(s.min_weight, { unit: false })} / ${this._kg(s.max_weight, { unit: false })}` : "–"}</div></div>`}
+          ${s.min_weight ? `<div class="stat"><div class="label">Min / Max</div><div class="val num">${this._kg(s.min_weight, { unit: false })} / ${this._kg(s.max_weight, { unit: false })}</div></div>` : ""}
         </div>
-        ${person.body && person.body.latest ? `<div class="body-line">🧬 ${link("body_fat", t.bodyFat, `${esc(t.bodyFat)} ${this._kg(person.body.latest.body_fat, { unit: false })} %`)}${person.body.latest.muscle_mass ? ` · ${link("muscle_mass", t.muscle, `${esc(t.muscle)} ${this._kg(person.body.latest.muscle_mass)}`)}` : ""}</div>` : ""}
-        ${goalHtml}
+        ${this._goalHtml(person, color)}
       </div>`;
+
+    // Short rule-based assessment (the AI's own text has its card).
+    const advice = () => {
+      if (st.body_fat === "high" || st.body_fat === "very_high") return t.advice.fat;
+      if (st.visceral_fat === "high" || st.visceral_fat === "very_high") return t.advice.visceral;
+      if (st.muscle_mass === "low") return t.advice.muscle;
+      if (st.water === "low") return t.advice.water;
+      if (st.bmi === "low") return t.advice.thin;
+      return t.advice.good;
+    };
+    const ai = person.ai || {};
+    const score = a && a.body_score !== undefined ? `
+      <div class="card">
+        <h2>${esc(t.bodyReport)}</h2>
+        <div class="score-row">
+          <div class="score">${link("body_score", t.bodyReport, `<b class="num">${a.body_score}</b>`)}<span>${esc(t.points)}</span></div>
+          <div class="score-text">${esc(advice())}</div>
+        </div>
+        <div class="pair">
+          <div><div class="pv num">${s.bmi ? link("bmi", t.bmi, num(s.bmi)) : "–"}</div><div class="pl">${esc(t.bmi)}</div>${this._status(bmiStatus)}</div>
+          <div><div class="pv num">${b.body_fat !== null && b.body_fat !== undefined ? link("body_fat", t.bodyFat, `${num(b.body_fat)} <small>%</small>`) : "–"}</div><div class="pl">${esc(t.bodyFat)}</div>${this._status(st.body_fat)}</div>
+        </div>
+      </div>` : "";
+
+    let aiCard = "";
+    // Switched off: only the person can switch it on, so only they get the hint.
+    if (ai.enabled || (person.is_me && this._entry.ai_available)) {
+      const hasText = Boolean(ai.summary || (ai.tips || []).length);
+      aiCard = `
+        <div class="card" aria-live="polite">
+          <div class="ai-head"><h2>🤖 ${esc(t.aiTitle)}</h2>
+            ${ai.enabled && person.can_manage ? `<button class="btn" data-action="ai-refresh" data-person="${esc(person.id)}" ${ai.busy ? "disabled" : ""}>${esc(ai.busy ? t.aiBusy : t.aiRefresh)}</button>` : ""}</div>
+          ${!ai.enabled ? `<div class="hint" style="margin-top:8px">${esc(t.aiOffHint)}</div>`
+            : hasText ? `${ai.summary ? `<p class="ai-summary">${esc(ai.summary)}</p>` : ""}${(ai.tips || []).length ? `<ul class="ai-tips">${ai.tips.map((tip) => `<li>${esc(tip)}</li>`).join("")}</ul>` : ""}`
+            : `<div class="hint" style="margin-top:8px">${esc(ai.busy ? t.aiBusy : t.aiNone)}</div>`}
+          ${ai.enabled && ai.error ? `<div class="form-error" role="alert">${esc(t.aiError(ai.error))}</div>` : ""}
+          ${ai.enabled && hasText && ai.ts ? `<div class="hint" style="margin-top:10px">${esc(t.aiAt(this._relative(Date.parse(ai.ts))))} · ${esc(t.aiDisclaimer)}</div>` : ""}
+        </div>`;
+    }
+
+    const missing = body.missing && body.missing.length
+      ? `<div class="card span"><div class="hint">${esc(t.bodyMissing(body.missing.map((k) => t.bodyFields[k]).join(", ")))}</div></div>` : "";
+
+    const compItem = (value, label) => value === null || value === undefined ? "" : `<div class="cv"><b class="num">${num(value)}</b> <small>${esc(this._unitLabel)}</small><div class="cl">${esc(label)}</div></div>`;
+    const composition = a && b.body_fat !== null && b.body_fat !== undefined ? `
+      <div class="card">
+        <h2>${esc(t.composition)}</h2>
+        <div class="comp">
+          <svg class="figure" viewBox="0 0 120 200" aria-hidden="true">
+            <defs><linearGradient id="wt-fig" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".45"/><stop offset="1" stop-color="${color}" stop-opacity=".95"/></linearGradient></defs>
+            <circle cx="60" cy="20" r="14" fill="url(#wt-fig)"/>
+            <rect x="54" y="32" width="12" height="10" rx="4" fill="url(#wt-fig)"/>
+            <path fill="url(#wt-fig)" d="M42 40 H78 Q88 40 90 50 L98 102 Q99 108 94 109 Q89 110 88 104 L80 64 L80 184 Q80 190 74 190 Q68 190 67 184 L62 118 L58 118 L53 184 Q52 190 46 190 Q40 190 40 184 L40 64 L32 104 Q31 110 26 109 Q21 108 22 102 L30 50 Q32 40 42 40 Z"/>
+          </svg>
+          <div class="comp-values">
+            ${compItem(a.water_mass, t.waterMass)}
+            ${compItem(a.fat_mass, t.fatMass)}
+            ${compItem(b.bone_mass, t.boneMineral)}
+            ${compItem(a.protein_mass, t.proteinMass)}
+          </div>
+        </div>
+      </div>` : "";
+
+    const facts = this._profileFacts(person, { height: person.height, goal_weight: person.goal, birth_month: person.birth_month, sex: person.sex });
+    const whtrStatus = { low: "low", healthy: "standard", increased: "high", high: "very_high" }[facts.whtrClass] || null;
+    const heart = body.heart_rate || null;
+    const tiles = [
+      ["muscle_mass", t.muscle, b.muscle_mass, kg, st.muscle_mass],
+      ["", t.musclePct, a && a.muscle_pct, (v) => `${num(v)} <small>%</small>`, st.muscle_pct],
+      ["body_water", t.waterPct, b.water, (v) => `${num(v)} <small>%</small>`, st.water],
+      ["protein", t.proteinPct, a && a.protein, (v) => `${num(v)} <small>%</small>`, st.protein],
+      ["", t.bonePct, a && a.bone_pct, (v) => `${num(v)} <small>%</small>`, st.bone_pct],
+      ["skeletal_muscle", t.skeletalMuscle, a && a.skeletal_muscle, kg, st.skeletal_muscle],
+      ["visceral_fat", t.visceral, a && a.visceral_fat, (v) => num(v), st.visceral_fat],
+      ["bmr", t.bmr, b.bmr, (v) => `${new Intl.NumberFormat(this._lang).format(v)} <small>kcal</small>`, st.bmr],
+      ["", t.whtr, facts.whtr, (v) => num(v, 2), whtrStatus],
+      ["metabolic_age", t.bodyAge, a && a.metabolic_age, (v) => `${v} <small>${esc(t.yearsUnit)}</small>`, st.metabolic_age],
+      ["", t.leanMass, a && a.lean_mass, kg, null],
+      ["heart_rate", t.heartRate, heart && heart.value, (v) => `${v} <small>bpm</small>`, st.heart_rate || (heart ? (heart.value < 60 ? "low" : heart.value <= 100 ? "standard" : "high") : null)],
+    ].filter(([, , value]) => value !== null && value !== undefined && !Number.isNaN(value));
+    const tileGrid = tiles.length ? `
+      <div class="mtiles span">${tiles.map(([key, label, value, fmt, status]) => `
+        <div class="mtile"><div class="mv num">${key ? link(key, label, fmt(value)) : fmt(value)}</div><div class="ml">${esc(label)}</div>${this._status(status)}</div>`).join("")}</div>` : "";
+
+    const types = ["obese", "overweight", "thick_set", "lack_exercise", "balanced", "balanced_muscular", "skinny", "balanced_skinny", "skinny_muscular"];
+    const bodyType = a && a.body_type ? `
+      <div class="card">
+        <h2>${esc(t.bodyType)}: ${esc(t.bodyTypes[a.body_type])}</h2>
+        <div class="bt" role="img" aria-label="${esc(`${t.bodyType}: ${t.bodyTypes[a.body_type]}`)}">
+          <div class="bt-rows">${t.fatLevels.map((l) => `<span>${esc(l)}</span>`).join("")}</div>
+          <div class="bt-grid">${types.map((k) => `<div class="bt-cell ${k === a.body_type ? "on" : ""}">${esc(t.bodyTypes[k])}</div>`).join("")}</div>
+          <div class="bt-cols">${t.muscleLevels.map((l) => `<span>${esc(l)}</span>`).join("")}</div>
+          <div class="bt-axis"><span>↕ ${esc(t.axisFat)}</span><span>${esc(t.axisMuscle)} ↔</span></div>
+        </div>
+      </div>` : "";
+
+    const sugg = (icon, label, value) => value === null || value === undefined ? "" : `<div class="sg"><span class="ic" aria-hidden="true">${icon}</span><div><div class="sl">${esc(label)}</div><div class="sv num">${value}</div></div></div>`;
+    const suggestions = a && a.ideal_weight !== undefined ? `
+      <div class="card">
+        <h2>${esc(t.suggestions)}</h2>
+        <div class="sugg">
+          ${sugg("⚖️", t.idealWeight, kg(a.ideal_weight))}
+          ${sugg("🎯", t.weightControl, a.weight_control !== undefined ? signedKg(a.weight_control) : null)}
+          ${sugg("🔥", t.fatControl, a.fat_control !== undefined ? signedKg(a.fat_control) : null)}
+          ${sugg("💪", t.muscleControl, a.muscle_control === undefined ? null : a.muscle_control > 0 ? signedKg(a.muscle_control) : esc(t.keepUp))}
+        </div>
+      </div>` : "";
+
+    const note = a ? `<div class="report-note span">${esc(t.analysisNote)}</div>` : "";
+    return `${hero}${score}${aiCard}${missing}${composition}${tileGrid}${bodyType}${suggestions}${note}`;
   }
 
   // ---------------------------------------------------------------- pets
@@ -1781,7 +2123,25 @@ class WeightTrackerPanel extends HTMLElement {
         <div class="card" data-preview="health-${esc(person.id)}">${this._myDataHealth(facts)}</div>
         <div class="card" data-preview="goal-${esc(person.id)}">${this._myDataGoal(person, facts)}</div>
       </div>
-      ${person.can_manage ? this._renderNotifySettings(person) : ""}`;
+      ${person.can_manage ? this._renderNotifySettings(person) : ""}
+      ${person.can_manage && this._entry.ai_available ? this._renderAiSettings(person) : ""}`;
+  }
+
+  _renderAiSettings(person) {
+    const t = this._t;
+    const formId = `ai-form-${person.id}`;
+    const entity = (this._entry.settings || {}).ai_task_entity;
+    const state = entity && this._hass.states[entity];
+    const name = (state && state.attributes.friendly_name) || entity || "AI Task";
+    return `
+      <div class="card">
+        <h2>🤖 ${esc(t.aiTitle)}</h2>
+        <div class="hint" style="margin-top:4px">${esc(t.aiExplain(name))}</div>
+        <div class="form" id="${esc(formId)}">
+          ${this._formFields(formId, [this._def("boolean", "ai_insights", t.aiSwitch, { wide: true })], { ai_insights: Boolean(person.ai_insights) })}
+          ${this._formActions(formId)}
+        </div>
+      </div>`;
   }
 
   _notifyServices() {
@@ -2581,6 +2941,8 @@ class WeightTrackerPanel extends HTMLElement {
       this._def("entity", "source_entity", t.source, { required: true, filter, onChange: (id) => this._suggestScaleSensors(id) }),
       this._def("entity", "stable_entity", t.stableEntity, { filter: { domain: "binary_sensor" }, helper: t.stableHint }),
       this._def("entity", "impedance_entity", t.impedanceEntity, { filter: { domain: "sensor" }, helper: t.impedanceHint }),
+      this._def("entity", "impedance_high_entity", t.impedanceHighEntity, { filter: { domain: "sensor" }, helper: t.impedanceHighHint }),
+      this._def("entity", "heart_rate_entity", t.heartRateEntity, { filter: { domain: "sensor" }, helper: t.heartRateHint }),
       this._def("entity", "body_fat_entity", t.bodyFatEntity, { filter: { domain: "sensor" }, helper: t.bodyFatEntityHint }),
       this._def("entity", "muscle_mass_entity", t.muscleEntity, { filter: { domain: "sensor" }, helper: t.directHint }),
       this._def("entity", "water_entity", t.waterEntity, { filter: { domain: "sensor" }, helper: t.directHint }),
@@ -2598,7 +2960,12 @@ class WeightTrackerPanel extends HTMLElement {
         <div class="form" id="scale-sensors-form">
           ${this._formFields("scale-sensors-form", sensors, defaults)}
           ${this._formActions("scale-sensors-form")}
-        </div>`, { open: !cfg.source_entity });
+        </div>`, { open: !cfg.source_entity }) + this._section("ai", "mdi:robot-outline", "🤖", t.aiSection, `
+        <div class="hint">${esc(t.aiSectionHint)}</div>
+        <div class="form" id="ai-settings-form">
+          ${this._formFields("ai-settings-form", [this._def("entity", "ai_task_entity", t.aiEntity, { filter: { domain: "ai_task" }, helper: t.aiEntityHint, wide: true })], defaults)}
+          ${this._formActions("ai-settings-form")}
+        </div>`);
   }
 
   // After picking the weight sensor: fill in "stabilized" and impedance from the
@@ -2617,10 +2984,14 @@ class WeightTrackerPanel extends HTMLElement {
       changed = true;
     }
     const impedance = siblings.filter((id) => id.startsWith("sensor.") && /impedanc/i.test(id));
-    const preferred = impedance.find((id) => /low/i.test(id)) || impedance.find((id) => !/high/i.test(id));
-    if (preferred && !current.impedance_entity) {
-      model.impedance_entity = preferred;
-      changed = true;
+    const low = impedance.find((id) => /low/i.test(id)) || impedance.find((id) => !/high/i.test(id));
+    const high = impedance.find((id) => /high/i.test(id) && id !== low);
+    const heart = siblings.find((id) => id.startsWith("sensor.") && /heart|herz|puls/i.test(id));
+    for (const [key, id] of [["impedance_entity", low || high], ["impedance_high_entity", low ? high : null], ["heart_rate_entity", heart]]) {
+      if (id && !current[key]) {
+        model[key] = id;
+        changed = true;
+      }
     }
     if (changed) this._render();
   }
@@ -2716,8 +3087,11 @@ class WeightTrackerPanel extends HTMLElement {
     const base = ["weight", "trend", "change_last", "change_7d", "change_30d", "change_total", "rate"];
     if (kind !== "person") return [...base, "goal_distance", "goal_eta", "last_measured"];
     const cfg = this._entry.settings || {};
+    const impedance = cfg.impedance_entity || cfg.impedance_high_entity;
     const direct = { body_fat: cfg.body_fat_entity, muscle_mass: cfg.muscle_mass_entity, body_water: cfg.water_entity, bone_mass: cfg.bone_mass_entity, bmr: cfg.bmr_entity };
-    const body = Object.keys(direct).filter((key) => cfg.impedance_entity || direct[key]);
+    const body = Object.keys(direct).filter((key) => impedance || direct[key]);
+    if (impedance) body.push("body_score", "visceral_fat", "protein", "metabolic_age", "skeletal_muscle");
+    if (cfg.heart_rate_entity) body.push("heart_rate");
     return [...base, "bmi", "goal_distance", "goal_eta", "last_measured", ...body];
   }
 
@@ -2875,9 +3249,9 @@ class WeightTrackerPanel extends HTMLElement {
     delete this._formErrors[formId];
     const m = this._models[formId];
     try {
-      if (formId === "settings-form" || formId === "scale-sensors-form") {
-        // Both cards are one set of settings: send the current values of both.
-        const m = { ...(this._entry.settings || {}), name: this._entry.title, ...(this._models["settings-form"] || {}), ...(this._models["scale-sensors-form"] || {}) };
+      if (formId === "settings-form" || formId === "scale-sensors-form" || formId === "ai-settings-form") {
+        // These cards are one set of settings: send the current values of all.
+        const m = { ...(this._entry.settings || {}), name: this._entry.title, ...(this._models["settings-form"] || {}), ...(this._models["scale-sensors-form"] || {}), ...(this._models["ai-settings-form"] || {}) };
         await this._ws({
           type: "weight_tracker/update_settings",
           settings: {
@@ -2890,6 +3264,9 @@ class WeightTrackerPanel extends HTMLElement {
             debounce_seconds: Math.round(Number(m.debounce_seconds)),
             stable_entity: m.stable_entity || null,
             impedance_entity: m.impedance_entity || null,
+            impedance_high_entity: m.impedance_high_entity || null,
+            heart_rate_entity: m.heart_rate_entity || null,
+            ai_task_entity: m.ai_task_entity || null,
             body_fat_entity: m.body_fat_entity || null,
             muscle_mass_entity: m.muscle_mass_entity || null,
             water_entity: m.water_entity || null,
@@ -2900,6 +3277,7 @@ class WeightTrackerPanel extends HTMLElement {
         this._toast(this._t.saved);
         this._clearForm("settings-form");
         this._clearForm("scale-sensors-form");
+        this._clearForm("ai-settings-form");
       } else if (formId.startsWith("person-form-")) {
         const id = formId.slice("person-form-".length);
         const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v));
@@ -2938,6 +3316,13 @@ class WeightTrackerPanel extends HTMLElement {
           },
         });
         this._editPet = null;
+        this._toast(this._t.saved);
+      } else if (formId.startsWith("ai-form-")) {
+        await this._ws({
+          type: "weight_tracker/update_profile",
+          person_id: formId.slice("ai-form-".length),
+          profile: { ai_insights: Boolean(m.ai_insights) },
+        });
         this._toast(this._t.saved);
       } else if (formId.startsWith("notify-form-")) {
         await this._ws({
@@ -3350,6 +3735,21 @@ class WeightTrackerPanel extends HTMLElement {
     const el = ev.composedPath().find((n) => n.dataset && n.dataset.action);
     if (!el || el.tagName === "SELECT") return;
     const { action } = el.dataset;
+    if (action === "subject") {
+      this._subject = el.dataset.person;
+      try {
+        localStorage.setItem("wt-subject", this._subject);
+      } catch (err) {
+        // only a convenience
+      }
+      this._render();
+      return;
+    }
+    if (action === "ai-refresh") {
+      this._ws({ type: "weight_tracker/ai_refresh", person_id: el.dataset.person })
+        .catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
+      return;
+    }
     if (action === "clothes-toggle") {
       this._ws({ type: "weight_tracker/set_clothes", measurement_id: el.dataset.id, clothes: !el.dataset.on })
         .catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));

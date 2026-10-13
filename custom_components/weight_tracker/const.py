@@ -16,6 +16,9 @@ STABLE_MAX_AGE = timedelta(minutes=2)  # weight must have been reported recently
 STABLE_REPEAT_WINDOW = timedelta(seconds=45)  # one weighing may flip the flag twice
 # Optional extra sensors of the scale (only used when the scale provides them)
 CONF_IMPEDANCE_ENTITY = "impedance_entity"
+# Second impedance of dual-frequency scales (Xiaomi S400: "Impedance High")
+CONF_IMPEDANCE_HIGH_ENTITY = "impedance_high_entity"
+CONF_HEART_RATE_ENTITY = "heart_rate_entity"
 CONF_BODY_FAT_ENTITY = "body_fat_entity"
 CONF_MUSCLE_ENTITY = "muscle_mass_entity"
 CONF_WATER_ENTITY = "water_entity"
@@ -24,6 +27,8 @@ CONF_BMR_ENTITY = "bmr_entity"
 # value stored with a reading -> setting with the scale's sensor
 EXTRA_ENTITIES = {
     "impedance": CONF_IMPEDANCE_ENTITY,
+    "impedance_high": CONF_IMPEDANCE_HIGH_ENTITY,
+    "heart_rate": CONF_HEART_RATE_ENTITY,
     "body_fat": CONF_BODY_FAT_ENTITY,
     "muscle_mass": CONF_MUSCLE_ENTITY,
     "water": CONF_WATER_ENTITY,
@@ -52,6 +57,11 @@ CONF_REMINDER_DAYS = "reminder_days"  # 0 = off
 CONF_NOTIFY_PET_WARNINGS = "notify_pet_warnings"
 # Clothes: each person can switch it on, mark measurements and set a start value
 CONF_CLOTHES = "clothes"
+# AI hints (HA "AI Task"): the admin picks the entity, each person opts in.
+CONF_AI_ENTITY = "ai_task_entity"
+CONF_AI_INSIGHTS = "ai_insights"
+AI_MIN_INTERVAL = timedelta(hours=1)  # automatic analyses at most this often
+AI_TIMEOUT = 120  # s
 CONF_CLOTHES_KG = "clothes_kg"
 # Actionable notifications (companion app): ids of the buttons
 CLOTHES_ACTION_PREFIX = "WEIGHT_TRACKER_CLOTHES_"
@@ -84,7 +94,10 @@ PERSON_SENSOR_KEYS = (
     "weight", "trend", "change_last", "change_7d", "change_30d", "change_total",
     "rate", "bmi", "goal_distance", "goal_eta", "last_measured",
 )
-BODY_SENSOR_KEYS = ("body_fat", "muscle_mass", "body_water", "bone_mass", "bmr")
+BODY_SENSOR_KEYS = (
+    "body_fat", "muscle_mass", "body_water", "bone_mass", "bmr",
+    "body_score", "visceral_fat", "protein", "metabolic_age", "skeletal_muscle", "heart_rate",
+)
 PET_SENSOR_KEYS = (
     "weight", "trend", "change_last", "change_7d", "change_30d", "change_total",
     "rate", "goal_distance", "goal_eta", "last_measured",

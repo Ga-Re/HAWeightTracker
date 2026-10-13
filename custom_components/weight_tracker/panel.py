@@ -48,6 +48,8 @@ from .settings import (
 from .const import (
     CONF_BIRTH_MONTH,
     CONF_BODY_FAT_ENTITY,
+    CONF_AI_ENTITY,
+    CONF_AI_INSIGHTS,
     CONF_CLOTHES,
     CONF_CLOTHES_KG,
     CONF_SENSORS,
@@ -126,6 +128,7 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_pet_event)
     websocket_api.async_register_command(hass, ws_set_sensors)
     websocket_api.async_register_command(hass, ws_set_clothes)
+    websocket_api.async_register_command(hass, ws_ai_refresh)
     file_hash = await hass.async_add_executor_job(_panel_file_hash)
     hass.data[DATA_PANEL_HASH] = file_hash
     if file_hash is None:
@@ -273,6 +276,12 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                 # entity ids of the person's sensors (for HA's more-info dialog)
                 "entities": sensor_ids.get(person_id, {}),
                 "stats": {k: _jsonable(v) for k, v in asdict(stats).items()} if stats else {},
+                # AI hints are health data like the measurements: same visibility
+                "ai": {
+                    **(manager.ai.get(person_id) or {}),
+                    "enabled": manager.ai_enabled(person_id),
+                    "busy": person_id in manager.ai_busy,
+                },
             }
             if data["can_manage"]:
                 learned, samples = manager.clothes_estimate(person_id)
@@ -282,6 +291,7 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                     "learned": learned,
                     "samples": samples,
                 }
+                data["ai_insights"] = bool(person.get(CONF_AI_INSIGHTS, False))
                 data["notify"] = {
                     "service": person.get(CONF_NOTIFY_SERVICE),
                     "weigh": person.get(CONF_NOTIFY_WEIGH, False),
@@ -402,11 +412,14 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
             "pets": pets,
             "pet_measurements": pet_measurements,
             "pet_session": pet_session,
+            # an admin chose an AI Task entity: persons may switch on AI hints
+            "ai_available": bool(manager.ai_entity),
         }
         if admin:
             entry_data["settings"] = {
                 CONF_SOURCE: entry.options.get(CONF_SOURCE),
                 CONF_STABLE_ENTITY: entry.options.get(CONF_STABLE_ENTITY) or None,
+                CONF_AI_ENTITY: entry.options.get(CONF_AI_ENTITY) or None,
                 **{conf: entry.options.get(conf) or None for conf in EXTRA_ENTITIES.values()},
                 **{k: entry.options.get(k, v) for k, v in SETTING_DEFAULTS.items()},
             }
@@ -1058,4 +1071,29 @@ def ws_set_clothes(
         connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Measurement not found")
         return
     manager.async_set_clothes(measurement, msg["clothes"])
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/ai_refresh",
+        vol.Required("entry_id"): str,
+        vol.Required("person_id"): str,
+    }
+)
+@callback
+def ws_ai_refresh(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Analyse a person's values with the AI now (the person itself or an admin)."""
+    if (manager := _entry_manager(hass, connection, msg)) is None:
+        return
+    person = manager.persons.get(msg["person_id"])
+    if person is None or not can_manage(connection.user, person):
+        connection.send_error(msg["id"], websocket_api.ERR_NOT_FOUND, "Person not found")
+        return
+    if not manager.ai_enabled(msg["person_id"]):
+        connection.send_error(msg["id"], "ai_disabled", "AI hints are not switched on")
+        return
+    manager.async_request_ai(msg["person_id"])
     connection.send_result(msg["id"])

@@ -31,7 +31,9 @@ from .const import (
     CONF_SENSORS,
     CONF_GOAL_WEIGHT,
     CONF_HEIGHT,
+    CONF_HEART_RATE_ENTITY,
     CONF_IMPEDANCE_ENTITY,
+    CONF_IMPEDANCE_HIGH_ENTITY,
 )
 
 # Sensors that make sense for pets (no BMI)
@@ -141,6 +143,8 @@ class BodySensorDescription(SensorEntityDescription):
 
     field: str
     needs_impedance: bool = True
+    # where the value lives in manager.body: "latest", "analysis" or "heart_rate"
+    source: str = "latest"
 
 
 BODY_SENSORS: tuple[BodySensorDescription, ...] = (
@@ -167,6 +171,31 @@ BODY_SENSORS: tuple[BodySensorDescription, ...] = (
         key="bmr", field="bmr", native_unit_of_measurement="kcal",
         state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0,
     ),
+    BodySensorDescription(
+        key="body_score", field="body_score", source="analysis",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0,
+    ),
+    BodySensorDescription(
+        key="visceral_fat", field="visceral_fat", source="analysis",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1,
+    ),
+    BodySensorDescription(
+        key="protein", field="protein", source="analysis", native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1,
+    ),
+    BodySensorDescription(
+        key="metabolic_age", field="metabolic_age", source="analysis", native_unit_of_measurement="a",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0,
+    ),
+    BodySensorDescription(
+        key="skeletal_muscle", field="skeletal_muscle", source="analysis", device_class=SensorDeviceClass.WEIGHT,
+        native_unit_of_measurement=KG, state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+    ),
+    BodySensorDescription(
+        key="heart_rate", field="value", source="heart_rate", native_unit_of_measurement="bpm",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0,
+    ),
 )
 
 
@@ -188,17 +217,23 @@ async def async_setup_entry(
         if description.key in person.get(CONF_SENSORS, []) and description.exists_fn(person)
     )
     # Body composition only if the scale provides impedance or that value.
-    has_impedance = bool(manager.options.get(CONF_IMPEDANCE_ENTITY))
+    has_impedance = bool(manager.options.get(CONF_IMPEDANCE_ENTITY) or manager.options.get(CONF_IMPEDANCE_HIGH_ENTITY))
     direct = {
         "body_fat": CONF_BODY_FAT_ENTITY, "muscle_mass": CONF_MUSCLE_ENTITY,
         "body_water": CONF_WATER_ENTITY, "bone_mass": CONF_BONE_ENTITY, "bmr": CONF_BMR_ENTITY,
+        # derived values need the impedance, the pulse its own sensor
+        "heart_rate": CONF_HEART_RATE_ENTITY,
     }
     entities.extend(
         BodySensor(manager, person_id, description)
         for person_id, person in manager.persons.items()
         for description in BODY_SENSORS
         if description.key in person.get(CONF_SENSORS, [])
-        and (has_impedance or bool(manager.options.get(direct[description.key])))
+        and (
+            bool(manager.options.get(direct[description.key]))
+            if description.key == "heart_rate"
+            else has_impedance or bool(manager.options.get(direct.get(description.key, "")))
+        )
     )
     entities.extend(
         PersonSensor(manager, None, description, pet_id=pet_id)
@@ -289,5 +324,5 @@ class BodySensor(WeightTrackerEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         """Latest estimated value."""
-        latest = (self.manager.body.get(self._person_id or "") or {}).get("latest") or {}
-        return latest.get(self.entity_description.field)
+        values = (self.manager.body.get(self._person_id or "") or {}).get(self.entity_description.source) or {}
+        return values.get(self.entity_description.field)

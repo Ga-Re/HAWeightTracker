@@ -7,6 +7,18 @@ Alle Versionen der Integration. Die Nummern folgen [Semantic Versioning](https:/
 Jeder Abschnitt wird beim Push automatisch zu einem [GitHub-Release](https://github.com/Ga-Re/HAWeightTracker/releases)
 (siehe `.github/workflows/release.yml`). HACS zeigt diese Releases als Updates an.
 
+## [2.5.0] – 2026-10-13
+
+### Neu
+- **Neue Übersicht im Stil der Xiaomi-App**, eine Person nach der anderen (Umschalter oben): großes Gewicht mit Einstufung, Körperbewertung in Punkten, Körperzusammensetzung, Kacheln mit Bewertung, Körpertyp-Matrix und Vorschläge zum Gewicht.
+- **Neue Körperwerte:** Körperbewertung, Viszeralfett, Eiweißanteil und -masse, Körperalter, Skelettmuskelmasse, fettfreie Masse, Fett- und Wassermasse, Standardgewicht, Fett- und Muskelkontrolle (Algorithmen nach bodymiscale), auch als HA-Sensoren.
+- **Zweiter Impedanz-Sensor** für Waagen mit zwei Frequenzen (Xiaomi S400: „Impedance High“). Die Formeln nutzen den größeren, also den 50-kHz-Wert.
+- **Herzfrequenz-Sensor** der Waage (Kachel und HA-Sensor).
+- **KI-Hinweise** über die AI-Task-Funktion von Home Assistant: Der Admin wählt die KI, jede Person stimmt für sich zu. Auswertung nach jeder Messung (höchstens stündlich) und per Knopf.
+
+### Geändert
+- Körperfett wird nach den Xiaomi-Tabellen eingestuft (statt Gallagher), passend zu den übrigen Formeln.
+
 ## [2.4.0] – 2026-10-13
 
 ### Neu

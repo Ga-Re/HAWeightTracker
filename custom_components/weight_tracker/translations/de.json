@@ -71,6 +71,24 @@
       },
       "bmr": {
         "name": "Grundumsatz"
+      },
+      "body_score": {
+        "name": "Körperbewertung"
+      },
+      "visceral_fat": {
+        "name": "Viszeralfett"
+      },
+      "protein": {
+        "name": "Protein"
+      },
+      "metabolic_age": {
+        "name": "Körperalter"
+      },
+      "skeletal_muscle": {
+        "name": "Skelettmuskelmasse"
+      },
+      "heart_rate": {
+        "name": "Herzfrequenz"
       }
     },
     "button": {

@@ -3,6 +3,11 @@
 Uses the widely used formulas of Xiaomi body composition scales (as in openScale
 and the bodymiscale integration). They are estimates, not medical values.
 
+The extended analysis (body score, visceral fat, metabolic age, protein, body
+type, weight suggestions and the Xiaomi rating tables) follows the algorithms
+documented by bodymiscale (https://github.com/dckiller51/bodymiscale,
+Apache License 2.0), re-implemented here.
+
 Pure Python without Home Assistant imports so it can be unit tested.
 """
 
@@ -92,38 +97,63 @@ def from_impedance(weight: float, height_cm: float, age: int, sex: str, impedanc
     )
 
 
-# Healthy body fat ranges by sex and age (Gallagher et al. 2000):
-# (max age, lower bound, upper healthy bound, upper "increased" bound)
-_FAT_RANGES = {
-    MALE: ((39, 8, 19, 24), (59, 11, 21, 27), (200, 13, 24, 29)),
-    FEMALE: ((39, 21, 32, 38), (59, 23, 33, 39), (200, 24, 35, 41)),
-}
+# Xiaomi rating tables. Body fat: (min age, max age, female, male) with
+# [very low, low, normal upper limit, high upper limit] in percent.
+_FAT_SCALES = (
+    (0, 12, (12.0, 21.0, 30.0, 34.0), (7.0, 16.0, 25.0, 30.0)),
+    (12, 14, (15.0, 24.0, 33.0, 37.0), (7.0, 16.0, 25.0, 30.0)),
+    (14, 16, (18.0, 27.0, 36.0, 40.0), (7.0, 16.0, 25.0, 30.0)),
+    (16, 18, (20.0, 28.0, 37.0, 41.0), (7.0, 16.0, 25.0, 30.0)),
+    (18, 40, (21.0, 28.0, 35.0, 40.0), (11.0, 17.0, 22.0, 27.0)),
+    (40, 60, (22.0, 29.0, 36.0, 41.0), (12.0, 18.0, 23.0, 28.0)),
+    (60, 200, (23.0, 30.0, 37.0, 42.0), (14.0, 20.0, 25.0, 30.0)),
+)
+# Muscle mass by height: (min height male, min height female, female, male) with [low, normal] in kg.
+_MUSCLE_SCALES = (
+    (170, 160, (36.5, 42.6), (49.4, 59.5)),
+    (160, 150, (32.9, 37.6), (44.0, 52.5)),
+    (0, 0, (29.1, 34.8), (38.5, 46.6)),
+)
+
+
+def fat_scale(sex: str | None, age: int | None) -> tuple[float, float, float, float] | None:
+    """[very low, low, normal upper limit, high upper limit] body fat in %."""
+    if sex not in (MALE, FEMALE) or age is None:
+        return None
+    for low, high, female, male in _FAT_SCALES:
+        if low <= age < high:
+            return female if sex == FEMALE else male
+    return None
+
+
+def muscle_scale(sex: str | None, height_cm: float | None) -> tuple[float, float] | None:
+    """[low, normal upper limit] muscle mass in kg for the height."""
+    if sex not in (MALE, FEMALE) or not height_cm:
+        return None
+    for min_male, min_female, female, male in _MUSCLE_SCALES:
+        if height_cm >= (min_female if sex == FEMALE else min_male):
+            return female if sex == FEMALE else male
+    return None
 
 
 def body_fat_class(body_fat: float | None, sex: str | None, age: int | None) -> str | None:
     """low / healthy / high / very_high, None without sex or for minors."""
-    if body_fat is None or sex not in _FAT_RANGES or age is None or age < 18:
+    if body_fat is None or age is None or age < 18 or (scale := fat_scale(sex, age)) is None:
         return None
-    for max_age, low, healthy, high in _FAT_RANGES[sex]:
-        if age <= max_age:
-            if body_fat < low:
-                return "low"
-            if body_fat <= healthy:
-                return "healthy"
-            if body_fat <= high:
-                return "high"
-            return "very_high"
-    return None
+    if body_fat < scale[0]:
+        return "low"
+    if body_fat <= scale[2]:
+        return "healthy"
+    if body_fat <= scale[3]:
+        return "high"
+    return "very_high"
 
 
 def body_fat_range(sex: str | None, age: int | None) -> tuple[float, float] | None:
     """Healthy body fat range (%) for display."""
-    if sex not in _FAT_RANGES or age is None or age < 18:
+    if age is None or age < 18 or (scale := fat_scale(sex, age)) is None:
         return None
-    for max_age, low, healthy, _ in _FAT_RANGES[sex]:
-        if age <= max_age:
-            return low, healthy
-    return None
+    return scale[0], scale[2]
 
 
 def age_from_birth_month(birth_month: str | None, year: int, month: int) -> int | None:
@@ -153,3 +183,208 @@ def whtr_class(ratio: float, age: int | None = None) -> str:
     if ratio < 0.6:
         return "increased"
     return "high"
+
+
+# ---------------------------------------------------------------- analysis
+
+
+def visceral_fat(weight: float, height_cm: float, age: int, sex: str) -> float:
+    """Visceral fat rating (1-50), Zepp Life formula."""
+    h, w = height_cm, weight
+    if sex == MALE:
+        if h < w * 1.6 + 63.0:
+            value = age * 0.15 + ((w * 305.0) / ((h * 0.0826 * h - h * 0.4) + 48.0) - 2.9)
+        else:
+            value = age * 0.15 + (w * (h * -0.0015 + 0.765) - h * 0.143) - 5.0
+    elif w <= h * 0.5 - 13.0:
+        value = age * 0.07 + (w * (h * -0.0024 + 0.691) - h * 0.027) - 10.5
+    else:
+        value = age * 0.07 + ((w * 500.0) / ((h * 1.45 + h * 0.1158 * h) - 120.0) - 6.0)
+    return _clamp(value, 1, 50)
+
+
+def metabolic_age(weight: float, height_cm: float, age: int, sex: str, impedance: float) -> float:
+    """Body (metabolic) age in years, Zepp Life formula."""
+    if sex == MALE:
+        value = height_cm * -0.7471 + weight * 0.9161 + age * 0.4184 + impedance * 0.0517 + 54.2267
+    else:
+        value = height_cm * -1.1165 + weight * 1.5784 + age * 0.4615 + impedance * 0.0415 + 83.2548
+    return _clamp(value, 15, 80)
+
+
+def skeletal_muscle_mass(height_cm: float, age: int, sex: str, impedance: float) -> float:
+    """Skeletal muscle mass in kg (Janssen et al. 2000)."""
+    value = (height_cm * height_cm / impedance) * 0.401 + (3.825 if sex == MALE else 0.0) - age * 0.071 + 5.102
+    return max(0.0, value)
+
+
+def ideal_weight(height_cm: float, sex: str) -> float:
+    """Standard weight of the Xiaomi app."""
+    return (height_cm - 70) * 0.6 if sex == FEMALE else (height_cm - 80) * 0.7
+
+
+def expected_bone_mass(weight: float, sex: str) -> float:
+    """Bone mass that counts as normal for the body weight."""
+    table = ((75, 2.0), (60, 1.9), (0, 1.6)) if sex == MALE else ((60, 1.8), (45, 1.5), (0, 1.3))
+    return next(bone for min_weight, bone in table if weight >= min_weight)
+
+
+def normal_bmr(weight: float, age: int, sex: str) -> float:
+    """Basal metabolic rate that counts as normal for weight and age."""
+    table = ((30, 21.6), (50, 20.07), (200, 19.35)) if sex == MALE else ((30, 21.24), (50, 19.53), (200, 18.63))
+    return weight * next(factor for max_age, factor in table if age < max_age)
+
+
+BODY_TYPES = (
+    "obese", "overweight", "thick_set",
+    "lack_exercise", "balanced", "balanced_muscular",
+    "skinny", "balanced_skinny", "skinny_muscular",
+)
+
+
+def body_type(fat: float, muscle: float, fats: tuple[float, ...], muscles: tuple[float, float]) -> str:
+    """One of BODY_TYPES: rows by body fat (high, normal, low), columns by muscle (low, normal, high)."""
+    fat_row = 0 if fat > fats[2] else 2 if fat < fats[1] else 1
+    muscle_col = 2 if muscle > muscles[1] else 0 if muscle < muscles[0] else 1
+    return BODY_TYPES[fat_row * 3 + muscle_col]
+
+
+def _malus(value: float, value1: float, value2: float, malus1: float, malus2: float) -> float:
+    """Penalty interpolated between two points, constant outside."""
+    if value1 == value2:
+        return 0.0
+    if value2 < value1:
+        value1, value2, malus1, malus2 = value2, value1, malus2, malus1
+    if value <= value1:
+        return malus1
+    if value >= value2:
+        return malus2
+    return max(0.0, (malus2 - malus1) / (value2 - value1) * (value - value1) + malus1)
+
+
+def _below(value: float, minimum: float, maximum: float) -> float:
+    """Penalty for values below maximum (10 at minimum, 5 just below maximum)."""
+    return 0.0 if value >= maximum else _malus(value, minimum, maximum, 10, 5)
+
+
+def body_score(
+    *, weight: float, bmi: float, age: int, sex: str, fat: float, muscle: float,
+    water: float, visceral: float, bone: float, bmr: float, protein: float,
+    fats: tuple[float, ...], muscles: tuple[float, float],
+) -> int:
+    """Body score 10-100: 100 minus penalties for values outside their range."""
+    score = 100.0
+    # BMI
+    if bmi < 15:
+        score -= _malus(bmi, 14, 15, 30, 15)
+    elif bmi < 18.5:
+        score -= 0 if fat < fats[2] and age < 18 else _malus(bmi, 15, 18.5, 15, 5)
+    elif bmi >= 28 and fat >= fats[2]:
+        score -= _malus(bmi, 28, 32, 5, 10)
+    # body fat
+    best = fats[2] - (3.0 if sex == MALE else 2.0)
+    if fat < fats[0]:
+        score -= _malus(fat, 1, fats[0], 10, 3)
+    elif fat >= fats[2]:
+        score -= _malus(fat, fats[2], fats[3], 10, 20)
+    elif fat >= best:
+        score -= _malus(fat, best, fats[2], 3, 9)
+    score -= _below(muscle, muscles[0] - 5, muscles[0])
+    normal_water = 55.0 if sex == MALE else 45.0
+    score -= _below(water, normal_water - 5, normal_water)
+    if visceral >= 10:
+        score -= _malus(visceral, 10, 15, 10, 15)
+    expected = expected_bone_mass(weight, sex)
+    score -= _below(bone, expected - 0.3, expected)
+    normal = normal_bmr(weight, age, sex)
+    if bmr < normal:
+        score -= _malus(bmr, normal - 300, normal, 6, 3)
+    if protein <= 16:
+        score -= _malus(protein, 10, 16, 10, 5)
+    elif protein <= 17:
+        score -= _malus(protein, 16, 17, 5, 3)
+    return round(_clamp(score, 10, 100))
+
+
+def analyze(
+    weight: float, height_cm: float | None, age: int | None, sex: str | None,
+    composition: Composition, impedance: float | None = None,
+) -> dict[str, object]:
+    """Extended analysis as in the Xiaomi app, from the composition of one reading.
+
+    Values that cannot be computed (missing profile data or scale values) are
+    left out. "status" rates each value: low / standard / good / high / very_high.
+    """
+    c = composition
+    out: dict[str, object] = {}
+    status: dict[str, str] = {}
+    adult = age is not None and age >= 18
+    known_sex = sex in (MALE, FEMALE)
+    fats = fat_scale(sex, age)
+    muscles = muscle_scale(sex, height_cm)
+
+    if c.body_fat is not None:
+        out["fat_mass"] = round(weight * c.body_fat / 100, 1)
+        out["lean_mass"] = round(weight - weight * c.body_fat / 100, 1)
+    if c.water is not None:
+        out["water_mass"] = round(weight * c.water / 100, 1)
+        if known_sex:
+            normal_water = 55.0 if sex == MALE else 45.0
+            status["water"] = "low" if c.water < normal_water else "good" if c.water <= normal_water + 10 else "high"
+    if c.muscle_mass is not None:
+        out["muscle_pct"] = round(c.muscle_mass / weight * 100, 1)
+        if muscles:
+            status["muscle_mass"] = status["muscle_pct"] = (
+                "low" if c.muscle_mass < muscles[0] else "standard" if c.muscle_mass <= muscles[1] else "good"
+            )
+    if c.bone_mass is not None:
+        out["bone_pct"] = round(c.bone_mass / weight * 100, 1)
+        if known_sex:
+            expected = expected_bone_mass(weight, sex)
+            status["bone_mass"] = status["bone_pct"] = (
+                "low" if c.bone_mass < expected - 0.3 else "good" if c.bone_mass > expected + 0.5 else "standard"
+            )
+    if c.muscle_mass is not None and c.water is not None:
+        protein = _clamp(c.muscle_mass / weight * 100 - c.water, 5, 32)
+        out["protein"] = round(protein, 1)
+        out["protein_mass"] = round(weight * protein / 100, 1)
+        status["protein"] = "low" if protein < 16 else "standard" if protein <= 20 else "good"
+    if c.body_fat is not None and fats and adult:
+        status["body_fat"] = (
+            "low" if c.body_fat < fats[0] else "standard" if c.body_fat <= fats[2]
+            else "high" if c.body_fat <= fats[3] else "very_high"
+        )
+    if c.bmr is not None and known_sex and age:
+        status["bmr"] = "good" if c.bmr >= normal_bmr(weight, age, sex) else "low"
+
+    if height_cm and age and known_sex:
+        bmi = weight / (height_cm / 100) ** 2
+        status["bmi"] = "low" if bmi < 18.5 else "standard" if bmi < 25 else "high" if bmi < 30 else "very_high"
+        visceral = visceral_fat(weight, height_cm, age, sex)
+        out["visceral_fat"] = round(visceral, 1)
+        status["visceral_fat"] = "standard" if visceral < 10 else "high" if visceral < 15 else "very_high"
+        ideal = ideal_weight(height_cm, sex)
+        out["ideal_weight"] = round(ideal, 1)
+        out["weight_control"] = round(ideal - weight, 1)
+        if impedance and plausible_input(weight, height_cm, age, impedance):
+            body_age = metabolic_age(weight, height_cm, age, sex, impedance)
+            out["metabolic_age"] = round(body_age)
+            status["metabolic_age"] = "good" if body_age < age - 0.5 else "standard" if body_age <= age + 0.5 else "high"
+            out["skeletal_muscle"] = round(skeletal_muscle_mass(height_cm, age, sex, impedance), 1)
+            if "muscle_mass" in status:
+                status["skeletal_muscle"] = status["muscle_mass"]
+        if c.body_fat is not None and fats:
+            out["fat_control"] = round(weight * (fats[2] - c.body_fat) / 100, 1)
+        if c.muscle_mass is not None and muscles:
+            out["muscle_control"] = round(max(0.0, muscles[0] - c.muscle_mass), 1)
+        if c.body_fat is not None and c.muscle_mass is not None and fats and muscles:
+            out["body_type"] = body_type(c.body_fat, c.muscle_mass, fats, muscles)
+        needed = (c.body_fat, c.muscle_mass, c.water, c.bone_mass, c.bmr, out.get("protein"))
+        if adult and fats and muscles and all(v is not None for v in needed):
+            out["body_score"] = body_score(
+                weight=weight, bmi=bmi, age=age, sex=sex, fat=c.body_fat, muscle=c.muscle_mass,
+                water=c.water, visceral=visceral, bone=c.bone_mass, bmr=c.bmr,
+                protein=out["protein"], fats=fats, muscles=muscles,
+            )
+    out["status"] = status
+    return out

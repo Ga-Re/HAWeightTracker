@@ -42,8 +42,14 @@ Das Panel hat drei Tabs. Der dritte heißt für Admins „Einstellungen“ und f
 
 ### Übersicht
 - **Offene Messungen** stehen ganz oben. Ein Klick auf den Namen ordnet die Messung zu.
-- **Eine Karte pro Person** zeigt aktuelles Gewicht, Trend, Veränderung über 7 und 30 Tage und insgesamt, Tempo pro Woche, BMI und Alter. Mit Zielgewicht kommen ein Fortschrittsbalken und das voraussichtliche Datum dazu.
-  - Sind für die Person Sensoren angelegt, öffnet ein Klick auf einen Wert die gewohnte Entitätsansicht von Home Assistant mit Verlauf.
+- **Körperanalyse pro Person** im Stil der Xiaomi-App. Oben wählst du die Person (alle, die du sehen darfst), das Panel merkt sich die Wahl.
+  - **Kopf:** großes Gewicht mit BMI-Einstufung, Trend, Veränderung über 7 und 30 Tage und insgesamt, Tempo pro Woche, Min/Max und Fortschritt zum Zielgewicht.
+  - **Körperbewertung** (Punkte von 100) mit kurzer Einschätzung, BMI und Körperfett mit Bewertung.
+  - **Körperzusammensetzung:** Körperwasser, Fettmasse, Knochenmineral und Eiweißmasse in kg.
+  - **Kacheln:** Muskelmasse und -anteil, Körperwasser, Eiweiß, Knochenanteil, Skelettmuskelmasse, Viszeralfett, Grundumsatz, Taille-zu-Größe, Körperalter, fettfreie Masse und Herzfrequenz, jeweils mit Bewertung (Niedrig / Standard / Gut / Hoch).
+  - **Körpertyp** in einer 3×3-Matrix aus Körperfett und Muskeln und **Vorschläge zum Gewicht** (Standardgewicht, Gewichts-, Fett- und Muskelkontrolle).
+  - **KI-Hinweise**, falls eingeschaltet (siehe [KI-Hinweise](#ki-hinweise)).
+  - Die Körperwerte erscheinen nur, wenn die Waage Impedanz oder direkte Werte liefert. Sind für die Person Sensoren angelegt, öffnet ein Klick auf einen Wert die Entitätsansicht von Home Assistant.
 - **Verlauf als Graph:** Jede Messung ist ein Punkt, dazu kommt die geglättete Trendlinie und das Zielgewicht als gestrichelte Linie. Zeiträume: 30 Tage, 90 Tage, 1 Jahr, alles. Mit *Veränderung* starten alle Personen bei 0, das ist praktisch für den Vergleich. Personen lassen sich ein- und ausblenden, beim Überfahren zeigt ein Tooltip die Details.
 - **Monatsdurchschnitt** pro Person mit Veränderung zum Vormonat.
 
@@ -62,9 +68,10 @@ Vor jedem Namen steht das **Bild der Home-Assistant-Person**. Es stammt von der 
 
 ### Einstellungen (nur Admins)
 - **Waage:** Name, minimales und maximales Gewicht, Toleranz, Eindeutigkeits-Abstand und Wartezeit, bis ein Wert stabil ist.
-- **Sensoren der Waage:** welche Werte deine Waage an Home Assistant meldet. Nötig ist nur der Gewichtssensor. Optional kommen Impedanz, Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz dazu, falls deine Waage sie liefert. Direkt gemessene Werte haben Vorrang vor der Schätzung aus der Impedanz. Hat die Waage einen **Stabilisiert-Sensor** (z. B. Xiaomi „Stabilized“), wird er beim Wählen des Gewichtssensors zusammen mit der Impedanz vom selben Gerät vorgeschlagen (siehe [Waagen mit „Stabilized“](#waagen-mit-stabilized-z-b-xiaomi-s400)).
+- **Sensoren der Waage:** welche Werte deine Waage an Home Assistant meldet. Nötig ist nur der Gewichtssensor. Optional kommen Impedanz (bei Waagen mit zwei Frequenzen beide), Herzfrequenz, Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz dazu, falls deine Waage sie liefert. Direkt gemessene Werte haben Vorrang vor der Schätzung aus der Impedanz. Hat die Waage einen **Stabilisiert-Sensor** (z. B. Xiaomi „Stabilized“), wird er beim Wählen des Gewichtssensors zusammen mit der Impedanz vom selben Gerät vorgeschlagen (siehe [Waagen mit „Stabilized“](#waagen-mit-stabilized-z-b-xiaomi-s400)).
 - **Personen:** anlegen, bearbeiten und löschen. Pro Person gibt es Name, Startgewicht, Größe, Zielgewicht, Geburtsmonat, Anwesenheits-Entität, verknüpften HA-Benutzer, wer zusätzlich ansehen darf und ob Sensoren angelegt werden. Beim Löschen einer Person werden auch ihre Messungen gelöscht.
 - **Freigaben:** Tabelle Benutzer × Personen, siehe unten.
+- **KI-Hinweise:** optional eine AI-Task-Entität für die Auswertung, siehe [KI-Hinweise](#ki-hinweise).
 
 Die Formulare nutzen die Eingabefelder von Home Assistant selbst. Waagen-Sensor und Anwesenheit sind durchsuchbare Entitätsauswahlen mit Filter: Gewichtssensoren bzw. nur `person.*`-Entitäten. Speichern lädt die Integration kurz neu, das Panel aktualisiert sich dabei von selbst. Der Knopf *Konfigurieren* unter Geräte & Dienste verweist nur noch auf das Panel.
 
@@ -75,9 +82,10 @@ Das Panel passt sich dem hellen oder dunklen Theme an, funktioniert auf dem Hand
 Manche Waagen, etwa die **Xiaomi Body Composition Scale S400**, schicken pro Wiegen nur das fertige Gewicht. Ist es gleich wie beim letzten Mal, ändert sich der Gewichtssensor in Home Assistant nicht, und ohne weiteren Hinweis würde die Messung fehlen. Deshalb unter *Einstellungen → Sensoren der Waage*:
 - **Gewichtssensor:** „… Gewicht“ bzw. „… Mass“ der Waage.
 - **Stabilisiert-Sensor:** „… Stabilized“. Jedes Umschalten auf „an“ zählt als Messung, auch bei gleichem Gewicht. Die Wartezeit („Beruhigungszeit“) entfällt dann.
-- **Impedanz:** bei der S400 „Impedance Low“ (50 kHz, wie bei der Mi Scale 2, für die die Formeln gemacht sind).
+- **Impedanz:** „Impedance Low“ und, falls vorhanden, „Impedance High“ im Feld für die zweite Frequenz. Die Namen richten sich nach der Größe der Werte, nicht nach der Frequenz: Der größere Wert ist die 50-kHz-Messung, mit der die Formeln (wie bei der Mi Scale 2) rechnen. Die Integration nimmt deshalb automatisch den größeren der beiden.
+- **Herzfrequenz:** „Heart Rate“, erscheint als Kachel in der Übersicht.
 
-Stabilisiert- und Impedanz-Sensor werden automatisch vorgeschlagen, sobald du den Gewichtssensor wählst. Ohne Stabilisiert-Sensor arbeitet die Integration wie bisher mit Änderungen des Gewichts.
+Stabilisiert-, Impedanz- und Herzfrequenz-Sensor werden automatisch vorgeschlagen, sobald du den Gewichtssensor wählst. Ohne Stabilisiert-Sensor arbeitet die Integration wie bisher mit Änderungen des Gewichts.
 
 ## Auswertung
 
@@ -97,8 +105,10 @@ chart_days: 90      # optional, 0 = ohne Verlauf
 - **Geschlecht, Größe, Geburtsmonat, Ziel** und **Taillenumfang** pflegt jede Person selbst unter *Meine Daten* (Stift ✎ in den Kacheln). Aus Taille und Größe wird das Taille-zu-Größe-Verhältnis (WHtR) berechnet und eingestuft. Es ist aussagekräftiger als der BMI allein.
 - **Körperzusammensetzung (nur wenn die Waage sie liefert):** Unter *Einstellungen → Sensoren der Waage* lassen sich optional ein **Impedanz-Sensor** (z. B. Xiaomi Body Composition Scale) und direkt gemessene Werte (Körperfett, Muskelmasse, Körperwasser, Knochenmasse, Grundumsatz) auswählen. Ist ein Wert beim Wiegen frisch (höchstens 2 Minuten alt), wird er mit der Messung gespeichert.
   - Aus der Impedanz werden Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz geschätzt (Xiaomi-Formel wie in openScale/bodymiscale). Das sind Richtwerte, keine medizinische Messung. Dafür braucht es Geschlecht, Geburtsmonat und Größe, fehlende Angaben nennt das Panel.
+  - Ebenfalls nach den Xiaomi-Algorithmen berechnet: Körperbewertung, Viszeralfett, Eiweißanteil, Körperalter, Körpertyp, Standardgewicht sowie Fett- und Muskelkontrolle; die Skelettmuskelmasse nach Janssen (2000). Die Algorithmen folgen [bodymiscale](https://github.com/dckiller51/bodymiscale) (Apache-Lizenz 2.0).
+  - **Abweichungen zur Xiaomi-App:** Neuere Waagen wie die S400 senden nur Gewicht, Impedanz und Puls. Die App rechnet mit Xiaomis eigenen, nicht veröffentlichten Formeln. Die Werte hier sind deshalb Näherungen und können spürbar abweichen, besonders Punktzahl, Körperwasser und Viszeralfett. Für Trends über Wochen eignen sie sich trotzdem.
   - Ohne diese Sensoren erscheint nirgends etwas zur Körperzusammensetzung.
-  - Unter *Einstellungen → Werte als HA-Sensoren* lassen sich dafür zusätzlich die Sensoren Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz anlegen.
+  - Unter *Einstellungen → Werte als HA-Sensoren* lassen sich dafür zusätzlich Sensoren anlegen: Körperfett, Muskelmasse, Körperwasser, Knochenmasse, Grundumsatz, Körperbewertung, Viszeralfett, Protein, Körperalter, Skelettmuskelmasse und Herzfrequenz.
 - **Notizen zu Messungen** („Urlaub“, „krank“, „neues Training“): beim Eintragen oder über 📝 in der Messliste. Im Graph sind Messungen mit Notiz umrandet, der Tooltip zeigt die Notiz.
 
 ## Mit oder ohne Kleidung
@@ -130,7 +140,7 @@ Ein Admin legt im Personen-Editor (*Einstellungen → Personen*) fest, an welche
 
 ## Werte als HA-Sensoren
 
-Unter *Einstellungen → Werte als HA-Sensoren* wählst du pro Person, Haustier und Kind einzeln aus, welche Werte als Sensor angelegt werden: Gewicht, Trend, Veränderungen, Tempo, BMI, Abstand zum Ziel, Zieldatum, letzte Messung und, falls die Waage es liefert, Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz. Mit *Alle* bzw. *Keine* geht es schneller. Wer vor 2.0 „Sensoren in HA“ eingeschaltet hatte, behält automatisch alle Sensoren.
+Unter *Einstellungen → Werte als HA-Sensoren* wählst du pro Person, Haustier und Kind einzeln aus, welche Werte als Sensor angelegt werden: Gewicht, Trend, Veränderungen, Tempo, BMI, Abstand zum Ziel, Zieldatum, letzte Messung und, falls die Waage es liefert, Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz. Mit *Alle* bzw. *Keine* geht es schneller. Neu ab 2.5.0 sind Körperbewertung, Viszeralfett, Protein, Körperalter, Skelettmuskelmasse (alle mit Impedanz) und Herzfrequenz. Wer vor 2.0 „Sensoren in HA“ eingeschaltet hatte, behält automatisch alle Sensoren.
 
 ## Haustiere wiegen
 
@@ -156,6 +166,18 @@ Kinder werden wie Haustiere per Differenzmessung gewogen (einmal allein, einmal 
 ## Einheiten
 
 Oben rechts im Panel wählst du **kg**, **lb** oder **st**. Die Wahl gilt für dieses Gerät, voreingestellt ist das Einheitensystem von Home Assistant. Anzeigen, Graph und Eingabefelder rechnen um, gespeichert wird immer in kg. Bei st zeigt das Panel große Werte als „13 st 10 lb“, Veränderungen in lb.
+
+## KI-Hinweise
+
+Optional wertet eine KI die Messwerte aus und schreibt eine kurze Einschätzung mit 2–4 Empfehlungen in die Übersicht. Genutzt wird die **AI-Task**-Funktion von Home Assistant (ab 2025.7). Damit funktioniert jede KI-Integration, die AI Task unterstützt, z. B. OpenAI, Anthropic (Claude), Google Gemini oder lokal Ollama. Einen eigenen API-Schlüssel braucht die Integration nicht.
+
+1. **Admin:** *Einstellungen → KI-Hinweise* → AI-Task-Entität wählen.
+2. **Jede Person** schaltet unter *Meine Daten → KI-Hinweise* selbst ein, ob ihre Werte ausgewertet werden. Standard ist aus.
+3. Die Auswertung läuft nach jeder neuen Messung (höchstens einmal pro Stunde) und mit dem Knopf **Neu auswerten** in der Übersicht.
+
+**Was an die KI geht:** nur Zahlen, also Geschlecht, Alter, Größe, Zielgewicht, Gewicht, Trend und Veränderungen, die Körperwerte mit Bewertung, Herzfrequenz und die Trendwerte der letzten Wochen. Name, Benutzer und Geburtsmonat gehen nicht mit. Bei einer Cloud-KI verlassen diese Gesundheitsdaten trotzdem dein Zuhause. Wer das nicht möchte, nutzt eine lokale KI oder lässt die Hinweise aus.
+
+Die Hinweise sehen alle, die die Person sehen dürfen. Sie ersetzen keine ärztliche Beratung. Schlägt eine Auswertung fehl (z. B. kein Guthaben), bleibt die letzte sichtbar, und das Panel zeigt den Fehler.
 
 ## Datenschutz & Freigaben
 
@@ -295,4 +317,4 @@ Für eine neue Version reicht es, in `manifest.json` die Versionsnummer zu erhö
 
 ## Lizenz
 
-[MIT](LICENSE)
+[MIT](LICENSE). Die Algorithmen für Körperbewertung, Viszeralfett, Körperalter, Protein, Körpertyp und die Xiaomi-Bewertungstabellen sind nach [bodymiscale](https://github.com/dckiller51/bodymiscale) (Apache-Lizenz 2.0) neu umgesetzt.
