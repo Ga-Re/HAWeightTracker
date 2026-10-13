@@ -277,6 +277,9 @@ const TEXT = {
     impedanceHint: "Nur falls deine Waage die Impedanz liefert (z. B. Xiaomi Body Composition Scale). Daraus werden Körperfett, Muskeln usw. geschätzt. Xiaomi S400: hier „Impedance Low“, unten „Impedance High“.",
     ovPersons: "Person wählen",
     infoAbout: (label) => `Was bedeutet „${label}“?`,
+    valuesTitle: "Körperwerte",
+    valueGroups: { fat: "Fett und Wasser", muscle: "Muskeln und Knochen", metabolism: "Stoffwechsel und Herz" },
+    sinceStart: (kg) => `seit Beginn ${kg}`,
     infoClose: "Schließen",
     infoYourRange: (lo, hi) => `Dein Standardbereich: ${lo}–${hi} %.`,
     segments: { muscle: "Muskelgewebe", essential_fat: "Essentielles Fett", storage_fat: "Speicherfett", bone: "Knochen", other: "Sonstiges" },
@@ -668,6 +671,9 @@ const TEXT = {
     impedanceHint: "Only if your scale reports impedance (e.g. Xiaomi Body Composition Scale). Body fat, muscles etc. are estimated from it. Xiaomi S400: “Impedance Low” here, “Impedance High” below.",
     ovPersons: "Choose person",
     infoAbout: (label) => `What does “${label}” mean?`,
+    valuesTitle: "Body values",
+    valueGroups: { fat: "Fat and water", muscle: "Muscle and bone", metabolism: "Metabolism and heart" },
+    sinceStart: (kg) => `${kg} since start`,
     infoClose: "Close",
     infoYourRange: (lo, hi) => `Your standard range: ${lo}–${hi} %.`,
     segments: { muscle: "Muscle tissue", essential_fat: "Essential fat", storage_fat: "Storage fat", bone: "Bone", other: "Other" },
@@ -1092,7 +1098,11 @@ const STYLE = `
   .sw[aria-selected="true"] { border-color: var(--primary-color, #03a9f4); background: color-mix(in srgb, var(--primary-color, #03a9f4) 14%, var(--wt-card)); font-weight: 500; }
   .sw:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: 2px; }
   /* dense: later cards fill gaps left next to shorter rows */
-  .report { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); grid-auto-flow: row dense; gap: 16px; }
+  /* at most two columns (content is max 1200px wide), so cards stand in pairs */
+  .report { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); grid-auto-flow: row dense; gap: 16px; }
+  .report-hero .stats { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+  .sub-h { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--wt-grid); }
+  .sugg { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
   .report .span { grid-column: 1 / -1; }
   .report-hero { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 24%, var(--wt-card)) 0%, var(--wt-card) 75%); }
   .rh-head { display: flex; align-items: center; gap: 12px; }
@@ -1145,12 +1155,23 @@ const STYLE = `
   .report-note { font-size: 12px; color: var(--wt-muted); line-height: 1.4; }
   .report.single { grid-template-columns: 1fr; }
   .sw .avatar.pet { background: rgba(127,127,127,.15); }
-  .info-btn { position: relative; display: inline-grid; place-items: center; width: 18px; height: 18px; margin-left: 4px; padding: 0; vertical-align: 1px;
+  /* labels that open their explanation: dotted underline instead of an icon */
+  .term { padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: help; text-align: inherit;
+    text-decoration: underline dotted; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 3px; }
+  .term:hover { color: var(--primary-color, #03a9f4); }
+  .term:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: 2px; border-radius: 2px; }
+  .st::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 5px; border-radius: 50%; background: currentColor; vertical-align: 1px; }
+  .st.st-standard, .st.st-good { color: var(--wt-muted); font-weight: 400; }
+  .st.st-standard::before, .st.st-good::before { background: var(--wt-st-good); }
+  .rh-label { text-align: center; font-size: 12px; color: var(--wt-muted); margin-top: 10px; }
+  .vgroup h3 { font-size: 13px; font-weight: 500; color: var(--wt-muted); margin: 16px 0 8px; }
+  .vgroup:first-of-type h3 { margin-top: 12px; }
+  .vgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .vt { padding: 10px 12px; border-radius: 10px; background: rgba(127,127,127,.08); min-width: 0; }
+  .vt .mv { font-size: 22px; font-weight: 500; line-height: 1.2; }
+  .vt .mv small { font-size: 13px; font-weight: 400; color: var(--wt-muted); }
+  .vt .ml { font-size: 12px; color: var(--wt-muted); margin: 2px 0 4px; }
     border: 1px solid currentColor; border-radius: 50%; background: transparent; color: var(--wt-muted); font: 600 11px/1 Georgia, serif; font-style: italic; cursor: pointer; }
-  .info-btn::after { content: ""; position: absolute; inset: -8px; }
-  .info-btn:hover { color: var(--primary-color, #03a9f4); }
-  .info-btn:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: 2px; }
-  h2 .info-btn { vertical-align: 2px; }
   .info-dialog { max-width: min(460px, calc(100vw - 32px)); padding: 20px; border: 1px solid var(--wt-border); border-radius: var(--wt-radius);
     background: var(--wt-card); color: var(--primary-text-color); box-shadow: 0 8px 32px rgba(0,0,0,.3); }
   .info-dialog::backdrop { background: rgba(0,0,0,.4); }
@@ -1729,11 +1750,6 @@ class WeightTrackerPanel extends HTMLElement {
       <button class="sw" role="tab" data-action="subject" data-person="${esc(x.subject.id)}" aria-selected="${x.subject === current.subject}">${icon(x)}<span>${esc(x.subject.name)}</span></button>`).join("")}</div>`;
   }
 
-  // Small (i) button next to a value; opens its explanation.
-  _info(key, label, person = null) {
-    return `<button class="info-btn" type="button" data-action="info" data-info="${esc(key)}" data-title="${esc(label)}"${person ? ` data-person="${esc(person.id)}"` : ""} aria-label="${esc(this._t.infoAbout(label))}">i</button>`;
-  }
-
   _showInfo(key, title, personId) {
     const t = this._t;
     let dialog = this.shadowRoot.getElementById("wt-info");
@@ -1781,7 +1797,7 @@ class WeightTrackerPanel extends HTMLElement {
       <div class="goal">
         <div class="row"><span>${esc(t.goal)} ${this._kg(person.goal)}</span><span class="num">${s.goal_reached ? "" : this._link(person, "goal_distance", t.goal, esc(t.goalLeft(this._kg(Math.abs(s.goal_remaining)))))}</span></div>
         <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(progress * 100)}"><div style="width:${(progress * 100).toFixed(1)}%;background:${color}"></div></div>
-        <div class="muted small">${this._link(person, "goal_eta", t.goal, esc(eta))} · ${Math.round(progress * 100)} %</div>
+        <div class="muted small">${this._link(person, "goal_eta", t.goal, esc(eta))} · ${Math.round(progress * 100)} %${s.change_total !== null && s.change_total !== undefined ? ` · ${this._link(person, "change_total", t.total, esc(t.sinceStart(this._kg(s.change_total, { signed: true }))))}` : ""}</div>
       </div>`;
   }
 
@@ -1801,8 +1817,9 @@ class WeightTrackerPanel extends HTMLElement {
     const num = (v, digits = 1) => this._kg(v, { unit: false, digits });
     const kg = (v) => `${num(v)} <small>${esc(this._unitLabel)}</small>`;
     const signedKg = (v) => `${this._kg(v, { signed: true, unit: false })} <small>${esc(this._unitLabel)}</small>`;
-    const info = (key, label) => this._info(key, label, person);
-    const stat = (key, label, value, infoKey = "changes") => `<div class="stat"><div class="label">${esc(label)}${info(infoKey, label)}</div><div class="val num">${link(key, label, value)}</div></div>`;
+    // A label that opens its explanation when tapped.
+    const term = (key, label) => `<button class="term" type="button" data-action="info" data-info="${esc(key)}" data-title="${esc(label)}" data-person="${esc(person.id)}" aria-label="${esc(`${label} – ${t.infoAbout(label)}`)}">${esc(label)}</button>`;
+    const stat = (key, label, value, infoKey = "changes") => `<div class="stat"><div class="label">${term(infoKey, label)}</div><div class="val num">${link(key, label, value)}</div></div>`;
     const bmiStatus = s.bmi && adult ? (s.bmi < 18.5 ? "low" : s.bmi < 25 ? "standard" : s.bmi < 30 ? "high" : "very_high") : null;
 
     const hero = `
@@ -1810,15 +1827,15 @@ class WeightTrackerPanel extends HTMLElement {
         <div class="rh-head">${this._avatar(person, 44)}
           <div><div class="rh-name">${esc(person.name)}${age !== null ? ` <span class="muted small" style="font-weight:400">· ${esc(t.years(age))}</span>` : ""}</div>
           <div class="muted small">${latestTs ? link("last_measured", t.measured, esc(this._dateTime(latestTs))) : esc(t.noData)}</div></div></div>
-        <div class="rh-weight">${link("weight", t.weight, this._bigWeight(s.latest_weight))}${info("weight", t.weight)}</div>
+        <div class="rh-label">${term("weight", t.weight)}</div>
+        <div class="rh-weight">${link("weight", t.weight, this._bigWeight(s.latest_weight))}</div>
         <div class="rh-class">${bmiStatus ? `<span class="st st-${bmiStatus}">${esc(t.bmiCat(s.bmi))}</span>` : ""}${s.change_last !== null && s.change_last !== undefined ? `${bmiStatus ? " · " : ""}<span class="muted num">${link("change_last", t.weight, this._kg(s.change_last, { signed: true }))} ${esc(t.sinceLast)}</span>` : ""}</div>
         <div class="stats">
           ${stat("trend", t.trend, this._kg(s.trend), "trend")}
           ${stat("change_7d", t.d7, this._kg(s.change_7d, { signed: true }))}
           ${stat("change_30d", t.d30, this._kg(s.change_30d, { signed: true }))}
           ${stat("rate", t.perWeek, this._kg(s.rate_per_week, { signed: true, digits: 2 }))}
-          ${stat("change_total", t.total, this._kg(s.change_total, { signed: true }))}
-          ${s.min_weight ? `<div class="stat"><div class="label">Min / Max</div><div class="val num">${this._kg(s.min_weight, { unit: false })} / ${this._kg(s.max_weight, { unit: false })}</div></div>` : ""}
+          ${person.goal ? "" : stat("change_total", t.total, this._kg(s.change_total, { signed: true }))}
         </div>
         ${this._goalHtml(person, color)}
       </div>`;
@@ -1835,14 +1852,14 @@ class WeightTrackerPanel extends HTMLElement {
     const ai = person.ai || {};
     const score = a && a.body_score !== undefined ? `
       <div class="card">
-        <h2>${esc(t.bodyReport)}${info("body_score", t.bodyReport)}</h2>
+        <h2>${term("body_score", t.bodyReport)}</h2>
         <div class="score-row">
           <div class="score">${link("body_score", t.bodyReport, `<b class="num">${a.body_score}</b>`)}<span>${esc(t.points)}</span></div>
           <div class="score-text">${esc(advice())}</div>
         </div>
         <div class="pair">
-          <div><div class="pv num">${s.bmi ? link("bmi", t.bmi, num(s.bmi)) : "–"}</div><div class="pl">${esc(t.bmi)}${info("bmi", t.bmi)}</div>${this._status(bmiStatus)}</div>
-          <div><div class="pv num">${b.body_fat !== null && b.body_fat !== undefined ? link("body_fat", t.bodyFat, `${num(b.body_fat)} <small>%</small>`) : "–"}</div><div class="pl">${esc(t.bodyFat)}${info("body_fat", t.bodyFat)}</div>${this._status(st.body_fat)}</div>
+          <div><div class="pv num">${s.bmi ? link("bmi", t.bmi, num(s.bmi)) : "–"}</div><div class="pl">${term("bmi", t.bmi)}</div>${this._status(bmiStatus)}</div>
+          <div><div class="pv num">${b.body_fat !== null && b.body_fat !== undefined ? link("body_fat", t.bodyFat, `${num(b.body_fat)} <small>%</small>`) : "–"}</div><div class="pl">${term("body_fat", t.bodyFat)}</div>${this._status(st.body_fat)}</div>
         </div>
       </div>` : "";
 
@@ -1852,7 +1869,7 @@ class WeightTrackerPanel extends HTMLElement {
       const hasText = Boolean(ai.summary || (ai.tips || []).length);
       aiCard = `
         <div class="card" aria-live="polite">
-          <div class="ai-head"><h2>🤖 ${esc(t.aiTitle)}${info("ai", t.aiTitle)}</h2>
+          <div class="ai-head"><h2>🤖 ${term("ai", t.aiTitle)}</h2>
             ${ai.enabled && person.can_manage ? `<button class="btn" data-action="ai-refresh" data-person="${esc(person.id)}" ${ai.busy ? "disabled" : ""}>${esc(ai.busy ? t.aiBusy : t.aiRefresh)}</button>` : ""}</div>
           ${!ai.enabled ? `<div class="hint" style="margin-top:8px">${esc(t.aiOffHint)}</div>`
             : hasText ? `${ai.summary ? `<p class="ai-summary">${esc(ai.summary)}</p>` : ""}${(ai.tips || []).length ? `<ul class="ai-tips">${ai.tips.map((tip) => `<li>${esc(tip)}</li>`).join("")}</ul>` : ""}`
@@ -1889,7 +1906,7 @@ class WeightTrackerPanel extends HTMLElement {
       const clip = `wt-figure-${esc(person.id)}`;
       composition = `
       <div class="card">
-        <h2>${esc(t.composition)}${info("composition", t.composition)}</h2>
+        <h2>${term("composition", t.composition)}</h2>
         <div class="comp2">
           <svg viewBox="0 0 200 400" role="img" aria-label="${esc(`${t.composition}: ${segments.map((seg) => `${t.segments[seg.key]} ${this._num(seg.pct)} %`).join(", ")}`)}">
             <defs><clipPath id="${clip}"><path d="${outline}"/></clipPath></defs>
@@ -1906,51 +1923,58 @@ class WeightTrackerPanel extends HTMLElement {
     const facts = this._profileFacts(person, { height: person.height, goal_weight: person.goal, birth_month: person.birth_month, sex: person.sex });
     const whtrStatus = { low: "low", healthy: "standard", increased: "high", high: "very_high" }[facts.whtrClass] || null;
     const heart = body.heart_rate || null;
-    // [sensor key, label, value, format, rating, explanation]
+    // [group, sensor key, label, value, format, rating, explanation]
     const tiles = [
-      ["muscle_mass", t.muscle, b.muscle_mass, kg, st.muscle_mass, "muscle"],
-      ["", t.musclePct, a && a.muscle_pct, (v) => `${num(v)} <small>%</small>`, st.muscle_pct, "muscle"],
-      ["body_water", t.waterPct, b.water, (v) => `${num(v)} <small>%</small>`, st.water, "water"],
-      ["protein", t.proteinPct, a && a.protein, (v) => `${num(v)} <small>%</small>`, st.protein, "protein"],
-      ["", t.bonePct, a && a.bone_pct, (v) => `${num(v)} <small>%</small>`, st.bone_pct, "bone"],
-      ["skeletal_muscle", t.skeletalMuscle, a && a.skeletal_muscle, kg, st.skeletal_muscle, "skeletal_muscle"],
-      ["visceral_fat", t.visceral, a && a.visceral_fat, (v) => num(v), st.visceral_fat, "visceral_fat"],
-      ["bmr", t.bmr, b.bmr, (v) => `${new Intl.NumberFormat(this._lang).format(v)} <small>kcal</small>`, st.bmr, "bmr"],
-      ["", t.whtr, facts.whtr, (v) => num(v, 2), whtrStatus, "whtr"],
-      ["metabolic_age", t.bodyAge, a && a.metabolic_age, (v) => `${v} <small>${esc(t.yearsUnit)}</small>`, st.metabolic_age, "metabolic_age"],
-      ["", t.leanMass, a && a.lean_mass, kg, null, "lean_mass"],
-      ["heart_rate", t.heartRate, heart && heart.value, (v) => `${v} <small>bpm</small>`, st.heart_rate || (heart ? (heart.value < 60 ? "low" : heart.value <= 100 ? "standard" : "high") : null), "heart_rate"],
-    ].filter(([, , value]) => value !== null && value !== undefined && !Number.isNaN(value));
-    const tileGrid = tiles.length ? `
-      <div class="mtiles span">${tiles.map(([key, label, value, fmt, status, infoKey]) => `
-        <div class="mtile"><div class="mv num">${key ? link(key, label, fmt(value)) : fmt(value)}</div><div class="ml">${esc(label)}${info(infoKey, label)}</div>${this._status(status)}</div>`).join("")}</div>` : "";
+      ["fat", "visceral_fat", t.visceral, a && a.visceral_fat, (v) => num(v), st.visceral_fat, "visceral_fat"],
+      ["fat", "body_water", t.waterPct, b.water, (v) => `${num(v)} <small>%</small>`, st.water, "water"],
+      ["fat", "", t.whtr, facts.whtr, (v) => num(v, 2), whtrStatus, "whtr"],
+      ["fat", "", t.leanMass, a && a.lean_mass, kg, null, "lean_mass"],
+      ["muscle", "muscle_mass", t.muscle, b.muscle_mass, kg, st.muscle_mass, "muscle"],
+      ["muscle", "", t.musclePct, a && a.muscle_pct, (v) => `${num(v)} <small>%</small>`, st.muscle_pct, "muscle"],
+      ["muscle", "skeletal_muscle", t.skeletalMuscle, a && a.skeletal_muscle, kg, st.skeletal_muscle, "skeletal_muscle"],
+      ["muscle", "protein", t.proteinPct, a && a.protein, (v) => `${num(v)} <small>%</small>`, st.protein, "protein"],
+      ["muscle", "", t.bonePct, a && a.bone_pct, (v) => `${num(v)} <small>%</small>`, st.bone_pct, "bone"],
+      ["metabolism", "bmr", t.bmr, b.bmr, (v) => `${new Intl.NumberFormat(this._lang).format(v)} <small>kcal</small>`, st.bmr, "bmr"],
+      ["metabolism", "metabolic_age", t.bodyAge, a && a.metabolic_age, (v) => `${v} <small>${esc(t.yearsUnit)}</small>`, st.metabolic_age, "metabolic_age"],
+      ["metabolism", "heart_rate", t.heartRate, heart && heart.value, (v) => `${v} <small>bpm</small>`, st.heart_rate || (heart ? (heart.value < 60 ? "low" : heart.value <= 100 ? "standard" : "high") : null), "heart_rate"],
+    ].filter(([, , , value]) => value !== null && value !== undefined && !Number.isNaN(value));
+    const groups = ["fat", "muscle", "metabolism"]
+      .map((group) => [group, tiles.filter((tile) => tile[0] === group)])
+      .filter(([, items]) => items.length);
+    const tileGrid = groups.length ? `
+      <div class="card span">
+        <h2>${esc(t.valuesTitle)}</h2>
+        ${groups.map(([group, items]) => `
+          <div class="vgroup"><h3>${esc(t.valueGroups[group])}</h3>
+            <div class="vgrid">${items.map(([, key, label, value, fmt, status, infoKey]) => `
+              <div class="vt"><div class="mv num">${key ? link(key, label, fmt(value)) : fmt(value)}</div><div class="ml">${term(infoKey, label)}</div>${this._status(status)}</div>`).join("")}</div>
+          </div>`).join("")}
+      </div>` : "";
 
     const types = ["obese", "overweight", "thick_set", "lack_exercise", "balanced", "balanced_muscular", "skinny", "balanced_skinny", "skinny_muscular"];
     const bodyType = a && a.body_type ? `
-      <div class="card">
-        <h2>${esc(t.bodyType)}: ${esc(t.bodyTypes[a.body_type])}${info("body_type", t.bodyType)}</h2>
+        <h2>${term("body_type", t.bodyType)}: ${esc(t.bodyTypes[a.body_type])}</h2>
         <div class="bt" role="img" aria-label="${esc(`${t.bodyType}: ${t.bodyTypes[a.body_type]}`)}">
           <div class="bt-rows">${t.fatLevels.map((l) => `<span>${esc(l)}</span>`).join("")}</div>
           <div class="bt-grid">${types.map((k) => `<div class="bt-cell ${k === a.body_type ? "on" : ""}">${esc(t.bodyTypes[k])}</div>`).join("")}</div>
           <div class="bt-cols">${t.muscleLevels.map((l) => `<span>${esc(l)}</span>`).join("")}</div>
           <div class="bt-axis"><span>↕ ${esc(t.axisFat)}</span><span>${esc(t.axisMuscle)} ↔</span></div>
-        </div>
-      </div>` : "";
+        </div>` : "";
 
     const sugg = (icon, label, value) => value === null || value === undefined ? "" : `<div class="sg"><span class="ic" aria-hidden="true">${icon}</span><div><div class="sl">${esc(label)}</div><div class="sv num">${value}</div></div></div>`;
     const suggestions = a && a.ideal_weight !== undefined ? `
-      <div class="card">
-        <h2>${esc(t.suggestions)}${info("suggestions", t.suggestions)}</h2>
+        <h2 ${bodyType ? 'class="sub-h"' : ""}>${term("suggestions", t.suggestions)}</h2>
         <div class="sugg">
           ${sugg("⚖️", t.idealWeight, kg(a.ideal_weight))}
           ${sugg("🎯", t.weightControl, a.weight_control !== undefined ? signedKg(a.weight_control) : null)}
           ${sugg("🔥", t.fatControl, a.fat_control !== undefined ? signedKg(a.fat_control) : null)}
           ${sugg("💪", t.muscleControl, a.muscle_control === undefined ? null : a.muscle_control > 0 ? signedKg(a.muscle_control) : esc(t.keepUp))}
-        </div>
-      </div>` : "";
+        </div>` : "";
+    // Body type and suggestions share a card, next to the figure.
+    const typeCard = bodyType || suggestions ? `<div class="card">${bodyType}${suggestions}</div>` : "";
 
     const note = a ? `<div class="report-note span">${esc(t.analysisNote)}</div>` : "";
-    return `${hero}${score}${aiCard}${missing}${composition}${tileGrid}${bodyType}${suggestions}${note}`;
+    return `${hero}${score}${aiCard}${missing}${composition}${typeCard}${tileGrid}${note}`;
   }
 
   // ---------------------------------------------------------------- pets

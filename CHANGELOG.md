@@ -7,6 +7,16 @@ Alle Versionen der Integration. Die Nummern folgen [Semantic Versioning](https:/
 Jeder Abschnitt wird beim Push automatisch zu einem [GitHub-Release](https://github.com/Ga-Re/HAWeightTracker/releases)
 (siehe `.github/workflows/release.yml`). HACS zeigt diese Releases als Updates an.
 
+## [2.7.0] – 2026-10-13
+
+### Geändert
+- **Übersicht aufgeräumt**, Aufbau unverändert:
+  - Statt (i)-Symbolen ist die Beschriftung jedes Werts selbst antippbar (gepunktete Unterlinie) und öffnet die Erklärung.
+  - Bewertungen sind ruhiger: „Standard“ und „Gut“ erscheinen grau mit grünem Punkt, farbig ist nur, was auffällt.
+  - Kopf mit vier Kennzahlen in einer Reihe; „seit Beginn“ steht in der Ziel-Zeile, Min/Max entfällt.
+  - Die Kacheln stehen in einer Karte „Körperwerte“, gruppiert nach Fett und Wasser, Muskeln und Knochen, Stoffwechsel und Herz.
+  - Körpertyp und Vorschläge zum Gewicht teilen sich eine Karte; die Übersicht hat höchstens zwei Spalten, damit Karten paarweise stehen.
+
 ## [2.6.1] – 2026-10-13
 
 ### Behoben

@@ -49,7 +49,7 @@ Das Panel hat drei Tabs. Der dritte heißt für Admins „Einstellungen“ und f
   - **Kacheln:** Muskelmasse und -anteil, Körperwasser, Eiweiß, Knochenanteil, Skelettmuskelmasse, Viszeralfett, Grundumsatz, Taille-zu-Größe, Körperalter, fettfreie Masse und Herzfrequenz, jeweils mit Bewertung (Niedrig / Standard / Gut / Hoch).
   - **Körpertyp** in einer 3×3-Matrix aus Körperfett und Muskeln und **Vorschläge zum Gewicht** (Standardgewicht, Gewichts-, Fett- und Muskelkontrolle).
   - **KI-Hinweise**, falls eingeschaltet (siehe [KI-Hinweise](#ki-hinweise)).
-  - **Infoknopf (i)** an jedem Wert: erklärt, wie der Wert entsteht, was er bedeutet und welcher Bereich normal ist.
+  - **Erklärungen:** Die Beschriftung jedes Werts (gepunktet unterstrichen) ist antippbar und erklärt, wie der Wert entsteht, was er bedeutet und welcher Bereich normal ist.
   - Die Körperwerte erscheinen nur, wenn die Waage Impedanz oder direkte Werte liefert. Sind für die Person Sensoren angelegt, öffnet ein Klick auf einen Wert die Entitätsansicht von Home Assistant.
 - **Verlauf als Graph:** Jede Messung ist ein Punkt, dazu kommt die geglättete Trendlinie und das Zielgewicht als gestrichelte Linie. Zeiträume: 30 Tage, 90 Tage, 1 Jahr, alles. Mit *Veränderung* starten alle Personen bei 0, das ist praktisch für den Vergleich. Personen lassen sich ein- und ausblenden, beim Überfahren zeigt ein Tooltip die Details.
 - **Monatsdurchschnitt** pro Person mit Veränderung zum Vormonat.
