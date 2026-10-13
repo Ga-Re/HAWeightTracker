@@ -1,6 +1,9 @@
 {
   "domain": "weight_tracker",
   "name": "Weight Tracker",
+  "after_dependencies": [
+    "recorder"
+  ],
   "codeowners": [
     "@Ga-Re"
   ],
@@ -16,5 +19,5 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/Ga-Re/HAWeightTracker/issues",
   "requirements": [],
-  "version": "2.9.0"
+  "version": "2.10.0"
 }

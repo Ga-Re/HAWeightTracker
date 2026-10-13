@@ -278,6 +278,12 @@ const TEXT = {
     impedanceHint: "Nur falls deine Waage die Impedanz liefert (z. B. Xiaomi Body Composition Scale). Daraus werden Körperfett, Muskeln usw. geschätzt. Xiaomi S400: hier „Impedance Low“, unten „Impedance High“.",
     ovPersons: "Person wählen",
     infoAbout: (label) => `Was bedeutet „${label}“?`,
+    scaleSuggestTitle: "Weitere Sensoren deiner Waage gefunden",
+    scaleSuggestText: (list) => `Noch nicht eingetragen: ${list}.`,
+    scaleSuggestApply: "Übernehmen und speichern",
+    pulseMissingAdmin: "Kein Puls: Unter Einstellungen → Sensoren der Waage ist noch kein Herzfrequenz-Sensor eingetragen.",
+    pulseWaiting: "Der Puls erscheint ab der nächsten Messung.",
+    pulseMissing: "Kein Puls – die Waage misst ihn nicht oder er ist noch nicht eingerichtet.",
     valuesTitle: "Körperwerte",
     valueGroupsExtra: { heart: "Herz und Fitness", indices: "Weitere Kennzahlen" },
     bmrMifflin: "Grundumsatz (Mifflin-St Jeor)",
@@ -708,6 +714,12 @@ const TEXT = {
     impedanceHint: "Only if your scale reports impedance (e.g. Xiaomi Body Composition Scale). Body fat, muscles etc. are estimated from it. Xiaomi S400: “Impedance Low” here, “Impedance High” below.",
     ovPersons: "Choose person",
     infoAbout: (label) => `What does “${label}” mean?`,
+    scaleSuggestTitle: "More sensors of your scale found",
+    scaleSuggestText: (list) => `Not set up yet: ${list}.`,
+    scaleSuggestApply: "Apply and save",
+    pulseMissingAdmin: "No pulse: no heart rate sensor is set under Settings → Scale sensors yet.",
+    pulseWaiting: "The pulse appears from the next measurement.",
+    pulseMissing: "No pulse – the scale does not measure it or it is not set up yet.",
     valuesTitle: "Body values",
     valueGroupsExtra: { heart: "Heart and fitness", indices: "More figures" },
     bmrMifflin: "Basal metabolic rate (Mifflin-St Jeor)",
@@ -1267,6 +1279,9 @@ const STYLE = `
   .zones { margin-top: 4px; }
   .zbar { display: flex; gap: 2px; height: 10px; border-radius: 5px; overflow: hidden; margin: 6px 0 10px; }
   .zbar span { display: block; height: 100%; }
+  .suggest-box { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 12px; padding: 12px 14px; border-radius: 12px;
+    background: color-mix(in srgb, var(--primary-color, #03a9f4) 10%, var(--wt-card)); }
+  .suggest-box > div { flex: 1 1 260px; }
   .zhead { font-size: 12px; color: var(--wt-muted); margin-top: 14px; }
   .zlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px 24px; font-size: 14px; }
   .zrow { display: grid; grid-template-columns: 10px 1fr auto; align-items: center; gap: 10px; }
@@ -2065,6 +2080,10 @@ class WeightTrackerPanel extends HTMLElement {
             <span class="zval num">${link(`zone_${k}`, t.zoneNames[k], `${mx.zones[k][0]}–${mx.zones[k][1]}`)} <small>bpm</small></span></div>`).join("")}</div>
       </div>` : "";
     const groupNames = { ...t.valueGroups, ...t.valueGroupsExtra };
+    // No pulse yet: say why (only admins can set up the scale's sensors).
+    const cfg = this._entry.settings;
+    const pulseNote = heart ? "" : `<div class="hint" style="margin-top:10px">${esc(
+      !cfg ? t.pulseMissing : cfg.heart_rate_entity ? t.pulseWaiting : t.pulseMissingAdmin)}</div>`;
     const groups = ["fat", "muscle", "metabolism", "heart", "indices"]
       .map((group) => [group, tiles.filter((tile) => tile[0] === group)])
       .filter(([, items]) => items.length);
@@ -2075,7 +2094,7 @@ class WeightTrackerPanel extends HTMLElement {
           <div class="vgroup"><h3>${esc(groupNames[group])}</h3>
             <div class="vgrid">${items.map(([, key, label, value, fmt, status, infoKey, note]) => `
               <div class="vt"><div class="mv num">${key ? link(key, label, fmt(value)) : fmt(value)}</div><div class="ml">${term(infoKey, label)}</div>${this._status(status)}${note ? `<div class="ml">${esc(note)}</div>` : ""}</div>`).join("")}</div>
-            ${group === "heart" ? zones : ""}
+            ${group === "heart" ? zones + pulseNote : ""}
           </div>`).join("")}
       </div>` : "";
 
@@ -3341,6 +3360,15 @@ class WeightTrackerPanel extends HTMLElement {
       this._def("entity", "bmr_entity", t.bmrEntity, { filter: { domain: "sensor" }, helper: t.directHint }),
     ];
     const defaults = { name: this._entry.title, ...cfg };
+    // Sensors of the scale that exist but are not set up yet (e.g. heart rate added later).
+    const suggestions = this._scaleSuggestions(cfg.source_entity, { ...cfg, ...(this._models["scale-sensors-form"] || {}) });
+    const suggestionLabels = { stable_entity: t.stableEntity, impedance_entity: t.impedanceEntity, impedance_high_entity: t.impedanceHighEntity, heart_rate_entity: t.heartRateEntity };
+    const suggestionBox = Object.keys(suggestions).length ? `
+        <div class="suggest-box" role="status">
+          <div><b>${esc(t.scaleSuggestTitle)}</b>
+            <div class="hint">${esc(t.scaleSuggestText(Object.entries(suggestions).map(([key, id]) => `${suggestionLabels[key]} (${(this._hass.states[id] && this._hass.states[id].attributes.friendly_name) || id})`).join(", ")))}</div></div>
+          <button class="btn primary" type="button" data-action="scale-suggest">${esc(t.scaleSuggestApply)}</button>
+        </div>` : "";
     return this._section("scale", "mdi:scale-bathroom", "⚖️", t.scale, `
         <div class="hint">${esc(t.scaleHint)}</div>
         <div class="form" id="settings-form">
@@ -3348,10 +3376,11 @@ class WeightTrackerPanel extends HTMLElement {
           ${this._formActions("settings-form")}
         </div>`) + this._section("scale-sensors", "mdi:access-point", "📡", t.scaleSensors, `
         <div class="hint">${esc(t.scaleSensorsHint)}</div>
+        ${suggestionBox}
         <div class="form" id="scale-sensors-form">
           ${this._formFields("scale-sensors-form", sensors, defaults)}
           ${this._formActions("scale-sensors-form")}
-        </div>`, { open: !cfg.source_entity }) + this._section("ai", "mdi:robot-outline", "🤖", t.aiSection, `
+        </div>`, { open: !cfg.source_entity || Boolean(suggestionBox) }) + this._section("ai", "mdi:robot-outline", "🤖", t.aiSection, `
         <div class="hint">${esc(t.aiSectionHint)}</div>
         <div class="form" id="ai-settings-form">
           ${this._formFields("ai-settings-form", [this._def("entity", "ai_task_entity", t.aiEntity, { filter: { domain: "ai_task" }, helper: t.aiEntityHint, wide: true })], defaults)}
@@ -3361,30 +3390,36 @@ class WeightTrackerPanel extends HTMLElement {
 
   // After picking the weight sensor: fill in "stabilized" and impedance from the
   // same device (e.g. Xiaomi scales), if those fields are still empty.
-  _suggestScaleSensors(sourceId) {
+  // Sensors on the scale's own device that fit fields still empty in `current`
+  // ("stabilized", both impedances, heart rate), as {setting key: entity id}.
+  _scaleSuggestions(sourceId, current) {
     const registry = (this._hass && this._hass.entities) || {};
     const device = sourceId && registry[sourceId] && registry[sourceId].device_id;
-    if (!device) return;
+    if (!device) return {};
     const siblings = Object.keys(registry).filter((id) => id !== sourceId && registry[id].device_id === device && !registry[id].disabled_by);
-    const model = this._models["scale-sensors-form"];
-    const current = { ...(this._entry.settings || {}), ...model };
-    let changed = false;
-    const stable = siblings.find((id) => id.startsWith("binary_sensor.") && /stabili[sz]/i.test(id));
-    if (stable && !current.stable_entity) {
-      model.stable_entity = stable;
-      changed = true;
-    }
     const impedance = siblings.filter((id) => id.startsWith("sensor.") && /impedanc/i.test(id));
     const low = impedance.find((id) => /low/i.test(id)) || impedance.find((id) => !/high/i.test(id));
     const high = impedance.find((id) => /high/i.test(id) && id !== low);
-    const heart = siblings.find((id) => id.startsWith("sensor.") && /heart|herz|puls/i.test(id));
-    for (const [key, id] of [["impedance_entity", low || high], ["impedance_high_entity", low ? high : null], ["heart_rate_entity", heart]]) {
-      if (id && !current[key]) {
-        model[key] = id;
-        changed = true;
-      }
+    const used = new Set(["stable_entity", "impedance_entity", "impedance_high_entity", "heart_rate_entity"].map((key) => current[key]).filter(Boolean));
+    const found = {};
+    for (const [key, id] of [
+      ["stable_entity", siblings.find((e) => e.startsWith("binary_sensor.") && /stabili[sz]/i.test(e))],
+      ["impedance_entity", low || high],
+      ["impedance_high_entity", low ? high : null],
+      ["heart_rate_entity", siblings.find((e) => e.startsWith("sensor.") && /heart|herz|puls/i.test(e))],
+    ]) {
+      if (id && !current[key] && !used.has(id)) found[key] = id;
     }
-    if (changed) this._render();
+    return found;
+  }
+
+  // After picking the weight sensor: fill in the matching sensors of the same device.
+  _suggestScaleSensors(sourceId) {
+    const model = this._models["scale-sensors-form"];
+    const found = this._scaleSuggestions(sourceId, { ...(this._entry.settings || {}), ...model });
+    if (!Object.keys(found).length) return;
+    Object.assign(model, found);
+    this._render();
   }
 
   _renderPersonsSettings() {
@@ -3678,8 +3713,13 @@ class WeightTrackerPanel extends HTMLElement {
     const m = this._models[formId];
     try {
       if (formId === "settings-form" || formId === "scale-sensors-form" || formId === "ai-settings-form") {
-        // These cards are one set of settings: send the current values of all.
-        const m = { ...(this._entry.settings || {}), name: this._entry.title, ...(this._models["settings-form"] || {}), ...(this._models["scale-sensors-form"] || {}), ...(this._models["ai-settings-form"] || {}) };
+        // These cards are one set of settings: send the current values of all,
+        // each card only with its own fields (every card's model starts as a copy
+        // of all settings, so a stale copy must not overwrite another card's change).
+        const own = (id) => Object.fromEntries((this._forms[id] || [])
+          .map((def) => [def.name, (this._models[id] || {})[def.name]])
+          .filter(([, value]) => value !== undefined));
+        const m = { ...(this._entry.settings || {}), name: this._entry.title, ...own("settings-form"), ...own("scale-sensors-form"), ...own("ai-settings-form") };
         await this._ws({
           type: "weight_tracker/update_settings",
           settings: {
@@ -4172,6 +4212,14 @@ class WeightTrackerPanel extends HTMLElement {
         // only a convenience
       }
       this._render();
+      return;
+    }
+    if (action === "scale-suggest") {
+      const cfg = this._entry.settings || {};
+      const model = this._models["scale-sensors-form"] || (this._models["scale-sensors-form"] = { ...cfg });
+      Object.assign(model, this._scaleSuggestions(cfg.source_entity, { ...cfg, ...model }));
+      this._dirty.add("scale-sensors-form");
+      this._saveForm("scale-sensors-form");
       return;
     }
     if (action === "info") {

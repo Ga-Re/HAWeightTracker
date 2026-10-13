@@ -106,6 +106,7 @@ from .const import (
     DEFAULT_TOLERANCE,
     DOMAIN,
     DUPLICATE_WINDOW,
+    BACKFILL_PERIOD,
     EXTRA_ENTITIES,
     EXTRA_READING_MAX_AGE,
     KIND_CHILD,
@@ -431,6 +432,10 @@ class WeightTrackerManager:
         self._check_pet_warnings(notify=False)
         self._update_notification()
         self.active = True
+        # Scale values set up later (e.g. heart rate) are looked up in the history.
+        self.hass.async_create_background_task(
+            self._async_backfill_extras(), f"{DOMAIN} backfill {self.entry.entry_id}"
+        )
 
         self._unsubs.append(
             async_track_state_change_event(
@@ -604,6 +609,56 @@ class WeightTrackerManager:
             _LOGGER.debug("Same weighing reported twice (%.2f kg)", weight)
             return
         self._async_register(weight, now)
+
+    async def _async_backfill_extras(self) -> None:
+        """Fill in scale values missing in recent measurements from the recorder.
+
+        When a sensor (heart rate, second impedance ...) is set up after the
+        weighings, its values are still in Home Assistant's history: take the
+        one reported within EXTRA_READING_MAX_AGE of each measurement.
+        """
+        wanted = {key: self.options.get(conf) for key, conf in EXTRA_ENTITIES.items() if self.options.get(conf)}
+        if not wanted or "recorder" not in self.hass.config.components:
+            return
+        now = dt_util.utcnow()
+        recent = [
+            m for m in self.measurements
+            if now - m.ts <= BACKFILL_PERIOD and m.status in (STATUS_ASSIGNED, STATUS_PENDING)
+        ]
+        try:
+            from homeassistant.components.recorder import get_instance, history  # noqa: PLC0415
+            instance = get_instance(self.hass)
+        except (ImportError, KeyError):
+            return
+        changed = False
+        for key, entity_id in wanted.items():
+            missing = [m for m in recent if getattr(m, key) is None]
+            if not missing:
+                continue
+            start = min(m.ts for m in missing) - EXTRA_READING_MAX_AGE
+            try:
+                result = await instance.async_add_executor_job(
+                    history.state_changes_during_period, self.hass, start, now, entity_id
+                )
+            except Exception as err:  # noqa: BLE001 - history is optional
+                _LOGGER.debug("No history for %s: %s", entity_id, err)
+                continue
+            values = []
+            for state in result.get(entity_id, []):
+                try:
+                    value = float(state.state)
+                except (TypeError, ValueError):
+                    continue
+                if value > 0:
+                    values.append((state.last_updated, value))
+            for m in missing:
+                nearest = min(values, key=lambda item: abs(item[0] - m.ts), default=None)
+                if nearest and abs(nearest[0] - m.ts) <= EXTRA_READING_MAX_AGE:
+                    setattr(m, key, nearest[1])
+                    changed = True
+        if changed and self.active:
+            _LOGGER.info("Filled in scale values of earlier measurements from the history")
+            self._async_changed(notify=False)
 
     def _candidates(self) -> list[Candidate]:
         """Build detection candidates from the current state."""

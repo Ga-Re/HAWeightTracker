@@ -39,6 +39,8 @@ EXTRA_ENTITIES = {
     "bmr": CONF_BMR_ENTITY,
 }
 EXTRA_READING_MAX_AGE = timedelta(minutes=2)
+# how far back missing scale values are looked up in the history
+BACKFILL_PERIOD = timedelta(days=30)
 CONF_MIN_WEIGHT = "min_weight"
 CONF_MAX_WEIGHT = "max_weight"
 CONF_TOLERANCE = "tolerance"

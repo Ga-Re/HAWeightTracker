@@ -7,6 +7,16 @@ Alle Versionen der Integration. Die Nummern folgen [Semantic Versioning](https:/
 Jeder Abschnitt wird beim Push automatisch zu einem [GitHub-Release](https://github.com/Ga-Re/HAWeightTracker/releases)
 (siehe `.github/workflows/release.yml`). HACS zeigt diese Releases als Updates an.
 
+## [2.10.0] – 2026-10-14
+
+### Neu
+- **Sensoren der Waage nachträglich übernehmen:** Hat das Gerät der Waage passende Sensoren, die noch nicht eingetragen sind (Herzfrequenz, Stabilisiert, zweite Impedanz), zeigt *Einstellungen → Sensoren der Waage* sie mit „Übernehmen und speichern“ an. Bisher kam der Vorschlag nur beim Neu-Auswählen des Gewichtssensors.
+- **Fehlende Werte aus dem Verlauf:** Wird ein Sensor der Waage später eingetragen, holt die Integration seine Werte für die Messungen der letzten 30 Tage aus dem Home-Assistant-Verlauf (Wert innerhalb von 2 Minuten um die Messung). So erscheinen Puls und Pulszonen sofort.
+- Die Übersicht sagt, warum der Puls fehlt (kein Herzfrequenz-Sensor eingetragen bzw. noch keine Messung mit Puls).
+
+### Behoben
+- Änderungen unter *Sensoren der Waage* wurden beim Speichern wieder überschrieben: Jede Einstellungskarte hielt eine Kopie aller Einstellungen, und die Karte „KI-Hinweise“ setzte beim Speichern die alten Werte zurück (z. B. einen gerade eingetragenen Herzfrequenz-Sensor). Jetzt liefert jede Karte nur ihre eigenen Felder.
+
 ## [2.9.0] – 2026-10-13
 
 ### Geändert

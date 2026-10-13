@@ -92,7 +92,7 @@ Manche Waagen, etwa die **Xiaomi Body Composition Scale S400**, schicken pro Wie
 - **Impedanz:** „Impedance Low“ und, falls vorhanden, „Impedance High“ im Feld für die zweite Frequenz. Die Namen richten sich nach der Größe der Werte, nicht nach der Frequenz: Der größere Wert ist die 50-kHz-Messung, mit der die Formeln (wie bei der Mi Scale 2) rechnen. Die Integration nimmt deshalb automatisch den größeren der beiden.
 - **Herzfrequenz:** „Heart Rate“, erscheint als Kachel in der Übersicht.
 
-Stabilisiert-, Impedanz- und Herzfrequenz-Sensor werden automatisch vorgeschlagen, sobald du den Gewichtssensor wählst. Ohne Stabilisiert-Sensor arbeitet die Integration wie bisher mit Änderungen des Gewichts.
+Stabilisiert-, Impedanz- und Herzfrequenz-Sensor werden automatisch vorgeschlagen, sobald du den Gewichtssensor wählst. Kommen solche Sensoren erst später dazu (oder wurden sie übersehen), zeigt der Abschnitt sie mit „Übernehmen und speichern“ an. Werte, die ein neu eingetragener Sensor schon vorher gemeldet hat, holt die Integration für die letzten 30 Tage aus dem Verlauf von Home Assistant. Ohne Stabilisiert-Sensor arbeitet die Integration wie bisher mit Änderungen des Gewichts.
 
 ## Auswertung
 
