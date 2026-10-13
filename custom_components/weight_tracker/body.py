@@ -14,6 +14,7 @@ Pure Python without Home Assistant imports so it can be unit tested.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 
 MALE = "male"
 FEMALE = "female"
@@ -45,6 +46,43 @@ def _lbm(weight: float, height: float, age: int, impedance: float) -> float:
     lbm -= impedance * 0.0068
     lbm -= age * 0.0542
     return lbm
+
+
+MODEL_STANDARD = "standard"  # formulas of common foot-to-foot body composition scales
+MODEL_SUN = "sun"  # Sun et al. 2003 (NHANES III), published BIA equation
+BODY_MODELS = (MODEL_STANDARD, MODEL_SUN)
+
+
+def estimate(model: str, weight: float, height_cm: float, age: int, sex: str, impedance: float) -> Composition | None:
+    """Body composition with the chosen set of formulas."""
+    if model == MODEL_SUN:
+        return from_sun(weight, height_cm, age, sex, impedance)
+    return from_impedance(weight, height_cm, age, sex, impedance)
+
+
+def from_sun(weight: float, height_cm: float, age: int, sex: str, impedance: float) -> Composition | None:
+    """Sun et al. (2003): fat-free mass from the impedance index height²/R.
+
+    Water is 73.2 % of the fat-free mass, bone mineral 4.2 %, muscle the rest;
+    basal metabolic rate after Katch-McArdle. Developed with hand-to-foot
+    measurements, so foot-to-foot scales tend to give lower body fat.
+    """
+    if sex not in (MALE, FEMALE) or not plausible_input(weight, height_cm, age, impedance) or age < 12:
+        return None
+    index = height_cm * height_cm / impedance
+    if sex == MALE:
+        ffm = -10.68 + 0.65 * index + 0.26 * weight + 0.02 * impedance
+    else:
+        ffm = -9.53 + 0.69 * index + 0.17 * weight + 0.02 * impedance
+    ffm = _clamp(ffm, weight * 0.4, weight * 0.97)
+    bone = ffm * 0.042
+    return Composition(
+        body_fat=round((weight - ffm) / weight * 100, 1),
+        water=round(ffm * 0.732 / weight * 100, 1),
+        bone_mass=round(bone, 2),
+        muscle_mass=round(ffm - bone, 1),
+        bmr=round(370 + 21.6 * ffm),
+    )
 
 
 def from_impedance(weight: float, height_cm: float, age: int, sex: str, impedance: float) -> Composition | None:
@@ -183,6 +221,57 @@ def whtr_class(ratio: float, age: int | None = None) -> str:
     if ratio < 0.6:
         return "increased"
     return "high"
+
+
+# ---------------------------------------------------------------- metrics
+
+ACTIVITY_LEVELS = (1.2, 1.375, 1.55, 1.725, 1.9)  # physical activity level (PAL)
+HEART_ZONES = {  # share of the heart rate reserve (Karvonen)
+    "health": (0.5, 0.6), "fat_burn": (0.6, 0.7), "aerobic": (0.7, 0.8), "anaerobic": (0.8, 0.9),
+}
+
+
+def derived_metrics(
+    *, weight: float | None, height_cm: float | None, age: int | None, sex: str | None,
+    activity: float | None = None, heart_rate: float | None = None,
+    impedance: float | None = None, lean_mass: float | None = None,
+) -> dict[str, object]:
+    """Indices, energy use and heart values that follow from the basic values.
+
+    Everything that cannot be computed (missing height, age, pulse ...) is left out.
+    """
+    out: dict[str, object] = {}
+    if not weight:
+        return out
+    known_sex = sex in (MALE, FEMALE)
+    if height_cm:
+        m = height_cm / 100
+        out["ponderal_index"] = round(weight / m ** 3, 2)
+        out["bsa"] = round(math.sqrt(height_cm * weight / 3600), 2)  # Mosteller
+        if known_sex:
+            out["broca_weight"] = round((height_cm - 100) * (0.9 if sex == MALE else 0.85), 1)
+        if impedance:
+            out["impedance_index"] = round(height_cm * height_cm / impedance, 2)
+        if age and known_sex:
+            mifflin = 10 * weight + 6.25 * height_cm - 5 * age + (5 if sex == MALE else -161)
+            out["bmr_mifflin"] = round(mifflin)
+            pal = activity if activity in ACTIVITY_LEVELS else ACTIVITY_LEVELS[0]
+            out["activity"] = pal
+            out["tdee"] = round(mifflin * pal)
+    if lean_mass:
+        out["bmr_katch"] = round(370 + 21.6 * lean_mass)  # Katch-McArdle
+    if age:
+        hr_max = 208 - 0.7 * age  # Tanaka
+        out["hr_max"] = round(hr_max)
+        if heart_rate and 30 <= heart_rate < hr_max:
+            reserve = hr_max - heart_rate
+            out["hr_reserve"] = round(reserve)
+            out["zones"] = {
+                key: [round(reserve * low + heart_rate), round(reserve * high + heart_rate)]
+                for key, (low, high) in HEART_ZONES.items()
+            }
+            out["vo2max"] = round(15 * hr_max / heart_rate, 1)  # Uth et al.
+    return out
 
 
 # ---------------------------------------------------------------- analysis

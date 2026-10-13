@@ -19,6 +19,9 @@ CONF_IMPEDANCE_ENTITY = "impedance_entity"
 # Second impedance of dual-frequency scales (Xiaomi S400: "Impedance High")
 CONF_IMPEDANCE_HIGH_ENTITY = "impedance_high_entity"
 CONF_HEART_RATE_ENTITY = "heart_rate_entity"
+# Formulas for body composition: "standard" (scale formulas) or "sun" (Sun et al.)
+CONF_BODY_MODEL = "body_model"
+DEFAULT_BODY_MODEL = "standard"
 CONF_BODY_FAT_ENTITY = "body_fat_entity"
 CONF_MUSCLE_ENTITY = "muscle_mass_entity"
 CONF_WATER_ENTITY = "water_entity"
@@ -60,6 +63,8 @@ CONF_CLOTHES = "clothes"
 # AI hints (HA "AI Task"): the admin picks the entity, each person opts in.
 CONF_AI_ENTITY = "ai_task_entity"
 CONF_AI_INSIGHTS = "ai_insights"
+# Physical activity level (PAL) of a person, for the total energy use
+CONF_ACTIVITY = "activity_level"
 # Values a person allows to be sent to the AI (missing = all of them).
 CONF_AI_FIELDS = "ai_fields"
 AI_FACT_KEYS = (
@@ -67,6 +72,7 @@ AI_FACT_KEYS = (
     "weight", "trend", "change_7d", "change_30d", "change_total", "rate", "weekly", "bmi",
     "body_fat", "muscle_mass", "water", "bone_mass", "bmr", "protein", "visceral_fat",
     "metabolic_age", "skeletal_muscle", "body_score", "body_type", "heart_rate", "whtr",
+    "activity", "tdee", "vo2max",
 )
 AI_MIN_INTERVAL = timedelta(hours=1)  # automatic analyses at most this often
 AI_TIMEOUT = 120  # s
@@ -105,7 +111,14 @@ PERSON_SENSOR_KEYS = (
 BODY_SENSOR_KEYS = (
     "body_fat", "muscle_mass", "body_water", "bone_mass", "bmr",
     "body_score", "visceral_fat", "protein", "metabolic_age", "skeletal_muscle", "heart_rate",
+) + (
+    # 2.8: values derived from the basic values
+    "fat_mass", "lean_mass", "water_mass", "ponderal_index", "bsa", "broca_weight",
+    "bmr_mifflin", "bmr_katch", "tdee", "hr_max", "hr_reserve", "vo2max", "impedance_index",
+    "zone_health", "zone_fat_burn", "zone_aerobic", "zone_anaerobic",
 )
+# body sensors that existed before 2.8 (new ones are pre-selected for persons using these)
+BODY_SENSOR_KEYS_2_7 = BODY_SENSOR_KEYS[:11]
 PET_SENSOR_KEYS = (
     "weight", "trend", "change_last", "change_7d", "change_30d", "change_total",
     "rate", "goal_distance", "goal_eta", "last_measured",

@@ -13,7 +13,12 @@ import voluptuous as vol
 from homeassistant.const import CONF_NAME
 from homeassistant.helpers import config_validation as cv
 
+from .body import ACTIVITY_LEVELS, BODY_MODELS
 from .const import (
+    BODY_SENSOR_KEYS_2_7,
+    CONF_ACTIVITY,
+    CONF_BODY_MODEL,
+    DEFAULT_BODY_MODEL,
     AI_FACT_KEYS,
     CONF_AMBIGUITY_MARGIN,
     CONF_BIRTH_DATE,
@@ -79,6 +84,7 @@ SETTING_DEFAULTS: dict[str, Any] = {
     CONF_TOLERANCE: DEFAULT_TOLERANCE,
     CONF_AMBIGUITY_MARGIN: DEFAULT_AMBIGUITY_MARGIN,
     CONF_DEBOUNCE: DEFAULT_DEBOUNCE,
+    CONF_BODY_MODEL: DEFAULT_BODY_MODEL,
 }
 
 
@@ -116,6 +122,7 @@ PROFILE_SCHEMA = vol.Schema(
         vol.Optional(CONF_SEX): vol.Any(None, "", vol.In(SEXES)),
         vol.Optional(CONF_CLOTHES): cv.boolean,
         vol.Optional(CONF_AI_INSIGHTS): cv.boolean,
+        vol.Optional(CONF_ACTIVITY): vol.Any(None, "", vol.All(vol.Coerce(float), vol.In(ACTIVITY_LEVELS))),
         vol.Optional(CONF_AI_FIELDS): vol.All(cv.ensure_list, [vol.In(AI_FACT_KEYS)]),
         vol.Optional(CONF_CLOTHES_KG): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=4))),
     }
@@ -132,6 +139,7 @@ PROFILE_KEYS = (
     CONF_CLOTHES,
     CONF_AI_INSIGHTS,
     CONF_AI_FIELDS,
+    CONF_ACTIVITY,
     CONF_CLOTHES_KG,
 )
 
@@ -148,6 +156,7 @@ SETTINGS_SCHEMA = vol.Schema(
         vol.Required(CONF_DEBOUNCE): vol.All(vol.Coerce(int), vol.Range(min=0, max=120)),
         vol.Optional(CONF_IMPEDANCE_ENTITY): vol.Any(None, "", cv.entity_domain("sensor")),
         vol.Optional(CONF_IMPEDANCE_HIGH_ENTITY): vol.Any(None, "", cv.entity_domain("sensor")),
+        vol.Optional(CONF_BODY_MODEL): vol.In(BODY_MODELS),
         vol.Optional(CONF_HEART_RATE_ENTITY): vol.Any(None, "", cv.entity_domain("sensor")),
         vol.Optional(CONF_AI_ENTITY): vol.Any(None, "", cv.entity_domain("ai_task")),
         vol.Optional(CONF_BODY_FAT_ENTITY): vol.Any(None, "", cv.entity_domain("sensor")),
@@ -244,7 +253,7 @@ def keep_personal_settings(new: dict[str, Any], old: dict[str, Any]) -> dict[str
     """Settings a person made for themselves (and the sensor choice) survive an admin edit."""
     if CONF_SENSORS in old:
         new[CONF_SENSORS] = old[CONF_SENSORS]
-    for key in (CONF_NOTIFY_WEIGH, CONF_NOTIFY_PET_WARNINGS, CONF_REMINDER_DAYS, CONF_CLOTHES, CONF_CLOTHES_KG, CONF_AI_INSIGHTS, CONF_AI_FIELDS):
+    for key in (CONF_NOTIFY_WEIGH, CONF_NOTIFY_PET_WARNINGS, CONF_REMINDER_DAYS, CONF_CLOTHES, CONF_CLOTHES_KG, CONF_AI_INSIGHTS, CONF_AI_FIELDS, CONF_ACTIVITY):
         if key in old and key not in new:
             new[key] = old[key]
     return new
@@ -308,6 +317,9 @@ def build_pet(data: dict[str, Any], pet_id: str) -> dict[str, Any]:
     return pet
 
 
+SENSORS_REVISION = "sensors_revision"
+
+
 def migrate_options(options: dict[str, Any]) -> dict[str, Any] | None:
     """Return updated options if stored data uses an old format, else None.
 
@@ -332,6 +344,15 @@ def migrate_options(options: dict[str, Any]) -> dict[str, Any] | None:
             enabled = subject.pop(CONF_CREATE_SENSORS)
             subject.setdefault(CONF_SENSORS, list(keys) if enabled else [])
             changed = True
+    # 2.8: new body sensors are pre-selected for persons who use body sensors
+    if new.get(SENSORS_REVISION, 0) < 28:
+        added = [key for key in BODY_SENSOR_KEYS if key not in BODY_SENSOR_KEYS_2_7]
+        for person in new[CONF_PERSONS]:
+            chosen = person.get(CONF_SENSORS) or []
+            if set(chosen) & set(BODY_SENSOR_KEYS_2_7):
+                person[CONF_SENSORS] = [*chosen, *(key for key in added if key not in chosen)]
+        new[SENSORS_REVISION] = 28
+        changed = True
     return new if changed else None
 
 

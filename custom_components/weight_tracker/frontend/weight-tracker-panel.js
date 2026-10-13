@@ -12,6 +12,7 @@ const AI_FIELDS = {
   profile: ["sex", "age", "height", "goal"],
   weight: ["weight", "trend", "change_7d", "change_30d", "change_total", "rate", "weekly", "bmi"],
   body: ["body_fat", "muscle_mass", "water", "bone_mass", "bmr", "protein", "visceral_fat", "metabolic_age", "skeletal_muscle", "body_score", "body_type", "heart_rate", "whtr"],
+  fitness: ["activity", "tdee", "vo2max"],
 };
 const AI_FIELD_KEYS = Object.values(AI_FIELDS).flat();
 
@@ -252,7 +253,7 @@ const TEXT = {
     whtrClass: { low: "niedrig", healthy: "gesund", increased: "erhöht", high: "hoch" },
     whtrLine: (cm, ratio, cls) => `Taille ${cm} cm · Taille/Größe ${ratio} – ${cls}`,
     body: "Körperzusammensetzung",
-    bodyHint: "Geschätzt aus der Impedanz deiner Waage (Xiaomi-Formel) – Richtwerte, keine medizinische Messung.",
+    bodyHint: "Geschätzt aus der Impedanz deiner Waage – Richtwerte, keine medizinische Messung.",
     bodyScaleHint: "Von deiner Waage gemessen.",
     bodyMissing: (fields) => `Deine Waage misst auch die Körperzusammensetzung. Dafür fehlt noch: ${fields}.`,
     bodyFields: { sex: "Geschlecht", birth_month: "Geburtsmonat", height: "Größe" },
@@ -278,41 +279,77 @@ const TEXT = {
     ovPersons: "Person wählen",
     infoAbout: (label) => `Was bedeutet „${label}“?`,
     valuesTitle: "Körperwerte",
-    valueGroups: { fat: "Fett und Wasser", muscle: "Muskeln und Knochen", metabolism: "Stoffwechsel und Herz" },
+    valueGroupsExtra: { heart: "Herz und Fitness", indices: "Weitere Kennzahlen" },
+    bmrMifflin: "Grundumsatz (Mifflin-St Jeor)",
+    bmrKatch: "Grundumsatz (Katch-McArdle)",
+    tdeeLabel: "Gesamtumsatz",
+    hrMax: "Max. Herzfrequenz",
+    hrReserve: "Herzfrequenzreserve",
+    vo2max: "VO₂max (geschätzt)",
+    zonesLabel: "Pulszonen",
+    zoneNames: { health: "Gesundheit", fat_burn: "Fettverbrennung", aerobic: "Aerob", anaerobic: "Anaerob" },
+    ponderal: "Ponderal-Index",
+    bsa: "Körperoberfläche",
+    broca: "Idealgewicht (Broca)",
+    impedanceIndex: "Impedanz-Index",
+    fatMassLabel: "Fettmasse",
+    waterLiters: "Körperwasser",
+    activity: "Aktivität",
+    activityLevels: { "1.2": "Sitzend", "1.375": "Wenig aktiv", "1.55": "Mäßig aktiv", "1.725": "Sehr aktiv", "1.9": "Extrem aktiv" },
+    activityHints: { "1.2": "Bürojob, kaum Sport", "1.375": "1–3× Sport pro Woche", "1.55": "3–5× Sport pro Woche", "1.725": "6–7× Sport pro Woche", "1.9": "körperliche Arbeit + Sport" },
+    activityHint: "Für den Gesamtumsatz: wie aktiv dein Alltag ist.",
+    bodyModel: "Formel für die Körperzusammensetzung",
+    bodyModels: { standard: "Standard (wie Körperanalysewaagen)", sun: "Sun et al. 2003 (Studienformel)" },
+    bodyModelHint: "Bestimmt, wie Körperfett, Wasser, Muskeln und Knochen aus der Impedanz berechnet werden. Standard ist auf Waagen abgestimmt, bei denen man mit den Füßen misst. Sun et al. ist eine veröffentlichte Studienformel aus Messungen von Hand zu Fuß; mit einer Fußwaage fällt das Körperfett damit meist niedriger aus.",
+    valueGroups: { fat: "Fett und Wasser", muscle: "Muskeln und Knochen", metabolism: "Stoffwechsel" },
     sinceStart: (kg) => `seit Beginn ${kg}`,
     infoClose: "Schließen",
     infoYourRange: (lo, hi) => `Dein Standardbereich: ${lo}–${hi} %.`,
     segments: { muscle: "Muskelgewebe", essential_fat: "Essentielles Fett", storage_fat: "Speicherfett", bone: "Knochen", other: "Sonstiges" },
     info: {
-      weight: "Das Gewicht von der Waage. Wenn du die Messung als „mit Kleidung“ markiert hast, ist das Kleidungsgewicht schon abgezogen. Es schwankt von Tag zu Tag um 1–2 kg, je nach Wasser, Essen und Verdauung. Aussagekräftiger ist deshalb der Trend.",
-      trend: "Das geglättete Gewicht, wie im „Hacker’s Diet“. Jede neue Messung zieht den Trend nur um 10 % in ihre Richtung. So siehst du, wohin es wirklich geht, ohne die Tagesschwankungen.",
-      changes: "Veränderung des Trendgewichts in den letzten 7 bzw. 30 Tagen und seit der ersten Messung. Das Tempo ist die durchschnittliche Veränderung pro Woche. Gesund abnehmen heißt meist 0,5–1 % des Körpergewichts pro Woche.",
-      bmi: "Body-Mass-Index: Gewicht in kg geteilt durch die Größe in Metern zum Quadrat. WHO-Einteilung für Erwachsene: unter 18,5 Untergewicht, 18,5–24,9 Normalgewicht, 25–29,9 Übergewicht, ab 30 Adipositas. Der BMI unterscheidet nicht zwischen Muskeln und Fett. Sehr muskulöse Menschen haben deshalb oft einen hohen BMI, ohne zu viel Fett zu haben.",
-      body_score: "Eine Gesamtnote von 10 bis 100 nach dem Xiaomi-Algorithmus. Sie startet bei 100 und zieht Punkte ab, wenn BMI, Körperfett, Muskeln, Körperwasser, Viszeralfett, Knochen, Grundumsatz oder Eiweiß außerhalb des Standards liegen. Gut, um die Entwicklung über Wochen zu verfolgen. Ein medizinischer Wert ist es nicht.",
-      body_fat: "Der Anteil von Fett am Körpergewicht. Die Waage schickt einen schwachen Strom durch den Körper: Muskeln mit viel Wasser leiten ihn gut, Fett kaum. Aus diesem Widerstand (Impedanz) wird das Fett geschätzt. Standard nach Xiaomi bei 18–39 Jahren: Männer 11–22 %, Frauen 21–35 %, mit dem Alter etwas höher. Der Wert hängt vom Wasserhaushalt ab, miss deshalb möglichst immer zur gleichen Tageszeit.",
-      composition: "So teilt sich dein Gewicht auf. Muskelgewebe ist die Skelettmuskulatur, mit der du dich bewegst. Essentielles Fett brauchst du zum Leben, etwa 3 % des Gewichts bei Männern und 12 % bei Frauen. Speicherfett ist das restliche Fett. Knochen meint die Knochenmineralien. Sonstiges umfasst Organe, Blut, Haut und Wasser außerhalb der Muskeln. Alles sind Schätzungen aus der Impedanz.",
-      water: "Der Anteil von Wasser am Körpergewicht. Muskeln bestehen zu etwa drei Vierteln aus Wasser, Fett kaum. Standard: Männer ab 55 %, Frauen ab 45 %. Der Wert schwankt deutlich damit, wie viel du getrunken oder geschwitzt hast.",
-      muscle: "Muskelmasse nach Xiaomi: alles außer Fett und Knochen, also die Muskeln samt dem Wasser darin und auch die Organe. Darum liegt sie weit über der Skelettmuskelmasse. Der Standard hängt von Größe und Geschlecht ab, zum Beispiel bei Männern ab 170 cm 49,4–59,5 kg.",
-      skeletal_muscle: "Nur die Muskeln, mit denen du dich bewegst. Berechnet mit der Formel von Janssen (2000) aus Größe, Impedanz, Alter und Geschlecht. Typisch sind etwa 35–45 % des Gewichts bei Männern und 30–40 % bei Frauen. Krafttraining und genug Eiweiß erhalten sie, besonders beim Abnehmen und im Alter.",
-      protein: "Eiweiß ist Baustoff für Muskeln, Organe und Enzyme. Der Anteil wird nach Xiaomi aus Muskelanteil minus Körperwasser geschätzt. Standard sind 16–20 %. Darunter deutet es auf wenig Muskelmasse oder zu wenig Eiweiß in der Ernährung hin.",
-      bone: "Das geschätzte Gewicht der Mineralien in den Knochen, vor allem Calcium. Es ändert sich nur sehr langsam. Der Wert wird aus der fettfreien Masse abgeleitet und ist keine echte Messung der Knochendichte.",
-      visceral_fat: "Viszeralfett liegt im Bauchraum um die Organe. Es ist stoffwechselaktiv und erhöht das Risiko für Herz-Kreislauf-Erkrankungen und Diabetes stärker als das Fett unter der Haut. Index nach Xiaomi: 1–9 Standard, 10–14 hoch, ab 15 sehr hoch. Ausdauer- und Krafttraining senken es oft schneller als das übrige Fett.",
-      bmr: "Der Grundumsatz ist die Energie, die dein Körper in völliger Ruhe pro Tag verbraucht: für Atmung, Herz, Organe und Körpertemperatur. Dein tatsächlicher Bedarf liegt je nach Aktivität etwa 20–80 % höher. Mehr Muskeln erhöhen den Grundumsatz.",
-      whtr: "Das Taille-zu-Größe-Verhältnis: Taillenumfang geteilt durch Körpergröße. Faustregel: Die Taille sollte kleiner sein als die halbe Körpergröße, also unter 0,5. Ab 50 Jahren steigt die Grenze bis 0,6. Es zeigt Bauchfett besser als der BMI. Dafür musst du unter „Meine Daten“ den Taillenumfang eintragen.",
-      metabolic_age: "Das Körperalter vergleicht deinen Stoffwechsel (aus Gewicht, Größe und Impedanz) mit dem Durchschnitt deines Alters. Liegt es unter deinem echten Alter, ist dein Körper „jünger“ als der Durchschnitt, liegt es darüber, „älter“.",
-      lean_mass: "Die fettfreie Masse ist alles außer Fett: Muskeln, Knochen, Organe und Wasser. Beim Abnehmen sollte vor allem das Fett sinken und die fettfreie Masse möglichst gleich bleiben.",
-      heart_rate: "Der Puls, den die Waage beim Wiegen über die Füße misst. In Ruhe sind bei Erwachsenen 60–100 Schläge pro Minute normal, bei Ausdauertrainierten oft weniger. Kurz nach Bewegung, Kaffee oder Stress ist er höher.",
-      body_type: "Der Körpertyp ergibt sich aus Körperfett (Zeilen) und Muskelmasse (Spalten), jeweils niedrig, normal oder hoch nach den Xiaomi-Tabellen. Ziel ist meist „Ausgewogen“ oder „Ausgewogen muskulös“.",
-      suggestions: "Das Standardgewicht nach Xiaomi ist bei Männern (Größe in cm − 80) × 0,7 und bei Frauen (Größe in cm − 70) × 0,6. Die Gewichtskontrolle zeigt den Abstand dazu. Die Fettkontrolle zeigt, wie viel Fett bis zur Obergrenze des Standardbereichs zu viel ist (oder noch Luft bleibt). Die Muskelkontrolle zeigt, wie viel Muskelmasse bis zum Standard fehlt.",
-      ai: "Eine KI (über AI Task in Home Assistant) bewertet deine Werte und gibt Empfehlungen. Welche Werte sie bekommt, legst du unter „Meine Daten“ fest. Die Hinweise können Fehler enthalten und ersetzen keine ärztliche Beratung.",
+      weight: "Dein aktuelles Gewicht. Ist die Messung als „mit Kleidung“ markiert, ist die Kleidung schon abgezogen. Das Gewicht schwankt von Tag zu Tag um 1–2 kg, je nachdem, was du gegessen und getrunken hast. Darum zeigt der Trend besser, wohin es geht.",
+      trend: "Dein geglättetes Gewicht. Jede neue Messung verschiebt den Trend nur ein Stück in ihre Richtung. So siehst du die echte Entwicklung ohne die täglichen Schwankungen.",
+      changes: "Wie sich dein Trendgewicht in den letzten 7 bzw. 30 Tagen und seit der ersten Messung verändert hat. Das Tempo ist die durchschnittliche Veränderung pro Woche. Gesund abnehmen heißt meist 0,5–1 % des Körpergewichts pro Woche.",
+      bmi: "Body-Mass-Index: Gewicht in kg geteilt durch das Quadrat der Größe in Metern. Für Erwachsene gilt: unter 18,5 Untergewicht, 18,5–24,9 Normalgewicht, 25–29,9 Übergewicht, ab 30 Adipositas. Der BMI unterscheidet nicht zwischen Muskeln und Fett. Sehr muskulöse Menschen haben deshalb oft einen hohen BMI, ohne zu viel Fett zu haben.",
+      body_score: "Eine Gesamtnote von 10 bis 100. Sie beginnt bei 100 und sinkt, wenn BMI, Körperfett, Muskeln, Körperwasser, Viszeralfett, Knochen, Grundumsatz oder Eiweiß außerhalb des Normalbereichs liegen. Gut, um deine Entwicklung über Wochen zu verfolgen.",
+      body_fat: "Wie viel deines Gewichts Fett ist. Die Waage schickt einen schwachen, nicht spürbaren Strom durch deinen Körper. Muskeln enthalten viel Wasser und leiten ihn gut, Fett kaum. Aus dem Widerstand wird das Fett geschätzt. Normal sind bei 18–39 Jahren etwa 11–22 % für Männer und 21–35 % für Frauen, mit dem Alter etwas mehr. Der Wert hängt vom Wasserhaushalt ab, miss deshalb möglichst immer zur gleichen Tageszeit.",
+      fat_mass: "Wie viele Kilogramm deines Gewichts Fett sind: Gewicht mal Körperfettanteil.",
+      composition: "So setzt sich dein Gewicht zusammen. Muskelgewebe sind die Muskeln, mit denen du dich bewegst. Essentielles Fett braucht der Körper zum Leben, etwa 3 % des Gewichts bei Männern und 12 % bei Frauen. Speicherfett ist das übrige Fett, also die Energiereserve. Knochen meint die Mineralien in den Knochen. Sonstiges sind Organe, Blut, Haut und Wasser außerhalb der Muskeln.",
+      water: "Wie viel deines Gewichts Wasser ist. Muskeln bestehen zu etwa drei Vierteln aus Wasser, Fett kaum. Normal sind bei Männern ab etwa 55 %, bei Frauen ab etwa 45 %. Der Wert schwankt deutlich damit, wie viel du getrunken oder geschwitzt hast.",
+      water_mass: "Die Wassermenge in deinem Körper in Litern. Sie macht etwa drei Viertel der fettfreien Masse aus. Eine gute Versorgung mit Wasser ist wichtig für Kreislauf, Konzentration und Muskeln.",
+      muscle: "Alles, was nicht Fett und nicht Knochen ist: die Muskeln samt dem Wasser darin, aber auch Organe. Darum ist dieser Wert viel höher als die Skelettmuskelmasse. Was normal ist, hängt von Größe und Geschlecht ab.",
+      skeletal_muscle: "Nur die Muskeln, mit denen du dich bewegst. Typisch sind etwa 35–45 % des Gewichts bei Männern und 30–40 % bei Frauen. Krafttraining und genug Eiweiß erhalten sie, besonders beim Abnehmen und im Alter.",
+      protein: "Eiweiß ist der Baustoff für Muskeln, Organe und Enzyme. Normal sind etwa 16–20 % des Gewichts. Ein niedriger Wert deutet auf wenig Muskeln oder zu wenig Eiweiß in der Ernährung hin.",
+      bone: "Das geschätzte Gewicht der Mineralien in deinen Knochen, vor allem Calcium. Es ändert sich nur sehr langsam. Eine Messung der Knochendichte ersetzt der Wert nicht.",
+      visceral_fat: "Viszeralfett liegt im Bauch um die Organe. Es erhöht das Risiko für Herz-Kreislauf-Erkrankungen und Diabetes stärker als das Fett unter der Haut. 1–9 ist normal, 10–14 erhöht, ab 15 hoch. Bewegung senkt es oft schneller als das übrige Fett.",
+      lean_mass: "Alles außer Fett: Muskeln, Knochen, Organe und Wasser. Beim Abnehmen sollte vor allem das Fett weniger werden, während die fettfreie Masse möglichst gleich bleibt.",
+      whtr: "Taillenumfang geteilt durch Körpergröße. Faustregel: Die Taille sollte kleiner sein als die halbe Körpergröße, also unter 0,5; ab 50 Jahren gilt bis 0,6 als normal. Zeigt Bauchfett besser als der BMI. Dafür trägst du unter „Meine Daten“ deinen Taillenumfang ein.",
+      bmr: "Der Grundumsatz ist die Energie, die dein Körper in völliger Ruhe am Tag verbraucht: für Atmung, Herzschlag, Organe und Körperwärme. Mehr Muskeln erhöhen ihn.",
+      bmr_mifflin: "Grundumsatz aus Gewicht, Größe, Alter und Geschlecht (Mifflin-St Jeor). Die übliche Formel, wenn man die Körperzusammensetzung nicht kennt: der Energieverbrauch in völliger Ruhe pro Tag.",
+      bmr_katch: "Grundumsatz aus der fettfreien Masse (Katch-McArdle). Genauer, wenn du viele Muskeln oder viel Fett hast, weil vor allem Muskeln Energie verbrauchen.",
+      tdee: "Wie viel Energie du an einem normalen Tag insgesamt verbrauchst: Grundumsatz mal Aktivitätsfaktor. Isst du weniger, nimmst du ab, isst du mehr, nimmst du zu. Deinen Aktivitätslevel stellst du unter „Meine Daten“ ein.",
+      metabolic_age: "Vergleicht deinen Stoffwechsel mit dem Durchschnitt deines Alters. Liegt das Körperalter unter deinem echten Alter, ist dein Körper „jünger“ als der Durchschnitt.",
+      heart_rate: "Der Puls, den die Waage beim Wiegen über die Füße misst. In Ruhe sind bei Erwachsenen 60–100 Schläge pro Minute normal, bei Trainierten oft weniger. Im Stehen und kurz nach Bewegung, Kaffee oder Stress ist er höher.",
+      hr_max: "Die rechnerisch höchste Herzfrequenz für dein Alter (208 − 0,7 × Alter). Sie dient als Obergrenze für die Trainingszonen. Die echte Grenze kann einige Schläge darüber oder darunter liegen.",
+      hr_reserve: "Der Abstand zwischen maximaler Herzfrequenz und Ruhepuls. Je größer die Reserve, desto mehr kann dein Herz bei Belastung zulegen. Grundlage der Pulszonen.",
+      zones: "Pulsbereiche fürs Training, berechnet aus Ruhepuls und Herzfrequenzreserve. Gesundheit (50–60 %): locker, zum Einstieg und zur Erholung. Fettverbrennung (60–70 %): ruhige Ausdauer, du kannst dich noch unterhalten. Aerob (70–80 %): verbessert die Ausdauer. Anaerob (80–90 %): hart, nur kurze Intervalle.",
+      vo2max: "Wie viel Sauerstoff dein Körper bei voller Belastung pro Minute und Kilogramm aufnehmen kann, geschätzt aus maximalem und Ruhepuls. Je höher, desto fitter. Mit Puls im Liegen fällt der Wert genauer und meist höher aus.",
+      ponderal_index: "Ähnlich wie der BMI, teilt das Gewicht aber durch die Größe hoch drei. Dadurch passt er besser für sehr große oder sehr kleine Menschen. Normal sind etwa 11–14 kg/m³.",
+      bsa: "Die Oberfläche deiner Haut in Quadratmetern. Ärztinnen und Ärzte nutzen sie zum Beispiel, um manche Medikamente zu dosieren.",
+      broca_weight: "Ein einfacher Richtwert fürs Gewicht: Größe in cm minus 100, bei Männern mal 0,9 und bei Frauen mal 0,85. Muskeln und Körperbau berücksichtigt er nicht.",
+      impedance_index: "Größe zum Quadrat geteilt durch den Widerstand, den die Waage misst. Die Grundlage, aus der Fett, Wasser und Muskeln berechnet werden. Höher heißt meist mehr fettfreie Masse.",
+      body_type: "Ergibt sich aus Körperfett (Zeilen) und Muskelmasse (Spalten), jeweils niedrig, normal oder hoch. Ziel ist meist „Ausgewogen“ oder „Ausgewogen muskulös“.",
+      suggestions: "Das Standardgewicht ist ein Richtwert aus Größe und Geschlecht. Die Gewichtskontrolle zeigt den Abstand dazu. Die Fettkontrolle zeigt, wie viel Fett über der Obergrenze des Normalbereichs liegt (oder wie viel Luft noch ist). Die Muskelkontrolle zeigt, wie viel Muskelmasse bis zum Normalbereich fehlt.",
+      ai: "Eine KI bewertet deine Werte und gibt dir Empfehlungen. Welche Werte sie sieht, legst du unter „Meine Daten“ fest. Die Hinweise können Fehler enthalten und ersetzen keine ärztliche Beratung.",
     },
     aiFieldsLabel: "Diese Werte darf die KI sehen",
-    aiFieldGroups: { profile: "Profil", weight: "Gewicht", body: "Körperwerte" },
+    aiFieldGroups: { profile: "Profil", weight: "Gewicht", body: "Körperwerte", fitness: "Aktivität und Fitness" },
     aiFieldNames: {
       sex: "Geschlecht", age: "Alter", height: "Größe", goal: "Zielgewicht",
       weight: "Gewicht", trend: "Trend", change_7d: "Veränderung 7 Tage", change_30d: "Veränderung 30 Tage", change_total: "Veränderung gesamt", rate: "Tempo pro Woche", weekly: "Wochenverlauf", bmi: "BMI",
       body_fat: "Körperfett", muscle_mass: "Muskelmasse", water: "Körperwasser", bone_mass: "Knochenmasse", bmr: "Grundumsatz", protein: "Eiweiß", visceral_fat: "Viszeralfett",
       metabolic_age: "Körperalter", skeletal_muscle: "Skelettmuskelmasse", body_score: "Körperbewertung", body_type: "Körpertyp", heart_rate: "Herzfrequenz", whtr: "Taille-zu-Größe",
+      activity: "Aktivitätslevel", tdee: "Gesamtumsatz", vo2max: "VO₂max",
     },
     aiFieldsNone: "Keine Werte ausgewählt – die KI kann nichts auswerten.",
     sinceLast: "seit der letzten Messung",
@@ -358,7 +395,7 @@ const TEXT = {
       thin: "Dein Gewicht liegt unter dem Normalbereich. Achte auf ausreichend Energie und Eiweiß.",
       good: "Deine Werte liegen im Normalbereich. Weiter so!",
     },
-    analysisNote: "Schätzwerte aus der Impedanz nach den Xiaomi-Formeln (wie bodymiscale) – keine medizinische Diagnose. Sie können von der Mi-Fitness-App abweichen.",
+    analysisNote: "Geschätzte Werte – keine medizinische Diagnose.",
     aiTitle: "KI-Hinweise",
     aiRefresh: "Neu auswerten",
     aiBusy: "Wird ausgewertet …",
@@ -419,6 +456,9 @@ const TEXT = {
       goal_distance: "Abstand zum Ziel", goal_eta: "Ziel voraussichtlich", last_measured: "Letzte Messung",
       body_fat: "Körperfett", muscle_mass: "Muskelmasse", body_water: "Körperwasser", bone_mass: "Knochenmasse", bmr: "Grundumsatz",
       body_score: "Körperbewertung", visceral_fat: "Viszeralfett", protein: "Protein", metabolic_age: "Körperalter", skeletal_muscle: "Skelettmuskelmasse", heart_rate: "Herzfrequenz",
+      fat_mass: "Fettmasse", lean_mass: "Fettfreie Masse", water_mass: "Körperwasser (l)", ponderal_index: "Ponderal-Index", bsa: "Körperoberfläche", broca_weight: "Idealgewicht (Broca)",
+      bmr_mifflin: "Grundumsatz (Mifflin)", bmr_katch: "Grundumsatz (Katch)", tdee: "Gesamtumsatz", hr_max: "Max. Herzfrequenz", hr_reserve: "Herzfrequenzreserve", vo2max: "VO₂max",
+      impedance_index: "Impedanz-Index", zone_health: "Pulszone Gesundheit", zone_fat_burn: "Pulszone Fettverbrennung", zone_aerobic: "Pulszone aerob", zone_anaerobic: "Pulszone anaerob",
     },
     notifyDevice: "Gerät",
     notifyDeviceHint: "Die Home-Assistant-App auf deinem Handy (notify-Dienst).",
@@ -646,7 +686,7 @@ const TEXT = {
     whtrClass: { low: "low", healthy: "healthy", increased: "increased", high: "high" },
     whtrLine: (cm, ratio, cls) => `Waist ${cm} cm · waist/height ${ratio} – ${cls}`,
     body: "Body composition",
-    bodyHint: "Estimated from your scale's impedance (Xiaomi formula) – guide values, not a medical measurement.",
+    bodyHint: "Estimated from your scale's impedance – guide values, not a medical measurement.",
     bodyScaleHint: "Measured by your scale.",
     bodyMissing: (fields) => `Your scale also measures body composition. Still missing: ${fields}.`,
     bodyFields: { sex: "sex", birth_month: "birth month", height: "height" },
@@ -672,41 +712,77 @@ const TEXT = {
     ovPersons: "Choose person",
     infoAbout: (label) => `What does “${label}” mean?`,
     valuesTitle: "Body values",
-    valueGroups: { fat: "Fat and water", muscle: "Muscle and bone", metabolism: "Metabolism and heart" },
+    valueGroupsExtra: { heart: "Heart and fitness", indices: "More figures" },
+    bmrMifflin: "Basal metabolic rate (Mifflin-St Jeor)",
+    bmrKatch: "Basal metabolic rate (Katch-McArdle)",
+    tdeeLabel: "Total energy expenditure",
+    hrMax: "Max. heart rate",
+    hrReserve: "Heart rate reserve",
+    vo2max: "VO₂max (estimated)",
+    zonesLabel: "Heart rate zones",
+    zoneNames: { health: "Health", fat_burn: "Fat burning", aerobic: "Aerobic", anaerobic: "Anaerobic" },
+    ponderal: "Ponderal index",
+    bsa: "Body surface area",
+    broca: "Ideal weight (Broca)",
+    impedanceIndex: "Impedance index",
+    fatMassLabel: "Fat mass",
+    waterLiters: "Body water",
+    activity: "Activity",
+    activityLevels: { "1.2": "Sedentary", "1.375": "Lightly active", "1.55": "Moderately active", "1.725": "Very active", "1.9": "Extremely active" },
+    activityHints: { "1.2": "office job, hardly any sport", "1.375": "sport 1–3× a week", "1.55": "sport 3–5× a week", "1.725": "sport 6–7× a week", "1.9": "physical work + sport" },
+    activityHint: "For the total energy expenditure: how active your everyday life is.",
+    bodyModel: "Formula for body composition",
+    bodyModels: { standard: "Standard (like body composition scales)", sun: "Sun et al. 2003 (study formula)" },
+    bodyModelHint: "Decides how body fat, water, muscle and bone are calculated from impedance. Standard is tuned for scales you stand on. Sun et al. is a published study formula from hand-to-foot measurements; with a scale you stand on it usually gives lower body fat.",
+    valueGroups: { fat: "Fat and water", muscle: "Muscle and bone", metabolism: "Metabolism" },
     sinceStart: (kg) => `${kg} since start`,
     infoClose: "Close",
     infoYourRange: (lo, hi) => `Your standard range: ${lo}–${hi} %.`,
     segments: { muscle: "Muscle tissue", essential_fat: "Essential fat", storage_fat: "Storage fat", bone: "Bone", other: "Other" },
     info: {
-      weight: "The weight from the scale. If you marked the measurement “with clothes”, the clothes weight is already deducted. It varies by 1–2 kg from day to day with water, food and digestion, so the trend tells you more.",
-      trend: "The smoothed weight, as in “The Hacker’s Diet”. Every new measurement pulls the trend only 10 % towards it. So you see where things are really going, without the daily ups and downs.",
-      changes: "Change of the trend weight over the last 7 and 30 days and since the first measurement. The rate is the average change per week. Healthy weight loss is usually 0.5–1 % of body weight per week.",
-      bmi: "Body mass index: weight in kg divided by height in metres squared. WHO categories for adults: below 18.5 underweight, 18.5–24.9 normal, 25–29.9 overweight, 30 and above obese. BMI does not distinguish muscle from fat, so very muscular people often have a high BMI without too much fat.",
-      body_score: "An overall score from 10 to 100 following the Xiaomi algorithm. It starts at 100 and deducts points when BMI, body fat, muscle, body water, visceral fat, bone, basal metabolic rate or protein are outside the standard. Good for following the development over weeks. It is not a medical value.",
-      body_fat: "The share of fat in your body weight. The scale sends a weak current through your body: muscles with a lot of water conduct it well, fat hardly does. Fat is estimated from this resistance (impedance). Xiaomi standard at 18–39 years: men 11–22 %, women 21–35 %, slightly higher with age. The value depends on your hydration, so measure at the same time of day if you can.",
-      composition: "How your weight is made up. Muscle tissue is the skeletal muscle you move with. Essential fat is needed for life, about 3 % of body weight in men and 12 % in women. Storage fat is the remaining fat. Bone means the bone minerals. Other covers organs, blood, skin and water outside the muscles. All of these are estimates from impedance.",
-      water: "The share of water in your body weight. Muscles are about three quarters water, fat hardly any. Standard: men from 55 %, women from 45 %. The value changes noticeably with how much you drank or sweated.",
-      muscle: "Muscle mass as defined by Xiaomi: everything except fat and bone, i.e. the muscles including the water in them, and also the organs. That is why it is far higher than skeletal muscle mass. The standard depends on height and sex, for example 49.4–59.5 kg for men from 170 cm.",
-      skeletal_muscle: "Only the muscles you move with. Calculated with the Janssen formula (2000) from height, impedance, age and sex. Typically about 35–45 % of body weight in men and 30–40 % in women. Strength training and enough protein preserve it, especially when losing weight and with age.",
-      protein: "Protein is the building material of muscles, organs and enzymes. Xiaomi estimates its share as muscle rate minus body water. The standard is 16–20 %. Below that it points to little muscle mass or too little protein in your diet.",
-      bone: "The estimated weight of the minerals in your bones, mainly calcium. It changes only very slowly. It is derived from fat-free mass and is not a real bone density measurement.",
-      visceral_fat: "Visceral fat sits in the abdomen around the organs. It is metabolically active and raises the risk of cardiovascular disease and diabetes more than fat under the skin. Xiaomi index: 1–9 standard, 10–14 high, 15 and above very high. Endurance and strength training often lower it faster than other fat.",
-      bmr: "The basal metabolic rate is the energy your body uses per day at complete rest: for breathing, heart, organs and body temperature. Your actual need is about 20–80 % higher depending on activity. More muscle raises it.",
-      whtr: "The waist-to-height ratio: waist circumference divided by height. Rule of thumb: your waist should be less than half your height, i.e. below 0.5. From 50 years the limit rises up to 0.6. It shows belly fat better than BMI. For it, enter your waist circumference under “My details”.",
-      metabolic_age: "Body age compares your metabolism (from weight, height and impedance) with the average for your age. Below your real age, your body is “younger” than average; above it, “older”.",
-      lean_mass: "Fat-free mass is everything except fat: muscles, bones, organs and water. When losing weight, mainly the fat should go down while fat-free mass stays the same if possible.",
-      heart_rate: "The pulse the scale measures through your feet while weighing. At rest, 60–100 beats per minute is normal for adults, often less for endurance athletes. It is higher shortly after exercise, coffee or stress.",
-      body_type: "The body type combines body fat (rows) and muscle mass (columns), each low, normal or high according to the Xiaomi tables. The goal is usually “Balanced” or “Balanced muscular”.",
-      suggestions: "The Xiaomi standard weight is (height in cm − 80) × 0.7 for men and (height in cm − 70) × 0.6 for women. Weight control shows the distance to it. Fat control shows how much fat is above the upper limit of the standard range (or how much room is left). Muscle control shows how much muscle mass is missing to the standard.",
-      ai: "An AI (via AI Task in Home Assistant) assesses your values and gives recommendations. You choose under “My details” which values it gets. The hints may contain mistakes and do not replace medical advice.",
+      weight: "Your current weight. If the measurement is marked “with clothes”, the clothes are already deducted. Weight varies by 1–2 kg from day to day depending on what you ate and drank, so the trend shows better where you are heading.",
+      trend: "Your smoothed weight. Every new measurement moves the trend only a little towards it, so you see the real development without the daily ups and downs.",
+      changes: "How your trend weight changed over the last 7 and 30 days and since the first measurement. The rate is the average change per week. Healthy weight loss is usually 0.5–1 % of body weight per week.",
+      bmi: "Body mass index: weight in kg divided by height in metres squared. For adults: below 18.5 underweight, 18.5–24.9 normal, 25–29.9 overweight, 30 and above obese. BMI does not tell muscle from fat, so very muscular people often have a high BMI without too much fat.",
+      body_score: "An overall score from 10 to 100. It starts at 100 and drops when BMI, body fat, muscle, body water, visceral fat, bone, basal metabolic rate or protein are outside the normal range. Good for following your development over weeks.",
+      body_fat: "How much of your weight is fat. The scale sends a weak current you cannot feel through your body. Muscles contain a lot of water and conduct it well, fat hardly does, so fat is estimated from the resistance. Normal at 18–39 years is about 11–22 % for men and 21–35 % for women, a bit more with age. The value depends on hydration, so measure at the same time of day if you can.",
+      fat_mass: "How many kilograms of your weight are fat: weight times body fat percentage.",
+      composition: "What your weight is made of. Muscle tissue is the muscle you move with. Essential fat is needed for life, about 3 % of body weight in men and 12 % in women. Storage fat is the remaining fat, your energy reserve. Bone means the minerals in your bones. Other covers organs, blood, skin and water outside the muscles.",
+      water: "How much of your weight is water. Muscles are about three quarters water, fat hardly any. Normal is from about 55 % for men and 45 % for women. It changes noticeably with how much you drank or sweated.",
+      water_mass: "The amount of water in your body in litres, about three quarters of your fat-free mass. Being well hydrated matters for circulation, concentration and muscles.",
+      muscle: "Everything that is neither fat nor bone: muscles including the water in them, but also organs. That is why it is much higher than skeletal muscle mass. What is normal depends on height and sex.",
+      skeletal_muscle: "Only the muscles you move with. Typically about 35–45 % of body weight in men and 30–40 % in women. Strength training and enough protein preserve them, especially when losing weight and with age.",
+      protein: "Protein is the building material of muscles, organs and enzymes. About 16–20 % of body weight is normal. A low value points to little muscle or too little protein in your diet.",
+      bone: "The estimated weight of the minerals in your bones, mainly calcium. It changes only very slowly and does not replace a bone density scan.",
+      visceral_fat: "Visceral fat sits in the abdomen around the organs. It raises the risk of cardiovascular disease and diabetes more than fat under the skin. 1–9 is normal, 10–14 increased, 15 and above high. Exercise often lowers it faster than other fat.",
+      lean_mass: "Everything except fat: muscles, bones, organs and water. When losing weight, mainly fat should go down while fat-free mass stays the same if possible.",
+      whtr: "Waist circumference divided by height. Rule of thumb: your waist should be less than half your height, below 0.5; from 50 years up to 0.6 is normal. It shows belly fat better than BMI. Enter your waist under “My details” for it.",
+      bmr: "The basal metabolic rate is the energy your body uses per day at complete rest: for breathing, heartbeat, organs and body heat. More muscle raises it.",
+      bmr_mifflin: "Basal metabolic rate from weight, height, age and sex (Mifflin-St Jeor). The usual formula when body composition is unknown: the energy used per day at complete rest.",
+      bmr_katch: "Basal metabolic rate from fat-free mass (Katch-McArdle). More accurate if you have a lot of muscle or fat, because mainly muscle uses energy.",
+      tdee: "How much energy you use on a normal day in total: basal metabolic rate times activity factor. Eat less and you lose weight, eat more and you gain. Set your activity level under “My details”.",
+      metabolic_age: "Compares your metabolism with the average for your age. A body age below your real age means your body is “younger” than average.",
+      heart_rate: "The pulse the scale measures through your feet while weighing. At rest, 60–100 beats per minute is normal for adults, often less for trained people. It is higher standing and shortly after exercise, coffee or stress.",
+      hr_max: "The calculated maximum heart rate for your age (208 − 0.7 × age). It is the upper limit for the training zones; your real limit can be a few beats higher or lower.",
+      hr_reserve: "The gap between maximum heart rate and resting pulse. The larger it is, the more your heart can speed up under load. The basis of the heart rate zones.",
+      zones: "Heart rate ranges for training, from resting pulse and heart rate reserve. Health (50–60 %): easy, for starting out and recovery. Fat burning (60–70 %): calm endurance, you can still talk. Aerobic (70–80 %): improves endurance. Anaerobic (80–90 %): hard, short intervals only.",
+      vo2max: "How much oxygen your body can take up per minute and kilogram at full effort, estimated from maximum and resting pulse. Higher means fitter. With a pulse measured lying down it is more accurate and usually higher.",
+      ponderal_index: "Like BMI, but divides weight by height cubed, so it suits very tall or very short people better. About 11–14 kg/m³ is normal.",
+      bsa: "The area of your skin in square metres. Doctors use it, for example, to dose some medicines.",
+      broca_weight: "A simple guide weight: height in cm minus 100, times 0.9 for men and 0.85 for women. It does not consider muscle or build.",
+      impedance_index: "Height squared divided by the resistance the scale measures. The basis from which fat, water and muscle are calculated. Higher usually means more fat-free mass.",
+      body_type: "Combines body fat (rows) and muscle mass (columns), each low, normal or high. The goal is usually “Balanced” or “Balanced muscular”.",
+      suggestions: "The standard weight is a guide value from height and sex. Weight control shows the distance to it. Fat control shows how much fat is above the upper limit of the normal range (or how much room is left). Muscle control shows how much muscle mass is missing to the normal range.",
+      ai: "An AI assesses your values and gives you recommendations. You choose under “My details” which values it sees. The hints may contain mistakes and do not replace medical advice.",
     },
     aiFieldsLabel: "The AI may see these values",
-    aiFieldGroups: { profile: "Profile", weight: "Weight", body: "Body values" },
+    aiFieldGroups: { profile: "Profile", weight: "Weight", body: "Body values", fitness: "Activity and fitness" },
     aiFieldNames: {
       sex: "Sex", age: "Age", height: "Height", goal: "Goal weight",
       weight: "Weight", trend: "Trend", change_7d: "Change 7 days", change_30d: "Change 30 days", change_total: "Total change", rate: "Rate per week", weekly: "Weekly history", bmi: "BMI",
       body_fat: "Body fat", muscle_mass: "Muscle mass", water: "Body water", bone_mass: "Bone mass", bmr: "Basal metabolic rate", protein: "Protein", visceral_fat: "Visceral fat",
       metabolic_age: "Body age", skeletal_muscle: "Skeletal muscle mass", body_score: "Body score", body_type: "Body type", heart_rate: "Heart rate", whtr: "Waist-to-height",
+      activity: "Activity level", tdee: "Total energy expenditure", vo2max: "VO₂max",
     },
     aiFieldsNone: "No values selected – the AI has nothing to analyse.",
     sinceLast: "since last measurement",
@@ -752,7 +828,7 @@ const TEXT = {
       thin: "Your weight is below the normal range. Make sure you get enough energy and protein.",
       good: "Your values are in the normal range. Keep it up!",
     },
-    analysisNote: "Estimates from impedance using the Xiaomi formulas (as in bodymiscale) – not a medical diagnosis. They can differ from the Mi Fitness app.",
+    analysisNote: "Estimated values – not a medical diagnosis.",
     aiTitle: "AI hints",
     aiRefresh: "Analyse again",
     aiBusy: "Analysing …",
@@ -813,6 +889,9 @@ const TEXT = {
       goal_distance: "Distance to goal", goal_eta: "Goal expected", last_measured: "Last measurement",
       body_fat: "Body fat", muscle_mass: "Muscle mass", body_water: "Body water", bone_mass: "Bone mass", bmr: "Basal metabolic rate",
       body_score: "Body score", visceral_fat: "Visceral fat", protein: "Protein", metabolic_age: "Body age", skeletal_muscle: "Skeletal muscle mass", heart_rate: "Heart rate",
+      fat_mass: "Fat mass", lean_mass: "Fat-free mass", water_mass: "Body water (l)", ponderal_index: "Ponderal index", bsa: "Body surface area", broca_weight: "Ideal weight (Broca)",
+      bmr_mifflin: "BMR (Mifflin)", bmr_katch: "BMR (Katch)", tdee: "Total energy expenditure", hr_max: "Max. heart rate", hr_reserve: "Heart rate reserve", vo2max: "VO₂max",
+      impedance_index: "Impedance index", zone_health: "Zone health", zone_fat_burn: "Zone fat burning", zone_aerobic: "Zone aerobic", zone_anaerobic: "Zone anaerobic",
     },
     notifyDevice: "Device",
     notifyDeviceHint: "The Home Assistant app on your phone (notify service).",
@@ -1171,13 +1250,28 @@ const STYLE = `
   .vt .mv { font-size: 22px; font-weight: 500; line-height: 1.2; }
   .vt .mv small { font-size: 13px; font-weight: 400; color: var(--wt-muted); }
   .vt .ml { font-size: 12px; color: var(--wt-muted); margin: 2px 0 4px; }
-    border: 1px solid currentColor; border-radius: 50%; background: transparent; color: var(--wt-muted); font: 600 11px/1 Georgia, serif; font-style: italic; cursor: pointer; }
-  .info-dialog { max-width: min(460px, calc(100vw - 32px)); padding: 20px; border: 1px solid var(--wt-border); border-radius: var(--wt-radius);
-    background: var(--wt-card); color: var(--primary-text-color); box-shadow: 0 8px 32px rgba(0,0,0,.3); }
-  .info-dialog::backdrop { background: rgba(0,0,0,.4); }
-  .info-dialog h2 { margin-bottom: 8px; }
-  .info-dialog p { margin: 0 0 8px; line-height: 1.5; font-size: 14px; }
-  .info-dialog .actions { justify-content: flex-end; margin-top: 12px; }
+  /* explanation popup: rounded, quiet, no frame */
+  .info-dialog { width: min(440px, calc(100vw - 32px)); max-height: min(80vh, 640px); padding: 22px 24px 20px; border: 0; border-radius: 22px;
+    background: var(--wt-card); color: var(--primary-text-color); box-shadow: 0 12px 40px rgba(0,0,0,.25); overflow: auto; }
+  .info-dialog::backdrop { background: rgba(0,0,0,.35); backdrop-filter: blur(2px); }
+  .info-dialog .ih { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+  .info-dialog h2 { flex: 1; margin: 0; font-size: 17px; font-weight: 500; line-height: 1.35; }
+  .info-dialog p { margin: 0 0 10px; font-size: 14px; line-height: 1.55; color: var(--wt-muted); }
+  .info-dialog p:last-child { margin-bottom: 0; }
+  .info-dialog .ix { flex: none; width: 32px; height: 32px; margin: -6px -10px 0 0; border: 0; border-radius: 50%; background: transparent;
+    color: var(--wt-muted); font-size: 20px; line-height: 1; cursor: pointer; }
+  .info-dialog .ix:hover { background: rgba(127,127,127,.14); color: var(--primary-text-color); }
+  .info-dialog .ix:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); }
+  .zones { margin-top: 4px; }
+  .zbar { display: flex; gap: 2px; height: 10px; border-radius: 5px; overflow: hidden; margin: 6px 0 10px; }
+  .zbar span { display: block; height: 100%; }
+  .zhead { font-size: 12px; color: var(--wt-muted); margin-top: 14px; }
+  .zlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px 24px; font-size: 14px; }
+  .zrow { display: grid; grid-template-columns: 10px 1fr auto; align-items: center; gap: 10px; }
+  .zdot { width: 10px; height: 10px; border-radius: 3px; }
+  .zname small { display: block; font-size: 12px; color: var(--wt-muted); }
+  .zval { font-weight: 500; white-space: nowrap; }
+  .zval small { font-size: 12px; font-weight: 400; color: var(--wt-muted); }
   .comp2 { display: grid; grid-template-columns: minmax(110px, 170px) 1fr; gap: 20px; align-items: center; margin-top: 12px; }
   .comp2 svg { width: 100%; height: auto; max-height: 300px; }
   .seg-list { display: grid; gap: 10px; }
@@ -1768,8 +1862,9 @@ class WeightTrackerPanel extends HTMLElement {
     const person = this._entry.persons.find((p) => p.id === personId);
     const range = person && person.body && person.body.fat_range;
     if (key === "body_fat" && range) parts.push(t.infoYourRange(this._num(range[0], { digits: 0 }), this._num(range[1], { digits: 0 })));
-    dialog.innerHTML = `<h2 id="wt-info-title">${esc(title)}</h2>${parts.map((text) => `<p>${esc(text)}</p>`).join("")}
-      <div class="actions"><button class="btn primary" data-close autofocus>${esc(t.infoClose)}</button></div>`;
+    dialog.innerHTML = `<div class="ih"><h2 id="wt-info-title">${esc(title)}</h2>
+      <button class="ix" type="button" data-close aria-label="${esc(t.infoClose)}">×</button></div>
+      ${parts.map((text) => `<p>${esc(text)}</p>`).join("")}`;
     if (!dialog.open) dialog.showModal();
   }
 
@@ -1923,31 +2018,62 @@ class WeightTrackerPanel extends HTMLElement {
     const facts = this._profileFacts(person, { height: person.height, goal_weight: person.goal, birth_month: person.birth_month, sex: person.sex });
     const whtrStatus = { low: "low", healthy: "standard", increased: "high", high: "very_high" }[facts.whtrClass] || null;
     const heart = body.heart_rate || null;
+    const mx = body.metrics || {};
+    const kcal = (v) => `${new Intl.NumberFormat(this._lang).format(v)} <small>kcal</small>`;
+    const bpm = (v) => `${v} <small>bpm</small>`;
+    const plain = (digits, unit) => (v) => `${this._num(v, { digits })}${unit ? ` <small>${esc(unit)}</small>` : ""}`;
+    const activityName = mx.activity ? t.activityLevels[String(mx.activity)] : null;
     // [group, sensor key, label, value, format, rating, explanation]
     const tiles = [
       ["fat", "visceral_fat", t.visceral, a && a.visceral_fat, (v) => num(v), st.visceral_fat, "visceral_fat"],
+      ["fat", "fat_mass", t.fatMassLabel, a && a.fat_mass, kg, null, "fat_mass"],
       ["fat", "body_water", t.waterPct, b.water, (v) => `${num(v)} <small>%</small>`, st.water, "water"],
+      ["fat", "water_mass", t.waterLiters, a && a.water_mass, plain(1, "l"), null, "water_mass"],
       ["fat", "", t.whtr, facts.whtr, (v) => num(v, 2), whtrStatus, "whtr"],
-      ["fat", "", t.leanMass, a && a.lean_mass, kg, null, "lean_mass"],
+      ["fat", "lean_mass", t.leanMass, a && a.lean_mass, kg, null, "lean_mass"],
       ["muscle", "muscle_mass", t.muscle, b.muscle_mass, kg, st.muscle_mass, "muscle"],
       ["muscle", "", t.musclePct, a && a.muscle_pct, (v) => `${num(v)} <small>%</small>`, st.muscle_pct, "muscle"],
       ["muscle", "skeletal_muscle", t.skeletalMuscle, a && a.skeletal_muscle, kg, st.skeletal_muscle, "skeletal_muscle"],
       ["muscle", "protein", t.proteinPct, a && a.protein, (v) => `${num(v)} <small>%</small>`, st.protein, "protein"],
       ["muscle", "", t.bonePct, a && a.bone_pct, (v) => `${num(v)} <small>%</small>`, st.bone_pct, "bone"],
-      ["metabolism", "bmr", t.bmr, b.bmr, (v) => `${new Intl.NumberFormat(this._lang).format(v)} <small>kcal</small>`, st.bmr, "bmr"],
+      ["metabolism", "bmr_mifflin", t.bmrMifflin, mx.bmr_mifflin, kcal, null, "bmr_mifflin"],
+      ["metabolism", "bmr_katch", t.bmrKatch, mx.bmr_katch, kcal, null, "bmr_katch"],
+      ["metabolism", "tdee", t.tdeeLabel, mx.tdee, kcal, null, "tdee", activityName],
       ["metabolism", "metabolic_age", t.bodyAge, a && a.metabolic_age, (v) => `${v} <small>${esc(t.yearsUnit)}</small>`, st.metabolic_age, "metabolic_age"],
-      ["metabolism", "heart_rate", t.heartRate, heart && heart.value, (v) => `${v} <small>bpm</small>`, st.heart_rate || (heart ? (heart.value < 60 ? "low" : heart.value <= 100 ? "standard" : "high") : null), "heart_rate"],
+      ["heart", "heart_rate", t.heartRate, heart && heart.value, bpm, st.heart_rate || (heart ? (heart.value < 60 ? "low" : heart.value <= 100 ? "standard" : "high") : null), "heart_rate"],
+      ["heart", "hr_max", t.hrMax, mx.hr_max, bpm, null, "hr_max"],
+      ["heart", "hr_reserve", t.hrReserve, mx.hr_reserve, bpm, null, "hr_reserve"],
+      ["heart", "vo2max", t.vo2max, mx.vo2max, plain(1, "ml/kg/min"), null, "vo2max"],
+      ["indices", "ponderal_index", t.ponderal, mx.ponderal_index, plain(1, "kg/m³"), mx.ponderal_index ? (mx.ponderal_index < 11 ? "low" : mx.ponderal_index <= 14 ? "standard" : "high") : null, "ponderal_index"],
+      ["indices", "bsa", t.bsa, mx.bsa, plain(2, "m²"), null, "bsa"],
+      ["indices", "broca_weight", t.broca, mx.broca_weight, kg, null, "broca_weight"],
+      ["indices", "impedance_index", t.impedanceIndex, mx.impedance_index, plain(1, "cm²/Ω"), null, "impedance_index"],
     ].filter(([, , , value]) => value !== null && value !== undefined && !Number.isNaN(value));
-    const groups = ["fat", "muscle", "metabolism"]
+    // Heart rate zones as one bar: four steps of one hue, darker = harder.
+    const zoneKeys = ["health", "fat_burn", "aerobic", "anaerobic"];
+    const zoneColor = (i) => `color-mix(in srgb, ${this._color(7)} ${40 + i * 20}%, var(--wt-card))`;
+    const zones = mx.zones ? `
+      <div class="zones">
+        <div class="zhead">${term("zones", t.zonesLabel)}</div>
+        <div class="zbar" role="img" aria-label="${esc(`${t.zonesLabel}: ${zoneKeys.map((k) => `${t.zoneNames[k]} ${mx.zones[k][0]}–${mx.zones[k][1]} bpm`).join(", ")}`)}">${zoneKeys.map((k, i) => `
+          <span style="flex:${Math.max(1, mx.zones[k][1] - mx.zones[k][0])};background:${zoneColor(i)}" title="${esc(`${t.zoneNames[k]}: ${mx.zones[k][0]}–${mx.zones[k][1]} bpm`)}"></span>`).join("")}</div>
+        <div class="zlist">${zoneKeys.map((k, i) => `
+          <div class="zrow"><span class="zdot" style="background:${zoneColor(i)}"></span>
+            <span class="zname">${esc(t.zoneNames[k])}<small>${50 + i * 10}–${60 + i * 10} %</small></span>
+            <span class="zval num">${link(`zone_${k}`, t.zoneNames[k], `${mx.zones[k][0]}–${mx.zones[k][1]}`)} <small>bpm</small></span></div>`).join("")}</div>
+      </div>` : "";
+    const groupNames = { ...t.valueGroups, ...t.valueGroupsExtra };
+    const groups = ["fat", "muscle", "metabolism", "heart", "indices"]
       .map((group) => [group, tiles.filter((tile) => tile[0] === group)])
       .filter(([, items]) => items.length);
     const tileGrid = groups.length ? `
       <div class="card span">
         <h2>${esc(t.valuesTitle)}</h2>
         ${groups.map(([group, items]) => `
-          <div class="vgroup"><h3>${esc(t.valueGroups[group])}</h3>
-            <div class="vgrid">${items.map(([, key, label, value, fmt, status, infoKey]) => `
-              <div class="vt"><div class="mv num">${key ? link(key, label, fmt(value)) : fmt(value)}</div><div class="ml">${term(infoKey, label)}</div>${this._status(status)}</div>`).join("")}</div>
+          <div class="vgroup"><h3>${esc(groupNames[group])}</h3>
+            <div class="vgrid">${items.map(([, key, label, value, fmt, status, infoKey, note]) => `
+              <div class="vt"><div class="mv num">${key ? link(key, label, fmt(value)) : fmt(value)}</div><div class="ml">${term(infoKey, label)}</div>${this._status(status)}${note ? `<div class="ml">${esc(note)}</div>` : ""}</div>`).join("")}</div>
+            ${group === "heart" ? zones : ""}
           </div>`).join("")}
       </div>` : "";
 
@@ -2304,6 +2430,9 @@ class WeightTrackerPanel extends HTMLElement {
       goal: this._def("number", "goal_weight", t.goalWeight, { min: 1, max: 300, step: 0.1, unit: "kg", helper: t.goalWeightHint, onChange: refresh }),
       sex: this._def("select", "sex", t.sex, { options: Object.entries(t.sexNames).map(([value, label]) => ({ value, label })), emptyLabel: t.sexNone, helper: t.sexHint, onChange: refresh }),
       waist: this._def("number", "waist_new", t.waistNew, { min: 30, max: 250, step: 0.5, unit: "cm", helper: t.waistHint }),
+      activity: this._def("select", "activity_level", t.activity, {
+        options: Object.entries(t.activityLevels).map(([value, label]) => ({ value, label: `${label} – ${t.activityHints[value]}` })), helper: t.activityHint,
+      }),
       clothes: [
         this._def("boolean", "clothes", t.clothesOn, { helper: t.clothesOnHint, wide: true }),
         this._def("number", "clothes_kg", t.clothesStart, { min: 0, max: 4, step: 0.1, unit: "kg", helper: t.clothesStartHint, wide: true }),
@@ -2316,7 +2445,7 @@ class WeightTrackerPanel extends HTMLElement {
     const formId = `profile-form-${person.id}`;
     const c = person.clothes || {};
     const defaults = { height: person.height ?? null, goal_weight: person.goal ?? null, birth_month: person.birth_month || null, sex: person.sex || "", waist_new: null,
-      clothes: Boolean(c.enabled), clothes_kg: c.start ?? 0.8 };
+      activity_level: person.activity_level ? String(person.activity_level) : "", clothes: Boolean(c.enabled), clothes_kg: c.start ?? 0.8 };
     if (!this._dirty.has(formId) || !this._models[formId]) this._models[formId] = { ...defaults };
     const facts = this._profileFacts(person, this._models[formId]);
     return `
@@ -2433,6 +2562,8 @@ class WeightTrackerPanel extends HTMLElement {
       bmi: content(t.bmi, f.bmi ? this._kg(f.bmi, { unit: false }) : "–", f.bmi && (f.age === null || f.age >= 18) ? esc(t.bmiCat(f.bmi)) : ""),
       goal: content(t.goal, f.goal ? `${this._kg(f.goal, { unit: false })} <small>${this._unitLabel}</small>` : "–", remaining !== null ? esc(Math.abs(remaining) <= 0.2 ? t.goalReached : t.goalLeft(this._kg(Math.abs(remaining)))) : ""),
       sex: content(t.sex, f.sex ? esc(t.sexNames[f.sex]) : "–", f.sex ? "" : esc(t.sexHint)),
+      activity: content(t.activity, person.activity_level ? esc(t.activityLevels[String(person.activity_level)]) : "–",
+        esc(person.activity_level ? t.activityHints[String(person.activity_level)] : t.activityHint)),
       clothes: person.clothes ? content(t.clothes, person.clothes.enabled ? `${this._kg(person.clothes.learned, { unit: false })} <small>${this._unitLabel}</small>` : esc(t.clothesOff),
         person.clothes.enabled ? esc(t.clothesLearned(person.clothes.samples)) : esc(t.clothesOnHint)) : "",
       waist: content(t.waist, f.waist ? `${this._kg(f.waist, { unit: false, digits: f.waist % 1 ? 1 : 0 })} <small>cm</small>` : "–",
@@ -2445,8 +2576,8 @@ class WeightTrackerPanel extends HTMLElement {
     const formId = `profile-form-${person.id}`;
     const defs = this._tileDefs(person);
     const contents = this._tileContents(person, facts);
-    const labels = { age: t.age, height: t.height, bmi: t.bmi, goal: t.goal, sex: t.sex, waist: t.waist, clothes: t.clothes };
-    return ["age", "height", "bmi", "goal", "sex", "waist", ...(person.clothes ? ["clothes"] : [])].map((key) => {
+    const labels = { age: t.age, height: t.height, bmi: t.bmi, goal: t.goal, sex: t.sex, waist: t.waist, activity: t.activity, clothes: t.clothes };
+    return ["age", "height", "bmi", "goal", "sex", "waist", "activity", ...(person.clothes ? ["clothes"] : [])].map((key) => {
       const editing = this._editTile && this._editTile.key === key && this._editTile.person === person.id;
       if (editing) {
         return `
@@ -2481,7 +2612,8 @@ class WeightTrackerPanel extends HTMLElement {
   _renderBody(person, f) {
     const t = this._t;
     const body = person.body;
-    if (!body) return "";
+    // Only derived values (no scale data): nothing to show here.
+    if (!body || (!body.latest && !(body.missing || []).length)) return "";
     if (!body.latest) {
       const fields = (body.missing || []).map((k) => t.bodyFields[k]).join(", ");
       return `<div class="card"><h2>🧬 ${esc(t.body)}</h2><div class="hint" style="margin-top:6px">${esc(t.bodyMissing(fields))}</div></div>`;
@@ -3171,6 +3303,7 @@ class WeightTrackerPanel extends HTMLElement {
       this._def("entity", "impedance_entity", t.impedanceEntity, { filter: { domain: "sensor" }, helper: t.impedanceHint }),
       this._def("entity", "impedance_high_entity", t.impedanceHighEntity, { filter: { domain: "sensor" }, helper: t.impedanceHighHint }),
       this._def("entity", "heart_rate_entity", t.heartRateEntity, { filter: { domain: "sensor" }, helper: t.heartRateHint }),
+      this._def("select", "body_model", t.bodyModel, { required: true, options: Object.entries(t.bodyModels).map(([value, label]) => ({ value, label })), helper: t.bodyModelHint, wide: true }),
       this._def("entity", "body_fat_entity", t.bodyFatEntity, { filter: { domain: "sensor" }, helper: t.bodyFatEntityHint }),
       this._def("entity", "muscle_mass_entity", t.muscleEntity, { filter: { domain: "sensor" }, helper: t.directHint }),
       this._def("entity", "water_entity", t.waterEntity, { filter: { domain: "sensor" }, helper: t.directHint }),
@@ -3320,6 +3453,12 @@ class WeightTrackerPanel extends HTMLElement {
     const body = Object.keys(direct).filter((key) => impedance || direct[key]);
     if (impedance) body.push("body_score", "visceral_fat", "protein", "metabolic_age", "skeletal_muscle");
     if (cfg.heart_rate_entity) body.push("heart_rate");
+    // values derived from weight, height, age (and impedance / pulse if the scale provides them)
+    if (impedance || cfg.body_fat_entity) body.push("fat_mass", "lean_mass");
+    if (impedance || cfg.water_entity) body.push("water_mass");
+    body.push("ponderal_index", "bsa", "broca_weight", "bmr_mifflin", "tdee", "hr_max");
+    if (impedance) body.push("bmr_katch", "impedance_index");
+    if (cfg.heart_rate_entity) body.push("hr_reserve", "vo2max", "zone_health", "zone_fat_burn", "zone_aerobic", "zone_anaerobic");
     return [...base, "bmi", "goal_distance", "goal_eta", "last_measured", ...body];
   }
 
@@ -3494,6 +3633,7 @@ class WeightTrackerPanel extends HTMLElement {
             impedance_entity: m.impedance_entity || null,
             impedance_high_entity: m.impedance_high_entity || null,
             heart_rate_entity: m.heart_rate_entity || null,
+            body_model: m.body_model || "standard",
             ai_task_entity: m.ai_task_entity || null,
             body_fat_entity: m.body_fat_entity || null,
             muscle_mass_entity: m.muscle_mass_entity || null,

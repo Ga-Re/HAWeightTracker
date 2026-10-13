@@ -46,7 +46,13 @@ Das Panel hat drei Tabs. Der dritte heißt für Admins „Einstellungen“ und f
   - **Kopf:** großes Gewicht mit BMI-Einstufung, Trend, Veränderung über 7 und 30 Tage und insgesamt, Tempo pro Woche, Min/Max und Fortschritt zum Zielgewicht.
   - **Körperbewertung** (Punkte von 100) mit kurzer Einschätzung, BMI und Körperfett mit Bewertung.
   - **Körperzusammensetzung als Figur:** männliche oder weibliche Silhouette nach dem eingetragenen Geschlecht, gefüllt mit Bändern für Muskelgewebe (Skelettmuskulatur), essentielles Fett (3 % bzw. 12 % des Gewichts), Speicherfett, Knochen und Sonstiges (Organe, Blut, Haut, Wasser). Jedes Band ist so hoch wie sein Anteil.
-  - **Kacheln:** Muskelmasse und -anteil, Körperwasser, Eiweiß, Knochenanteil, Skelettmuskelmasse, Viszeralfett, Grundumsatz, Taille-zu-Größe, Körperalter, fettfreie Masse und Herzfrequenz, jeweils mit Bewertung (Niedrig / Standard / Gut / Hoch).
+  - **Körperwerte**, gruppiert:
+    - **Fett und Wasser:** Viszeralfett, Fettmasse, Körperwasser in % und Litern, Taille-zu-Größe, fettfreie Masse.
+    - **Muskeln und Knochen:** Muskelmasse und -anteil, Skelettmuskelmasse, Eiweiß, Knochenanteil.
+    - **Stoffwechsel:** Grundumsatz nach Mifflin-St Jeor und nach Katch-McArdle, Gesamtumsatz (mit deinem Aktivitätslevel), Körperalter.
+    - **Herz und Fitness:** Puls der Waage, maximale Herzfrequenz (Tanaka), Herzfrequenzreserve, geschätzte VO₂max und die vier Pulszonen (Karvonen: Gesundheit, Fettverbrennung, aerob, anaerob).
+    - **Weitere Kennzahlen:** Ponderal-Index, Körperoberfläche (Mosteller), Idealgewicht nach Broca, Impedanz-Index.
+    - Jeder Wert hat eine Bewertung, wo sinnvoll. Ein Tipp auf die Beschriftung erklärt, was der Wert bedeutet.
   - **Körpertyp** in einer 3×3-Matrix aus Körperfett und Muskeln und **Vorschläge zum Gewicht** (Standardgewicht, Gewichts-, Fett- und Muskelkontrolle).
   - **KI-Hinweise**, falls eingeschaltet (siehe [KI-Hinweise](#ki-hinweise)).
   - **Erklärungen:** Die Beschriftung jedes Werts (gepunktet unterstrichen) ist antippbar und erklärt, wie der Wert entsteht, was er bedeutet und welcher Bereich normal ist.
@@ -106,7 +112,9 @@ chart_days: 90      # optional, 0 = ohne Verlauf
 - **Geschlecht, Größe, Geburtsmonat, Ziel** und **Taillenumfang** pflegt jede Person selbst unter *Meine Daten* (Stift ✎ in den Kacheln). Aus Taille und Größe wird das Taille-zu-Größe-Verhältnis (WHtR) berechnet und eingestuft. Es ist aussagekräftiger als der BMI allein.
 - **Körperzusammensetzung (nur wenn die Waage sie liefert):** Unter *Einstellungen → Sensoren der Waage* lassen sich optional ein **Impedanz-Sensor** (z. B. Xiaomi Body Composition Scale) und direkt gemessene Werte (Körperfett, Muskelmasse, Körperwasser, Knochenmasse, Grundumsatz) auswählen. Ist ein Wert beim Wiegen frisch (höchstens 2 Minuten alt), wird er mit der Messung gespeichert.
   - Aus der Impedanz werden Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz geschätzt (Xiaomi-Formel wie in openScale/bodymiscale). Das sind Richtwerte, keine medizinische Messung. Dafür braucht es Geschlecht, Geburtsmonat und Größe, fehlende Angaben nennt das Panel.
-  - Ebenfalls nach den Xiaomi-Algorithmen berechnet: Körperbewertung, Viszeralfett, Eiweißanteil, Körperalter, Körpertyp, Standardgewicht sowie Fett- und Muskelkontrolle; die Skelettmuskelmasse nach Janssen (2000). Die Algorithmen folgen [bodymiscale](https://github.com/dckiller51/bodymiscale) (Apache-Lizenz 2.0).
+  - **Formel wählbar** unter *Einstellungen → Sensoren der Waage*: **Standard** (abgestimmt auf Waagen, auf denen man steht) oder **Sun et al. 2003** (veröffentlichte Studienformel: fettfreie Masse aus dem Impedanz-Index, Wasser 73,2 % und Knochen 4,2 % davon, Muskeln der Rest). Sun et al. wurde mit Messungen von Hand zu Fuß entwickelt, mit einer Fußwaage fällt das Körperfett damit meist niedriger aus.
+  - Ohne Impedanz gibt es trotzdem die Werte, die nur Gewicht, Größe, Alter und Geschlecht brauchen (Ponderal-Index, Körperoberfläche, Broca, Grundumsatz nach Mifflin-St Jeor, Gesamtumsatz, maximale Herzfrequenz).
+  - Ebenfalls berechnet: Körperbewertung, Viszeralfett, Eiweißanteil, Körperalter, Körpertyp, Standardgewicht sowie Fett- und Muskelkontrolle; die Skelettmuskelmasse nach Janssen (2000). Die Algorithmen folgen [bodymiscale](https://github.com/dckiller51/bodymiscale) (Apache-Lizenz 2.0).
   - **Abweichungen zur Xiaomi-App:** Neuere Waagen wie die S400 senden nur Gewicht, Impedanz und Puls. Die App rechnet mit Xiaomis eigenen, nicht veröffentlichten Formeln. Die Werte hier sind deshalb Näherungen und können spürbar abweichen, besonders Punktzahl, Körperwasser und Viszeralfett. Für Trends über Wochen eignen sie sich trotzdem.
   - Ohne diese Sensoren erscheint nirgends etwas zur Körperzusammensetzung.
   - Unter *Einstellungen → Werte als HA-Sensoren* lassen sich dafür zusätzlich Sensoren anlegen: Körperfett, Muskelmasse, Körperwasser, Knochenmasse, Grundumsatz, Körperbewertung, Viszeralfett, Protein, Körperalter, Skelettmuskelmasse und Herzfrequenz.
@@ -141,7 +149,7 @@ Ein Admin legt im Personen-Editor (*Einstellungen → Personen*) fest, an welche
 
 ## Werte als HA-Sensoren
 
-Unter *Einstellungen → Werte als HA-Sensoren* wählst du pro Person, Haustier und Kind einzeln aus, welche Werte als Sensor angelegt werden: Gewicht, Trend, Veränderungen, Tempo, BMI, Abstand zum Ziel, Zieldatum, letzte Messung und, falls die Waage es liefert, Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz. Mit *Alle* bzw. *Keine* geht es schneller. Neu ab 2.5.0 sind Körperbewertung, Viszeralfett, Protein, Körperalter, Skelettmuskelmasse (alle mit Impedanz) und Herzfrequenz. Wer vor 2.0 „Sensoren in HA“ eingeschaltet hatte, behält automatisch alle Sensoren.
+Unter *Einstellungen → Werte als HA-Sensoren* wählst du pro Person, Haustier und Kind einzeln aus, welche Werte als Sensor angelegt werden: Gewicht, Trend, Veränderungen, Tempo, BMI, Abstand zum Ziel, Zieldatum, letzte Messung und, falls die Waage es liefert, Körperfett, Muskelmasse, Körperwasser, Knochenmasse und Grundumsatz. Mit *Alle* bzw. *Keine* geht es schneller. Neu ab 2.5.0 sind Körperbewertung, Viszeralfett, Protein, Körperalter, Skelettmuskelmasse (alle mit Impedanz) und Herzfrequenz. Ab 2.8.0 kommen Fettmasse, fettfreie Masse, Körperwasser in Litern, Ponderal-Index, Körperoberfläche, Broca-Gewicht, beide Grundumsätze, Gesamtumsatz, maximale Herzfrequenz, Herzfrequenzreserve, VO₂max, Impedanz-Index und die vier Pulszonen dazu. Die Pulszonen haben als Zustand den Bereich („129–140“), Unter- und Obergrenze stehen als Attribute `min` und `max`. Wer schon Körpersensoren nutzt, bekommt die neuen beim Update einmalig angehakt. Wer vor 2.0 „Sensoren in HA“ eingeschaltet hatte, behält automatisch alle Sensoren.
 
 ## Haustiere wiegen
 

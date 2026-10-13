@@ -143,8 +143,12 @@ class BodySensorDescription(SensorEntityDescription):
 
     field: str
     needs_impedance: bool = True
-    # where the value lives in manager.body: "latest", "analysis" or "heart_rate"
+    # where the value lives in manager.body: "latest", "analysis", "metrics" or "heart_rate"
     source: str = "latest"
+    # heart rate zone: state "low–high" with the bounds as attributes
+    zone: str | None = None
+    # what the scale must provide: "impedance" (body composition), "heart_rate" or nothing
+    needs: str = "impedance"
 
 
 BODY_SENSORS: tuple[BodySensorDescription, ...] = (
@@ -194,7 +198,64 @@ BODY_SENSORS: tuple[BodySensorDescription, ...] = (
     ),
     BodySensorDescription(
         key="heart_rate", field="value", source="heart_rate", native_unit_of_measurement="bpm",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0, needs="heart_rate",
+    ),
+    # values derived from the basic values
+    BodySensorDescription(
+        key="fat_mass", field="fat_mass", source="analysis", device_class=SensorDeviceClass.WEIGHT,
+        native_unit_of_measurement=KG, state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1,
+    ),
+    BodySensorDescription(
+        key="lean_mass", field="lean_mass", source="analysis", device_class=SensorDeviceClass.WEIGHT,
+        native_unit_of_measurement=KG, state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1,
+    ),
+    BodySensorDescription(
+        key="water_mass", field="water_mass", source="analysis", native_unit_of_measurement="L",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1,
+    ),
+    BodySensorDescription(
+        key="ponderal_index", field="ponderal_index", source="metrics", native_unit_of_measurement="kg/m³",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=2, needs="",
+    ),
+    BodySensorDescription(
+        key="bsa", field="bsa", source="metrics", native_unit_of_measurement="m²",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=2, needs="",
+    ),
+    BodySensorDescription(
+        key="broca_weight", field="broca_weight", source="metrics", device_class=SensorDeviceClass.WEIGHT,
+        native_unit_of_measurement=KG, state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1, needs="",
+    ),
+    BodySensorDescription(
+        key="bmr_mifflin", field="bmr_mifflin", source="metrics", native_unit_of_measurement="kcal",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0, needs="",
+    ),
+    BodySensorDescription(
+        key="bmr_katch", field="bmr_katch", source="metrics", native_unit_of_measurement="kcal",
         state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0,
+    ),
+    BodySensorDescription(
+        key="tdee", field="tdee", source="metrics", native_unit_of_measurement="kcal",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0, needs="",
+    ),
+    BodySensorDescription(
+        key="hr_max", field="hr_max", source="metrics", native_unit_of_measurement="bpm",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0, needs="",
+    ),
+    BodySensorDescription(
+        key="hr_reserve", field="hr_reserve", source="metrics", native_unit_of_measurement="bpm",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=0, needs="heart_rate",
+    ),
+    BodySensorDescription(
+        key="vo2max", field="vo2max", source="metrics", native_unit_of_measurement="mL/kg/min",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1, needs="heart_rate",
+    ),
+    BodySensorDescription(
+        key="impedance_index", field="impedance_index", source="metrics", native_unit_of_measurement="cm²/Ω",
+        state_class=SensorStateClass.MEASUREMENT, suggested_display_precision=1,
+    ),
+    *(
+        BodySensorDescription(key=f"zone_{zone}", field="zones", source="metrics", zone=zone, needs="heart_rate")
+        for zone in ("health", "fat_burn", "aerobic", "anaerobic")
     ),
 )
 
@@ -230,8 +291,8 @@ async def async_setup_entry(
         for description in BODY_SENSORS
         if description.key in person.get(CONF_SENSORS, [])
         and (
-            bool(manager.options.get(direct[description.key]))
-            if description.key == "heart_rate"
+            True if not description.needs
+            else bool(manager.options.get(CONF_HEART_RATE_ENTITY)) if description.needs == "heart_rate"
             else has_impedance or bool(manager.options.get(direct.get(description.key, "")))
         )
     )
@@ -325,4 +386,16 @@ class BodySensor(WeightTrackerEntity, SensorEntity):
     def native_value(self) -> float | None:
         """Latest estimated value."""
         values = (self.manager.body.get(self._person_id or "") or {}).get(self.entity_description.source) or {}
+        if self.entity_description.zone:
+            bounds = (values.get("zones") or {}).get(self.entity_description.zone)
+            return f"{bounds[0]}–{bounds[1]}" if bounds else None
         return values.get(self.entity_description.field)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Heart rate zones: lower and upper bound in bpm."""
+        if not self.entity_description.zone:
+            return None
+        values = (self.manager.body.get(self._person_id or "") or {}).get("metrics") or {}
+        bounds = (values.get("zones") or {}).get(self.entity_description.zone)
+        return {"min": bounds[0], "max": bounds[1], "unit": "bpm"} if bounds else None

@@ -48,6 +48,7 @@ from .settings import (
 from .const import (
     CONF_BIRTH_MONTH,
     CONF_BODY_FAT_ENTITY,
+    CONF_ACTIVITY,
     CONF_AI_ENTITY,
     CONF_AI_FIELDS,
     CONF_AI_INSIGHTS,
@@ -267,6 +268,7 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                 "birth_month": person.get(CONF_BIRTH_MONTH),
                 "picture": _person_picture(hass, person),
                 "sex": person.get(CONF_SEX),
+                "activity_level": person.get(CONF_ACTIVITY),
                 # only present if the scale provides impedance / body fat
                 "body": manager.body.get(person_id),
                 "waist": [

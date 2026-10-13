@@ -89,6 +89,57 @@
       },
       "heart_rate": {
         "name": "Herzfrequenz"
+      },
+      "fat_mass": {
+        "name": "Fettmasse"
+      },
+      "lean_mass": {
+        "name": "Fettfreie Masse"
+      },
+      "water_mass": {
+        "name": "Körperwasser (Liter)"
+      },
+      "ponderal_index": {
+        "name": "Ponderal-Index"
+      },
+      "bsa": {
+        "name": "Körperoberfläche"
+      },
+      "broca_weight": {
+        "name": "Idealgewicht (Broca)"
+      },
+      "bmr_mifflin": {
+        "name": "Grundumsatz (Mifflin-St Jeor)"
+      },
+      "bmr_katch": {
+        "name": "Grundumsatz (Katch-McArdle)"
+      },
+      "tdee": {
+        "name": "Gesamtumsatz"
+      },
+      "hr_max": {
+        "name": "Maximale Herzfrequenz"
+      },
+      "hr_reserve": {
+        "name": "Herzfrequenzreserve"
+      },
+      "vo2max": {
+        "name": "VO2max (geschätzt)"
+      },
+      "impedance_index": {
+        "name": "Impedanz-Index"
+      },
+      "zone_health": {
+        "name": "Pulszone Gesundheit"
+      },
+      "zone_fat_burn": {
+        "name": "Pulszone Fettverbrennung"
+      },
+      "zone_aerobic": {
+        "name": "Pulszone aerob"
+      },
+      "zone_anaerobic": {
+        "name": "Pulszone anaerob"
       }
     },
     "button": {

@@ -7,6 +7,23 @@ Alle Versionen der Integration. Die Nummern folgen [Semantic Versioning](https:/
 Jeder Abschnitt wird beim Push automatisch zu einem [GitHub-Release](https://github.com/Ga-Re/HAWeightTracker/releases)
 (siehe `.github/workflows/release.yml`). HACS zeigt diese Releases als Updates an.
 
+## [2.8.0] – 2026-10-13
+
+### Neu
+- **Weitere Kennzahlen** aus Gewicht, Größe, Alter, Puls und Impedanz, in der Übersicht und als HA-Sensoren: Ponderal-Index, Körperoberfläche (Mosteller), Idealgewicht (Broca), Grundumsatz nach Mifflin-St Jeor und nach Katch-McArdle, Gesamtumsatz, maximale Herzfrequenz (Tanaka), Herzfrequenzreserve, Pulszonen (Gesundheit, Fettverbrennung, aerob, anaerob), geschätzte VO₂max, Impedanz-Index, Fettmasse, fettfreie Masse und Körperwasser in Litern.
+- **Formel für die Körperzusammensetzung wählbar** (Einstellungen → Sensoren der Waage): Standard oder Sun et al. 2003.
+- **Aktivitätslevel** unter *Meine Daten* (sitzend bis extrem aktiv) für den Gesamtumsatz.
+- Neue Sensoren sind bei Personen, die schon Körpersensoren nutzen, einmalig vorausgewählt.
+- KI: Aktivitätslevel, Gesamtumsatz und VO₂max lassen sich ebenfalls freigeben.
+
+### Geändert
+- Erklärungen sagen schlicht, was ein Wert bedeutet, ohne Herkunftsangaben.
+- Die Erklärungs-Popups sind schlichter: abgerundet, ohne Rahmen, Schließen mit ×.
+- Werte, die nur Gewicht, Größe und Alter brauchen, gibt es auch ohne Impedanz-Waage.
+
+### Behoben
+- Die Erklärungs-Popups hatten keine Gestaltung (eckig, Standard-Rahmen), weil eine übrig gebliebene CSS-Zeile ihre Regel unwirksam machte.
+
 ## [2.7.0] – 2026-10-13
 
 ### Geändert

@@ -44,7 +44,7 @@ from .analytics import PersonStats, Point, compute_stats, trend_series
 from .clothes import DEFAULT_CLOTHES_KG, learned_clothes, offset_samples
 from .growth import curves, percentile, z_score
 from .ai import build_prompt, parse_answer
-from .body import Composition, age_from_birth_month, analyze, body_fat_class, body_fat_range, from_impedance, waist_to_height
+from .body import Composition, age_from_birth_month, analyze, body_fat_class, body_fat_range, derived_metrics, estimate, waist_to_height
 from .notifications import (
     clothes_answer,
     clothes_question,
@@ -63,7 +63,10 @@ from .const import (
     CONF_AI_ENTITY,
     CONF_AI_FIELDS,
     CONF_AI_INSIGHTS,
+    CONF_ACTIVITY,
     CONF_BIRTH_MONTH,
+    CONF_BODY_MODEL,
+    DEFAULT_BODY_MODEL,
     CLOTHES_ACTION_PREFIX,
     NO_CLOTHES_ACTION_PREFIX,
     NOTIFICATION_TAG_PREFIX,
@@ -1314,16 +1317,29 @@ class WeightTrackerManager:
             own = [m for m in self.measurements if m.person_id == person_id and m.status == STATUS_ASSIGNED]
             assigned = [m for m in own if any(getattr(m, key) is not None for key in composition_keys)]
             pulse = next((m for m in reversed(own) if m.heart_rate), None)
-            if not assigned and pulse is None:
-                continue  # the scale does not provide composition data
             sex = person.get(CONF_SEX)
             age = age_from_birth_month(person.get(CONF_BIRTH_MONTH), local.year, local.month)
             height = person.get(CONF_HEIGHT)
+            stats = self.stats.get(person_id)
+            model = self.options.get(CONF_BODY_MODEL, DEFAULT_BODY_MODEL)
+
+            def metrics(lean_mass: float | None = None, impedance: float | None = None) -> dict[str, Any]:
+                return derived_metrics(
+                    weight=stats.latest_weight if stats else None, height_cm=height, age=age, sex=sex,
+                    activity=person.get(CONF_ACTIVITY), heart_rate=pulse.heart_rate if pulse else None,
+                    impedance=impedance, lean_mass=lean_mass,
+                )
+
+            if not assigned and pulse is None:
+                # no scale data: only the values that follow from weight, height and age
+                if values := metrics():
+                    self.body[person_id] = {"metrics": values, "missing": []}
+                continue
             history: list[tuple[Measurement, Composition]] = []
             for m in assigned:
                 composition = None
                 if m.body_impedance is not None and sex and age and height:
-                    composition = from_impedance(m.effective, height, age, sex, m.body_impedance)
+                    composition = estimate(model, m.effective, height, age, sex, m.body_impedance)
                 direct = {
                     key: round(getattr(m, key), 1 if key != "bmr" else 0)
                     for key in ("body_fat", "muscle_mass", "water", "bone_mass", "bmr")
@@ -1340,6 +1356,7 @@ class WeightTrackerManager:
             data: dict[str, Any] = {
                 "missing": missing,
                 "source": "scale" if any(getattr(m, k) is not None for m in assigned for k in ("body_fat", "muscle_mass", "water")) and not any(m.body_impedance for m in assigned) else "impedance",
+                "model": model,
             }
             if pulse is not None:
                 data["heart_rate"] = {"value": round(pulse.heart_rate), "ts": pulse.ts.isoformat()}
@@ -1349,6 +1366,7 @@ class WeightTrackerManager:
                 analysis = analyze(latest_m.effective, height, age, sex, latest, latest_m.body_impedance)
                 if pulse is not None:
                     analysis["status"]["heart_rate"] = "low" if pulse.heart_rate < 60 else "standard" if pulse.heart_rate <= 100 else "high"
+                data["metrics"] = metrics(analysis.get("lean_mass"), latest_m.body_impedance)
                 data.update(
                     {
                         "latest": asdict(latest),
@@ -1361,6 +1379,7 @@ class WeightTrackerManager:
                         "history": [[int(m.ts.timestamp() * 1000), c.body_fat, c.muscle_mass] for m, c in history if c.body_fat is not None][-365:],
                     }
                 )
+            data.setdefault("metrics", metrics(impedance=next((m.body_impedance for m in reversed(assigned) if m.body_impedance), None)))
             self.body[person_id] = data
 
     # ------------------------------------------------------------- AI hints
@@ -1421,6 +1440,10 @@ class WeightTrackerManager:
         for key in ("protein", "visceral_fat", "metabolic_age", "skeletal_muscle", "body_score", "body_type"):
             facts[key] = analysis.get(key)
         facts["heart_rate"] = (body.get("heart_rate") or {}).get("value")
+        derived = body.get("metrics") or {}
+        facts["activity"] = derived.get("activity")
+        facts["tdee"] = derived.get("tdee")
+        facts["vo2max"] = derived.get("vo2max")
         waist = [w for w in self.waist if w.person_id == person_id]
         if waist and person.get(CONF_HEIGHT):
             facts["whtr"] = waist_to_height(waist[-1].cm, person.get(CONF_HEIGHT))
