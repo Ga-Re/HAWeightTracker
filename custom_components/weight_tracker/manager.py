@@ -1510,12 +1510,13 @@ class WeightTrackerManager:
             if values:
                 weekly.append(round(values[-1], 1))
         facts["weekly"] = weekly or None
-        facts["status"] = analysis.get("status") or {}
+        ratings = {**(analysis.get("status") or {}), **(derived.get("status") or {})}
+        facts["status"] = ratings
         # Only what the person allowed (no setting = everything).
         allowed = person.get(CONF_AI_FIELDS)
         if allowed is not None:
             facts = {k: v for k, v in facts.items() if k in allowed}
-            facts["status"] = {k: v for k, v in (analysis.get("status") or {}).items() if k in allowed}
+            facts["status"] = {k: v for k, v in ratings.items() if k in allowed}
         return facts
 
     async def _async_run_ai(self, person_id: str) -> None:

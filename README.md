@@ -52,7 +52,7 @@ Das Panel hat drei Tabs. Der dritte heißt für Admins „Einstellungen“ und f
     - **Stoffwechsel:** Grundumsatz nach Mifflin-St Jeor und nach Katch-McArdle, Gesamtumsatz (mit deinem Aktivitätslevel), Körperalter.
     - **Herz und Fitness:** Puls der Waage, maximale Herzfrequenz (Tanaka), Herzfrequenzreserve, geschätzte VO₂max und die vier Pulszonen (Karvonen: Gesundheit, Fettverbrennung, aerob, anaerob).
     - **Weitere Kennzahlen:** Ponderal-Index, Körperoberfläche (Mosteller), Idealgewicht nach Broca, Impedanz-Index.
-    - Jeder Wert hat eine Bewertung, wo sinnvoll. Ein Tipp auf die Beschriftung erklärt, was der Wert bedeutet.
+    - Unter jedem Wert steht eine Bewertung (z. B. Niedrig, Normal, Gut, Hoch). Werte ohne gut oder schlecht sind als „Richtwert“ oder „Durchschnitt“ markiert, beim Broca-Gewicht steht der Abstand zu deinem Gewicht. Veränderungen und Tempo werden am Ziel gemessen („Gesundes Tempo“, „Weg vom Ziel“). Ein Tipp auf die Beschriftung erklärt, was der Wert bedeutet.
   - **Körpertyp** als Karte aus BMI (senkrecht: unter 18,5 / bis 21,7 / bis 25 / darüber) und Körperfettanteil (waagerecht, Männer 10/15/20 %, Frauen 20/25/30 %) mit zehn Feldern von „Mager“ bis „Fettleibig“; ein Punkt zeigt die genaue Lage. Dazu **Vorschläge zum Gewicht** (Standardgewicht, Gewichts-, Fett- und Muskelkontrolle).
   - **KI-Hinweise**, falls eingeschaltet (siehe [KI-Hinweise](#ki-hinweise)).
   - **Erklärungen:** Die Beschriftung jedes Werts (gepunktet unterstrichen) ist antippbar und erklärt, wie der Wert entsteht, was er bedeutet und welcher Bereich normal ist.

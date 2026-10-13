@@ -299,7 +299,7 @@ const TEXT = {
     broca: "Idealgewicht (Broca)",
     impedanceIndex: "Impedanz-Index",
     fatMassLabel: "Fettmasse",
-    waterLiters: "Körperwasser",
+    waterLiters: "Wassermenge",
     activity: "Aktivität",
     activityLevels: { "1.2": "Sitzend", "1.375": "Wenig aktiv", "1.55": "Mäßig aktiv", "1.725": "Sehr aktiv", "1.9": "Extrem aktiv" },
     activityHints: { "1.2": "Bürojob, kaum Sport", "1.375": "1–3× Sport pro Woche", "1.55": "3–5× Sport pro Woche", "1.725": "6–7× Sport pro Woche", "1.9": "körperliche Arbeit + Sport" },
@@ -376,7 +376,9 @@ const TEXT = {
     leanMass: "Fettfreie Masse",
     heartRate: "Herzfrequenz",
     yearsUnit: "Jahre",
-    status: { low: "Niedrig", standard: "Standard", good: "Gut", high: "Hoch", very_high: "Sehr hoch" },
+    status: { low: "Niedrig", standard: "Normal", good: "Gut", high: "Hoch", very_high: "Sehr hoch", very_low: "Sehr niedrig", excellent: "Sehr gut", guide: "Richtwert", below: "Unter Durchschnitt", average: "Durchschnitt", above: "Über Durchschnitt" },
+    pace: { stable: "Stabil", toward: "Richtung Ziel", healthy: "Gesundes Tempo", fast: "Sehr schnell", away: "Weg vom Ziel", change: "Verändert sich" },
+    vsYou: (kg) => `Du: ${kg}`,
     bodyType: "Körpertyp",
     bodyTypes: {
       athletic: "Athletisch", overweight: "Übergewichtig", obese: "Fettleibig", muscular: "Muskulös", fit: "Fit",
@@ -735,7 +737,7 @@ const TEXT = {
     broca: "Ideal weight (Broca)",
     impedanceIndex: "Impedance index",
     fatMassLabel: "Fat mass",
-    waterLiters: "Body water",
+    waterLiters: "Water amount",
     activity: "Activity",
     activityLevels: { "1.2": "Sedentary", "1.375": "Lightly active", "1.55": "Moderately active", "1.725": "Very active", "1.9": "Extremely active" },
     activityHints: { "1.2": "office job, hardly any sport", "1.375": "sport 1–3× a week", "1.55": "sport 3–5× a week", "1.725": "sport 6–7× a week", "1.9": "physical work + sport" },
@@ -812,7 +814,9 @@ const TEXT = {
     leanMass: "Fat-free mass",
     heartRate: "Heart rate",
     yearsUnit: "years",
-    status: { low: "Low", standard: "Standard", good: "Good", high: "High", very_high: "Very high" },
+    status: { low: "Low", standard: "Normal", good: "Good", high: "High", very_high: "Very high", very_low: "Very low", excellent: "Excellent", guide: "Guide value", below: "Below average", average: "Average", above: "Above average" },
+    pace: { stable: "Stable", toward: "Towards goal", healthy: "Healthy pace", fast: "Very fast", away: "Away from goal", change: "Changing" },
+    vsYou: (kg) => `You: ${kg}`,
     bodyType: "Body type",
     bodyTypes: {
       athletic: "Athletic", overweight: "Overweight", obese: "Obese", muscular: "Muscular", fit: "Fit",
@@ -1254,8 +1258,11 @@ const STYLE = `
   .term:hover { color: var(--primary-color, #03a9f4); }
   .term:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: 2px; border-radius: 2px; }
   .st::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 5px; border-radius: 50%; background: currentColor; vertical-align: 1px; }
-  .st.st-standard, .st.st-good { color: var(--wt-muted); font-weight: 400; }
-  .st.st-standard::before, .st.st-good::before { background: var(--wt-st-good); }
+  .st.st-standard, .st.st-good, .st.st-excellent { color: var(--wt-muted); font-weight: 400; }
+  .st.st-standard::before, .st.st-good::before, .st.st-excellent::before { background: var(--wt-st-good); }
+  /* neither good nor bad (guide values, above/below average): grey */
+  .st.st-guide, .st.st-below, .st.st-average, .st.st-above { color: var(--wt-muted); font-weight: 400; }
+  .st.st-guide::before, .st.st-below::before, .st.st-average::before, .st.st-above::before { background: var(--wt-muted); opacity: .6; }
   .rh-label { text-align: center; font-size: 12px; color: var(--wt-muted); margin-top: 10px; }
   .vgroup h3 { font-size: 13px; font-weight: 500; color: var(--wt-muted); margin: 16px 0 8px; }
   .vgroup:first-of-type h3 { margin-top: 12px; }
@@ -1885,8 +1892,11 @@ class WeightTrackerPanel extends HTMLElement {
     if (!dialog.open) dialog.showModal();
   }
 
+  // Rating under a value: a status key, or [status key, own text].
   _status(status) {
-    return status ? `<span class="st st-${esc(status)}">${esc(this._t.status[status] || status)}</span>` : "";
+    if (!status) return "";
+    const [key, text] = Array.isArray(status) ? status : [status, this._t.status[status] || status];
+    return `<span class="st st-${esc(key)}">${esc(text)}</span>`;
   }
 
   // 85,9 kg like the Xiaomi app: big integer part, smaller decimals.
@@ -1931,7 +1941,21 @@ class WeightTrackerPanel extends HTMLElement {
     const signedKg = (v) => `${this._kg(v, { signed: true, unit: false })} <small>${esc(this._unitLabel)}</small>`;
     // A label that opens its explanation when tapped.
     const term = (key, label) => `<button class="term" type="button" data-action="info" data-info="${esc(key)}" data-title="${esc(label)}" data-person="${esc(person.id)}" aria-label="${esc(`${label} – ${t.infoAbout(label)}`)}">${esc(label)}</button>`;
-    const stat = (key, label, value, infoKey = "changes") => `<div class="stat"><div class="label">${term(infoKey, label)}</div><div class="val num">${link(key, label, value)}</div></div>`;
+    const stat = (key, label, value, infoKey = "changes", rating = null) => `<div class="stat"><div class="label">${term(infoKey, label)}</div><div class="val num">${link(key, label, value)}</div>${this._status(rating)}</div>`;
+    // Rate a change (kg per week): towards the goal, healthy pace, too fast or away.
+    const goalDir = person.goal && s.trend ? Math.sign(person.goal - s.trend) : 0;
+    const pace = (perWeek) => {
+      if (perWeek === null || perWeek === undefined) return null;
+      const share = Math.abs(perWeek) / (s.trend || s.latest_weight || 1) * 100;
+      if (Math.abs(perWeek) < 0.1) return ["standard", t.pace.stable];
+      if (goalDir && Math.sign(perWeek) !== goalDir) return ["high", t.pace.away];
+      if (share > 1) return ["high", t.pace.fast];
+      return goalDir ? ["good", t.pace.healthy] : ["guide", t.pace.change];
+    };
+    const trendStatus = s.trend && person.height && adult ? (() => {
+      const bmi = s.trend / (person.height / 100) ** 2;
+      return [bmi < 18.5 ? "low" : bmi < 25 ? "standard" : bmi < 30 ? "high" : "very_high", t.bmiCat(bmi)];
+    })() : null;
     const bmiStatus = s.bmi && adult ? (s.bmi < 18.5 ? "low" : s.bmi < 25 ? "standard" : s.bmi < 30 ? "high" : "very_high") : null;
 
     const hero = `
@@ -1943,10 +1967,10 @@ class WeightTrackerPanel extends HTMLElement {
         <div class="rh-weight">${link("weight", t.weight, this._bigWeight(s.latest_weight))}</div>
         <div class="rh-class">${bmiStatus ? `<span class="st st-${bmiStatus}">${esc(t.bmiCat(s.bmi))}</span>` : ""}${s.change_last !== null && s.change_last !== undefined ? `${bmiStatus ? " · " : ""}<span class="muted num">${link("change_last", t.weight, this._kg(s.change_last, { signed: true }))} ${esc(t.sinceLast)}</span>` : ""}</div>
         <div class="stats">
-          ${stat("trend", t.trend, this._kg(s.trend), "trend")}
-          ${stat("change_7d", t.d7, this._kg(s.change_7d, { signed: true }))}
-          ${stat("change_30d", t.d30, this._kg(s.change_30d, { signed: true }))}
-          ${stat("rate", t.perWeek, this._kg(s.rate_per_week, { signed: true, digits: 2 }))}
+          ${stat("trend", t.trend, this._kg(s.trend), "trend", trendStatus)}
+          ${stat("change_7d", t.d7, this._kg(s.change_7d, { signed: true }), "changes", pace(s.change_7d))}
+          ${stat("change_30d", t.d30, this._kg(s.change_30d, { signed: true }), "changes", pace(s.change_30d === null || s.change_30d === undefined ? null : s.change_30d * 7 / 30))}
+          ${stat("rate", t.perWeek, this._kg(s.rate_per_week, { signed: true, digits: 2 }), "changes", pace(s.rate_per_week))}
           ${person.goal ? "" : stat("change_total", t.total, this._kg(s.change_total, { signed: true }))}
         </div>
         ${this._goalHtml(person, color)}
@@ -1966,7 +1990,8 @@ class WeightTrackerPanel extends HTMLElement {
       <div class="card">
         <h2>${term("body_score", t.bodyReport)}</h2>
         <div class="score-row">
-          <div class="score">${link("body_score", t.bodyReport, `<b class="num">${a.body_score}</b>`)}<span>${esc(t.points)}</span></div>
+          <div class="score">${link("body_score", t.bodyReport, `<b class="num">${a.body_score}</b>`)}<span>${esc(t.points)}</span>
+            <div>${this._status(a.body_score >= 85 ? "good" : a.body_score >= 70 ? "standard" : a.body_score >= 50 ? ["high", t.status.low] : ["very_high", t.status.very_low])}</div></div>
           <div class="score-text">${esc(advice())}</div>
         </div>
         <div class="pair">
@@ -2040,31 +2065,36 @@ class WeightTrackerPanel extends HTMLElement {
     const bpm = (v) => `${v} <small>bpm</small>`;
     const plain = (digits, unit) => (v) => `${this._num(v, { digits })}${unit ? ` <small>${esc(unit)}</small>` : ""}`;
     const activityName = mx.activity ? t.activityLevels[String(mx.activity)] : null;
+    const ms = mx.status || {};
+    // Broca is a reference weight: say where you are compared with it.
+    const brocaDiff = mx.broca_weight && s.latest_weight ? s.latest_weight - mx.broca_weight : null;
+    const brocaStatus = brocaDiff === null ? null
+      : [Math.abs(brocaDiff) <= mx.broca_weight * 0.1 ? "standard" : brocaDiff > 0 ? "high" : "low", t.vsYou(this._kg(brocaDiff, { signed: true }))];
     // [group, sensor key, label, value, format, rating, explanation]
     const tiles = [
       ["fat", "visceral_fat", t.visceral, a && a.visceral_fat, (v) => num(v), st.visceral_fat, "visceral_fat"],
-      ["fat", "fat_mass", t.fatMassLabel, a && a.fat_mass, kg, null, "fat_mass"],
+      ["fat", "fat_mass", t.fatMassLabel, a && a.fat_mass, kg, st.fat_mass, "fat_mass"],
       ["fat", "body_water", t.waterPct, b.water, (v) => `${num(v)} <small>%</small>`, st.water, "water"],
-      ["fat", "water_mass", t.waterLiters, a && a.water_mass, plain(1, "l"), null, "water_mass"],
+      ["fat", "water_mass", t.waterLiters, a && a.water_mass, plain(1, "l"), st.water_mass, "water_mass"],
       ["fat", "", t.whtr, facts.whtr, (v) => num(v, 2), whtrStatus, "whtr"],
-      ["fat", "lean_mass", t.leanMass, a && a.lean_mass, kg, null, "lean_mass"],
+      ["fat", "lean_mass", t.leanMass, a && a.lean_mass, kg, st.lean_mass, "lean_mass"],
       ["muscle", "muscle_mass", t.muscle, b.muscle_mass, kg, st.muscle_mass, "muscle"],
       ["muscle", "", t.musclePct, a && a.muscle_pct, (v) => `${num(v)} <small>%</small>`, st.muscle_pct, "muscle"],
       ["muscle", "skeletal_muscle", t.skeletalMuscle, a && a.skeletal_muscle, kg, st.skeletal_muscle, "skeletal_muscle"],
       ["muscle", "protein", t.proteinPct, a && a.protein, (v) => `${num(v)} <small>%</small>`, st.protein, "protein"],
       ["muscle", "", t.bonePct, a && a.bone_pct, (v) => `${num(v)} <small>%</small>`, st.bone_pct, "bone"],
-      ["metabolism", "bmr_mifflin", t.bmrMifflin, mx.bmr_mifflin, kcal, null, "bmr_mifflin"],
-      ["metabolism", "bmr_katch", t.bmrKatch, mx.bmr_katch, kcal, null, "bmr_katch"],
-      ["metabolism", "tdee", t.tdeeLabel, mx.tdee, kcal, null, "tdee", activityName],
+      ["metabolism", "bmr_mifflin", t.bmrMifflin, mx.bmr_mifflin, kcal, ms.bmr_mifflin, "bmr_mifflin"],
+      ["metabolism", "bmr_katch", t.bmrKatch, mx.bmr_katch, kcal, ms.bmr_katch, "bmr_katch"],
+      ["metabolism", "tdee", t.tdeeLabel, mx.tdee, kcal, ms.tdee, "tdee", activityName],
       ["metabolism", "metabolic_age", t.bodyAge, a && a.metabolic_age, (v) => `${v} <small>${esc(t.yearsUnit)}</small>`, st.metabolic_age, "metabolic_age"],
       ["heart", "heart_rate", t.heartRate, heart && heart.value, bpm, st.heart_rate || (heart ? (heart.value < 60 ? "low" : heart.value <= 100 ? "standard" : "high") : null), "heart_rate"],
-      ["heart", "hr_max", t.hrMax, mx.hr_max, bpm, null, "hr_max"],
-      ["heart", "hr_reserve", t.hrReserve, mx.hr_reserve, bpm, null, "hr_reserve"],
-      ["heart", "vo2max", t.vo2max, mx.vo2max, plain(1, "ml/kg/min"), null, "vo2max"],
-      ["indices", "ponderal_index", t.ponderal, mx.ponderal_index, plain(1, "kg/m³"), mx.ponderal_index ? (mx.ponderal_index < 11 ? "low" : mx.ponderal_index <= 14 ? "standard" : "high") : null, "ponderal_index"],
-      ["indices", "bsa", t.bsa, mx.bsa, plain(2, "m²"), null, "bsa"],
-      ["indices", "broca_weight", t.broca, mx.broca_weight, kg, null, "broca_weight"],
-      ["indices", "impedance_index", t.impedanceIndex, mx.impedance_index, plain(1, "cm²/Ω"), null, "impedance_index"],
+      ["heart", "hr_max", t.hrMax, mx.hr_max, bpm, ms.hr_max, "hr_max"],
+      ["heart", "hr_reserve", t.hrReserve, mx.hr_reserve, bpm, ms.hr_reserve, "hr_reserve"],
+      ["heart", "vo2max", t.vo2max, mx.vo2max, plain(1, "ml/kg/min"), ms.vo2max, "vo2max"],
+      ["indices", "ponderal_index", t.ponderal, mx.ponderal_index, plain(1, "kg/m³"), ms.ponderal_index, "ponderal_index"],
+      ["indices", "bsa", t.bsa, mx.bsa, plain(2, "m²"), ms.bsa, "bsa"],
+      ["indices", "broca_weight", t.broca, mx.broca_weight, kg, brocaStatus, "broca_weight"],
+      ["indices", "impedance_index", t.impedanceIndex, mx.impedance_index, plain(1, "cm²/Ω"), ms.impedance_index, "impedance_index"],
     ].filter(([, , , value]) => value !== null && value !== undefined && !Number.isNaN(value));
     // Heart rate zones as one bar: four steps of one hue, darker = harder.
     const zoneKeys = ["health", "fat_burn", "aerobic", "anaerobic"];

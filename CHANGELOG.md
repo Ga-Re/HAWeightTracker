@@ -7,6 +7,19 @@ Alle Versionen der Integration. Die Nummern folgen [Semantic Versioning](https:/
 Jeder Abschnitt wird beim Push automatisch zu einem [GitHub-Release](https://github.com/Ga-Re/HAWeightTracker/releases)
 (siehe `.github/workflows/release.yml`). HACS zeigt diese Releases als Updates an.
 
+## [2.11.0] – 2026-10-14
+
+### Neu
+- **Bewertung unter jedem Wert** der Übersicht, damit man ihn einordnen kann:
+  - Körperwerte: Fettmasse, Wassermenge, fettfreie Masse (über den Fettfreie-Masse-Index), Grundumsatz nach Katch-McArdle (im Vergleich zum Durchschnitt), Herzfrequenzreserve (nach Ruhepuls), VO₂max (nach Alter und Geschlecht: Niedrig bis Sehr gut), Ponderal-Index, Körperoberfläche (unter/über Durchschnitt), Impedanz-Index.
+  - Werte ohne gut oder schlecht (Grundumsatz nach Mifflin-St Jeor, Gesamtumsatz, maximale Herzfrequenz) sind als „Richtwert“ markiert; beim Idealgewicht nach Broca steht, wo du liegst („Du: +16,3 kg“).
+  - Kopf: Trend mit BMI-Einstufung, Veränderungen und Tempo im Verhältnis zum Ziel („Gesundes Tempo“, „Sehr schnell“ über 1 % pro Woche, „Weg vom Ziel“, „Stabil“).
+  - Körperbewertung: Gut, Normal, Niedrig, Sehr niedrig.
+- Die KI bekommt diese Bewertungen ebenfalls mit (soweit der Wert freigegeben ist).
+
+### Geändert
+- „Standard“ heißt in den Bewertungen jetzt „Normal“; die Wassermenge in Litern heißt „Wassermenge“.
+
 ## [2.10.0] – 2026-10-14
 
 ### Neu

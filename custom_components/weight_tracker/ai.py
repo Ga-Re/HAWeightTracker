@@ -72,12 +72,14 @@ _INSTRUCTIONS = {
 _WORDS = {
     "de": {
         "low": "niedrig", "standard": "normal", "good": "gut", "high": "hoch", "very_high": "sehr hoch",
+        "excellent": "sehr gut", "guide": "Richtwert", "below": "unter dem Durchschnitt", "average": "durchschnittlich", "above": "über dem Durchschnitt",
         "obese": "fettleibig", "overweight": "übergewichtig", "athletic": "athletisch", "muscular": "muskulös",
         "fit": "fit", "lean_muscular": "schlank und muskulös", "lean": "schlank", "skinny_fat": "unsichtbar fettleibig (normales Gewicht, viel Fett)",
         "thin": "mager", "underweight": "untergewichtig",
     },
     "en": {
         "low": "low", "standard": "normal", "good": "good", "high": "high", "very_high": "very high",
+        "excellent": "excellent", "guide": "guide value", "below": "below average", "average": "average", "above": "above average",
         "obese": "obese", "overweight": "overweight", "athletic": "athletic", "muscular": "muscular",
         "fit": "fit", "lean_muscular": "lean and muscular", "lean": "lean", "skinny_fat": "skinny fat (normal weight, high body fat)",
         "thin": "thin", "underweight": "underweight",

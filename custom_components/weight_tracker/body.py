@@ -231,6 +231,33 @@ HEART_ZONES = {  # share of the heart rate reserve (Karvonen)
 }
 
 
+# VO2max ratings by sex and age (upper limits of "low", "standard", "good"; above = excellent),
+# after the usual fitness tables (Cooper Institute / ACSM).
+_VO2MAX = {
+    MALE: ((29, 38, 43, 49), (39, 36, 41, 47), (49, 34, 39, 45), (59, 31, 36, 42), (200, 28, 33, 39)),
+    FEMALE: ((29, 31, 36, 42), (39, 29, 34, 40), (49, 27, 32, 38), (59, 24, 29, 35), (200, 22, 27, 33)),
+}
+
+
+def vo2max_class(vo2max: float, age: int, sex: str | None) -> str | None:
+    """low / standard / good / excellent."""
+    if sex not in _VO2MAX:
+        return None
+    for max_age, low, standard, good in _VO2MAX[sex]:
+        if age <= max_age:
+            return "low" if vo2max < low else "standard" if vo2max < standard else "good" if vo2max < good else "excellent"
+    return None
+
+
+def ffmi_class(lean_mass: float, height_cm: float, sex: str | None) -> str | None:
+    """Fat-free mass index (lean mass / height²): low / standard / good / excellent."""
+    if sex not in (MALE, FEMALE) or not height_cm:
+        return None
+    ffmi = lean_mass / (height_cm / 100) ** 2
+    low, good, excellent = (17, 20, 23) if sex == MALE else (14, 17, 20)
+    return "low" if ffmi < low else "standard" if ffmi < good else "good" if ffmi < excellent else "excellent"
+
+
 def derived_metrics(
     *, weight: float | None, height_cm: float | None, age: int | None, sex: str | None,
     activity: float | None = None, heart_rate: float | None = None,
@@ -241,36 +268,54 @@ def derived_metrics(
     Everything that cannot be computed (missing height, age, pulse ...) is left out.
     """
     out: dict[str, object] = {}
+    status: dict[str, str] = {}
     if not weight:
         return out
     known_sex = sex in (MALE, FEMALE)
     if height_cm:
         m = height_cm / 100
         out["ponderal_index"] = round(weight / m ** 3, 2)
+        status["ponderal_index"] = "low" if out["ponderal_index"] < 11 else "standard" if out["ponderal_index"] <= 14 else "high"
         out["bsa"] = round(math.sqrt(height_cm * weight / 3600), 2)  # Mosteller
+        # not good or bad, only compared with the adult average (about 1.6-2.1 m²)
+        status["bsa"] = "below" if out["bsa"] < 1.6 else "average" if out["bsa"] <= 2.1 else "above"
         if known_sex:
             out["broca_weight"] = round((height_cm - 100) * (0.9 if sex == MALE else 0.85), 1)
         if impedance:
             out["impedance_index"] = round(height_cm * height_cm / impedance, 2)
+            if lean_mass and (rating := ffmi_class(lean_mass, height_cm, sex)):
+                status["impedance_index"] = rating  # the index mainly reflects the fat-free mass
         if age and known_sex:
             mifflin = 10 * weight + 6.25 * height_cm - 5 * age + (5 if sex == MALE else -161)
             out["bmr_mifflin"] = round(mifflin)
+            status["bmr_mifflin"] = status["tdee"] = "guide"
             pal = activity if activity in ACTIVITY_LEVELS else ACTIVITY_LEVELS[0]
             out["activity"] = pal
             out["tdee"] = round(mifflin * pal)
     if lean_mass:
         out["bmr_katch"] = round(370 + 21.6 * lean_mass)  # Katch-McArdle
+        if "bmr_mifflin" in out:
+            # more than the average for weight/height/age = more muscle
+            diff = out["bmr_katch"] - out["bmr_mifflin"]
+            status["bmr_katch"] = "good" if diff >= 50 else "low" if diff <= -50 else "standard"
     if age:
         hr_max = 208 - 0.7 * age  # Tanaka
         out["hr_max"] = round(hr_max)
+        status["hr_max"] = "guide"
         if heart_rate and 30 <= heart_rate < hr_max:
             reserve = hr_max - heart_rate
             out["hr_reserve"] = round(reserve)
+            # a low resting pulse leaves more reserve
+            status["hr_reserve"] = "good" if heart_rate < 60 else "standard" if heart_rate <= 80 else "low"
             out["zones"] = {
                 key: [round(reserve * low + heart_rate), round(reserve * high + heart_rate)]
                 for key, (low, high) in HEART_ZONES.items()
             }
             out["vo2max"] = round(15 * hr_max / heart_rate, 1)  # Uth et al.
+            if rating := vo2max_class(out["vo2max"], age, sex):
+                status["vo2max"] = rating
+    if status:
+        out["status"] = status
     return out
 
 
@@ -423,11 +468,13 @@ def analyze(
     if c.body_fat is not None:
         out["fat_mass"] = round(weight * c.body_fat / 100, 1)
         out["lean_mass"] = round(weight - weight * c.body_fat / 100, 1)
+        if rating := ffmi_class(out["lean_mass"], height_cm, sex):
+            status["lean_mass"] = rating
     if c.water is not None:
         out["water_mass"] = round(weight * c.water / 100, 1)
         if known_sex:
             normal_water = 55.0 if sex == MALE else 45.0
-            status["water"] = "low" if c.water < normal_water else "good" if c.water <= normal_water + 10 else "high"
+            status["water"] = status["water_mass"] = "low" if c.water < normal_water else "good" if c.water <= normal_water + 10 else "high"
     if c.muscle_mass is not None:
         out["muscle_pct"] = round(c.muscle_mass / weight * 100, 1)
         if muscles:
@@ -447,7 +494,7 @@ def analyze(
         out["protein_mass"] = round(weight * protein / 100, 1)
         status["protein"] = "low" if protein < 16 else "standard" if protein <= 20 else "good"
     if c.body_fat is not None and fats and adult:
-        status["body_fat"] = (
+        status["body_fat"] = status["fat_mass"] = (
             "low" if c.body_fat < fats[0] else "standard" if c.body_fat <= fats[2]
             else "high" if c.body_fat <= fats[3] else "very_high"
         )
