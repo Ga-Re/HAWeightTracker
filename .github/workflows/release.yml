@@ -1,0 +1,33 @@
+name: Release
+
+# Every version in CHANGELOG.md becomes a GitHub release (HACS shows them as
+# updates). The version in manifest.json is released from the pushed commit;
+# older versions only if their tag v<version> already exists.
+on:
+  push:
+    branches: [main]
+    paths:
+      - custom_components/weight_tracker/manifest.json
+      - CHANGELOG.md
+      - .github/workflows/release.yml
+      - .github/scripts/release.py
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create missing releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/release.py

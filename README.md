@@ -1,5 +1,7 @@
 # Weight Tracker für Home Assistant
 
+[![Release](https://img.shields.io/github/v/release/Ga-Re/HAWeightTracker)](https://github.com/Ga-Re/HAWeightTracker/releases) [![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
+
 Custom Integration, die die Messwerte **einer** Waage automatisch den richtigen Personen zuordnet und pro Person Gewicht, Trend, Veränderungen, BMI und Zielprognose als Sensoren bereitstellt. Ein eigenes Panel **„Gewicht“ in der Seitenleiste** zeigt alles auf einen Blick – ohne Dashboard-Konfiguration.
 
 ## Installation
@@ -282,6 +284,14 @@ Seit Version 1.2.0 meldet die Integration eine fehlende Datei selbst als Benachr
 
 - Meldet die Waage zweimal hintereinander **exakt** denselben Wert, löst Home Assistant keine Zustandsänderung aus. Die zweite Messung wird dann nicht erfasst.
 - Wiegt ihr ungefähr gleich viel (weniger als ~1 kg Unterschied), entscheidet nur die Anwesenheit. Ohne `person.*`-Entität fragt die Integration nach.
+
+## Versionen
+
+Jede Version ist ein [GitHub-Release](https://github.com/Ga-Re/HAWeightTracker/releases) mit Änderungsliste. HACS zeigt neue Releases als Update an und erlaubt über ⋮ → *Erneut herunterladen* auch eine bestimmte Version. Was sich wann geändert hat, steht im [CHANGELOG](CHANGELOG.md).
+
+Die Nummern folgen Semantic Versioning: **Major** bei Änderungen, die bestehende Einrichtungen brechen oder Funktionen entfernen, **Minor** für neue Funktionen, **Patch** für Fehlerbehebungen.
+
+Für eine neue Version reicht es, in `manifest.json` die Versionsnummer zu erhöhen und in `CHANGELOG.md` einen Abschnitt `## [x.y.z] – Datum` zu ergänzen. Nach dem Push legt der Workflow *Release* automatisch Tag und Release an. Fehlt der Abschnitt im Changelog, schlägt er fehl, statt ein Release ohne Beschreibung anzulegen.
 
 ## Lizenz
 
