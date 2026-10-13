@@ -60,6 +60,14 @@ CONF_CLOTHES = "clothes"
 # AI hints (HA "AI Task"): the admin picks the entity, each person opts in.
 CONF_AI_ENTITY = "ai_task_entity"
 CONF_AI_INSIGHTS = "ai_insights"
+# Values a person allows to be sent to the AI (missing = all of them).
+CONF_AI_FIELDS = "ai_fields"
+AI_FACT_KEYS = (
+    "sex", "age", "height", "goal",
+    "weight", "trend", "change_7d", "change_30d", "change_total", "rate", "weekly", "bmi",
+    "body_fat", "muscle_mass", "water", "bone_mass", "bmr", "protein", "visceral_fat",
+    "metabolic_age", "skeletal_muscle", "body_score", "body_type", "heart_rate", "whtr",
+)
 AI_MIN_INTERVAL = timedelta(hours=1)  # automatic analyses at most this often
 AI_TIMEOUT = 120  # s
 CONF_CLOTHES_KG = "clothes_kg"

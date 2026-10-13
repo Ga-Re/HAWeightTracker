@@ -49,6 +49,7 @@ from .const import (
     CONF_BIRTH_MONTH,
     CONF_BODY_FAT_ENTITY,
     CONF_AI_ENTITY,
+    CONF_AI_FIELDS,
     CONF_AI_INSIGHTS,
     CONF_CLOTHES,
     CONF_CLOTHES_KG,
@@ -292,6 +293,7 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                     "samples": samples,
                 }
                 data["ai_insights"] = bool(person.get(CONF_AI_INSIGHTS, False))
+                data["ai_fields"] = person.get(CONF_AI_FIELDS)  # None = all values
                 data["notify"] = {
                     "service": person.get(CONF_NOTIFY_SERVICE),
                     "weigh": person.get(CONF_NOTIFY_WEIGH, False),

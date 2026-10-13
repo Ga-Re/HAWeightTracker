@@ -7,6 +7,42 @@
 const DAY = 864e5;
 
 // Categorical person colors, fixed order (validated for CVD separation).
+// Values that may go to the AI, grouped for the selection on "My details".
+const AI_FIELDS = {
+  profile: ["sex", "age", "height", "goal"],
+  weight: ["weight", "trend", "change_7d", "change_30d", "change_total", "rate", "weekly", "bmi"],
+  body: ["body_fat", "muscle_mass", "water", "bone_mass", "bmr", "protein", "visceral_fat", "metabolic_age", "skeletal_muscle", "body_score", "body_type", "heart_rate", "whtr"],
+};
+const AI_FIELD_KEYS = Object.values(AI_FIELDS).flat();
+
+// Right half of the body outlines (x from the centre line, y down, 0-400),
+// mirrored and smoothed into the silhouette of the composition figure.
+const FIGURES = {
+  male: [[0, 6], [11, 7], [18, 15], [20, 28], [19, 42], [15, 53], [11, 60], [11, 70], [24, 75], [40, 79], [50, 87], [54, 100],
+    [57, 130], [61, 160], [64, 190], [65, 210], [67, 226], [63, 240], [57, 243], [54, 234], [53, 214], [50, 190], [47, 160],
+    [44, 130], [41, 112], [37, 135], [35, 160], [34, 182], [36, 205], [38, 222], [38, 245], [36, 280], [33, 312], [31, 345],
+    [28, 372], [27, 382], [33, 392], [31, 398], [13, 398], [10, 390], [11, 372], [12, 340], [13, 300], [11, 262], [6, 236], [0, 228]],
+  female: [[0, 0], [7, 1], [10, 7], [8, 13], [15, 15], [22, 24], [23, 38], [20, 50], [14, 58], [9, 63], [9, 72], [20, 76],
+    [32, 80], [39, 88], [42, 100], [43, 128], [45, 158], [50, 184], [55, 204], [58, 220], [55, 236], [49, 238], [46, 228],
+    [46, 208], [42, 186], [37, 160], [33, 132], [30, 112], [32, 134], [28, 154], [25, 170], [28, 188], [35, 205], [38, 222],
+    [38, 250], [33, 290], [29, 322], [27, 350], [25, 374], [24, 384], [30, 394], [28, 398], [11, 398], [9, 390], [10, 372],
+    [11, 344], [10, 306], [8, 268], [5, 246], [0, 240]],
+};
+
+// Closed smooth path (Catmull-Rom) through the mirrored outline, centred at x=100.
+function figurePath(half) {
+  const pts = [...half, ...half.slice(1, -1).reverse().map(([x, y]) => [-x, y])].map(([x, y]) => [100 + x, y]);
+  const n = pts.length;
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += `C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0]},${p2[1]}`;
+  }
+  return `${d}Z`;
+}
+
 const COLORS = {
   light: ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"],
   dark: ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"],
@@ -240,6 +276,42 @@ const TEXT = {
     impedanceEntity: "Impedanz-Sensor",
     impedanceHint: "Nur falls deine Waage die Impedanz liefert (z. B. Xiaomi Body Composition Scale). Daraus werden Körperfett, Muskeln usw. geschätzt. Xiaomi S400: hier „Impedance Low“, unten „Impedance High“.",
     ovPersons: "Person wählen",
+    infoAbout: (label) => `Was bedeutet „${label}“?`,
+    infoClose: "Schließen",
+    infoYourRange: (lo, hi) => `Dein Standardbereich: ${lo}–${hi} %.`,
+    segments: { muscle: "Muskelgewebe", essential_fat: "Essentielles Fett", storage_fat: "Speicherfett", bone: "Knochen", other: "Sonstiges" },
+    info: {
+      weight: "Das Gewicht von der Waage. Wenn du die Messung als „mit Kleidung“ markiert hast, ist das Kleidungsgewicht schon abgezogen. Es schwankt von Tag zu Tag um 1–2 kg, je nach Wasser, Essen und Verdauung. Aussagekräftiger ist deshalb der Trend.",
+      trend: "Das geglättete Gewicht, wie im „Hacker’s Diet“. Jede neue Messung zieht den Trend nur um 10 % in ihre Richtung. So siehst du, wohin es wirklich geht, ohne die Tagesschwankungen.",
+      changes: "Veränderung des Trendgewichts in den letzten 7 bzw. 30 Tagen und seit der ersten Messung. Das Tempo ist die durchschnittliche Veränderung pro Woche. Gesund abnehmen heißt meist 0,5–1 % des Körpergewichts pro Woche.",
+      bmi: "Body-Mass-Index: Gewicht in kg geteilt durch die Größe in Metern zum Quadrat. WHO-Einteilung für Erwachsene: unter 18,5 Untergewicht, 18,5–24,9 Normalgewicht, 25–29,9 Übergewicht, ab 30 Adipositas. Der BMI unterscheidet nicht zwischen Muskeln und Fett. Sehr muskulöse Menschen haben deshalb oft einen hohen BMI, ohne zu viel Fett zu haben.",
+      body_score: "Eine Gesamtnote von 10 bis 100 nach dem Xiaomi-Algorithmus. Sie startet bei 100 und zieht Punkte ab, wenn BMI, Körperfett, Muskeln, Körperwasser, Viszeralfett, Knochen, Grundumsatz oder Eiweiß außerhalb des Standards liegen. Gut, um die Entwicklung über Wochen zu verfolgen. Ein medizinischer Wert ist es nicht.",
+      body_fat: "Der Anteil von Fett am Körpergewicht. Die Waage schickt einen schwachen Strom durch den Körper: Muskeln mit viel Wasser leiten ihn gut, Fett kaum. Aus diesem Widerstand (Impedanz) wird das Fett geschätzt. Standard nach Xiaomi bei 18–39 Jahren: Männer 11–22 %, Frauen 21–35 %, mit dem Alter etwas höher. Der Wert hängt vom Wasserhaushalt ab, miss deshalb möglichst immer zur gleichen Tageszeit.",
+      composition: "So teilt sich dein Gewicht auf. Muskelgewebe ist die Skelettmuskulatur, mit der du dich bewegst. Essentielles Fett brauchst du zum Leben, etwa 3 % des Gewichts bei Männern und 12 % bei Frauen. Speicherfett ist das restliche Fett. Knochen meint die Knochenmineralien. Sonstiges umfasst Organe, Blut, Haut und Wasser außerhalb der Muskeln. Alles sind Schätzungen aus der Impedanz.",
+      water: "Der Anteil von Wasser am Körpergewicht. Muskeln bestehen zu etwa drei Vierteln aus Wasser, Fett kaum. Standard: Männer ab 55 %, Frauen ab 45 %. Der Wert schwankt deutlich damit, wie viel du getrunken oder geschwitzt hast.",
+      muscle: "Muskelmasse nach Xiaomi: alles außer Fett und Knochen, also die Muskeln samt dem Wasser darin und auch die Organe. Darum liegt sie weit über der Skelettmuskelmasse. Der Standard hängt von Größe und Geschlecht ab, zum Beispiel bei Männern ab 170 cm 49,4–59,5 kg.",
+      skeletal_muscle: "Nur die Muskeln, mit denen du dich bewegst. Berechnet mit der Formel von Janssen (2000) aus Größe, Impedanz, Alter und Geschlecht. Typisch sind etwa 35–45 % des Gewichts bei Männern und 30–40 % bei Frauen. Krafttraining und genug Eiweiß erhalten sie, besonders beim Abnehmen und im Alter.",
+      protein: "Eiweiß ist Baustoff für Muskeln, Organe und Enzyme. Der Anteil wird nach Xiaomi aus Muskelanteil minus Körperwasser geschätzt. Standard sind 16–20 %. Darunter deutet es auf wenig Muskelmasse oder zu wenig Eiweiß in der Ernährung hin.",
+      bone: "Das geschätzte Gewicht der Mineralien in den Knochen, vor allem Calcium. Es ändert sich nur sehr langsam. Der Wert wird aus der fettfreien Masse abgeleitet und ist keine echte Messung der Knochendichte.",
+      visceral_fat: "Viszeralfett liegt im Bauchraum um die Organe. Es ist stoffwechselaktiv und erhöht das Risiko für Herz-Kreislauf-Erkrankungen und Diabetes stärker als das Fett unter der Haut. Index nach Xiaomi: 1–9 Standard, 10–14 hoch, ab 15 sehr hoch. Ausdauer- und Krafttraining senken es oft schneller als das übrige Fett.",
+      bmr: "Der Grundumsatz ist die Energie, die dein Körper in völliger Ruhe pro Tag verbraucht: für Atmung, Herz, Organe und Körpertemperatur. Dein tatsächlicher Bedarf liegt je nach Aktivität etwa 20–80 % höher. Mehr Muskeln erhöhen den Grundumsatz.",
+      whtr: "Das Taille-zu-Größe-Verhältnis: Taillenumfang geteilt durch Körpergröße. Faustregel: Die Taille sollte kleiner sein als die halbe Körpergröße, also unter 0,5. Ab 50 Jahren steigt die Grenze bis 0,6. Es zeigt Bauchfett besser als der BMI. Dafür musst du unter „Meine Daten“ den Taillenumfang eintragen.",
+      metabolic_age: "Das Körperalter vergleicht deinen Stoffwechsel (aus Gewicht, Größe und Impedanz) mit dem Durchschnitt deines Alters. Liegt es unter deinem echten Alter, ist dein Körper „jünger“ als der Durchschnitt, liegt es darüber, „älter“.",
+      lean_mass: "Die fettfreie Masse ist alles außer Fett: Muskeln, Knochen, Organe und Wasser. Beim Abnehmen sollte vor allem das Fett sinken und die fettfreie Masse möglichst gleich bleiben.",
+      heart_rate: "Der Puls, den die Waage beim Wiegen über die Füße misst. In Ruhe sind bei Erwachsenen 60–100 Schläge pro Minute normal, bei Ausdauertrainierten oft weniger. Kurz nach Bewegung, Kaffee oder Stress ist er höher.",
+      body_type: "Der Körpertyp ergibt sich aus Körperfett (Zeilen) und Muskelmasse (Spalten), jeweils niedrig, normal oder hoch nach den Xiaomi-Tabellen. Ziel ist meist „Ausgewogen“ oder „Ausgewogen muskulös“.",
+      suggestions: "Das Standardgewicht nach Xiaomi ist bei Männern (Größe in cm − 80) × 0,7 und bei Frauen (Größe in cm − 70) × 0,6. Die Gewichtskontrolle zeigt den Abstand dazu. Die Fettkontrolle zeigt, wie viel Fett bis zur Obergrenze des Standardbereichs zu viel ist (oder noch Luft bleibt). Die Muskelkontrolle zeigt, wie viel Muskelmasse bis zum Standard fehlt.",
+      ai: "Eine KI (über AI Task in Home Assistant) bewertet deine Werte und gibt Empfehlungen. Welche Werte sie bekommt, legst du unter „Meine Daten“ fest. Die Hinweise können Fehler enthalten und ersetzen keine ärztliche Beratung.",
+    },
+    aiFieldsLabel: "Diese Werte darf die KI sehen",
+    aiFieldGroups: { profile: "Profil", weight: "Gewicht", body: "Körperwerte" },
+    aiFieldNames: {
+      sex: "Geschlecht", age: "Alter", height: "Größe", goal: "Zielgewicht",
+      weight: "Gewicht", trend: "Trend", change_7d: "Veränderung 7 Tage", change_30d: "Veränderung 30 Tage", change_total: "Veränderung gesamt", rate: "Tempo pro Woche", weekly: "Wochenverlauf", bmi: "BMI",
+      body_fat: "Körperfett", muscle_mass: "Muskelmasse", water: "Körperwasser", bone_mass: "Knochenmasse", bmr: "Grundumsatz", protein: "Eiweiß", visceral_fat: "Viszeralfett",
+      metabolic_age: "Körperalter", skeletal_muscle: "Skelettmuskelmasse", body_score: "Körperbewertung", body_type: "Körpertyp", heart_rate: "Herzfrequenz", whtr: "Taille-zu-Größe",
+    },
+    aiFieldsNone: "Keine Werte ausgewählt – die KI kann nichts auswerten.",
     sinceLast: "seit der letzten Messung",
     bodyReport: "Körperbewertung",
     points: "Punkte",
@@ -293,7 +365,7 @@ const TEXT = {
     aiDisclaimer: "Von einer KI erstellt – kann Fehler enthalten und ersetzt keine ärztliche Beratung.",
     aiOffHint: "KI-Hinweise sind aus. Einschalten unter „Meine Daten“.",
     aiSwitch: "Meine Werte von der KI auswerten lassen",
-    aiExplain: (entity) => `Nach jeder Messung (höchstens einmal pro Stunde) und auf Knopfdruck gehen deine Werte an „${entity}“: Gewicht, Trend, Körperwerte, Alter, Größe und Geschlecht – ohne Namen. Bei einer Cloud-KI verlassen diese Gesundheitsdaten dein Zuhause.`,
+    aiExplain: (entity) => `Nach jeder Messung (höchstens einmal pro Stunde) und auf Knopfdruck gehen die unten ausgewählten Werte an „${entity}“ – ohne Namen. Bei einer Cloud-KI verlassen diese Gesundheitsdaten dein Zuhause.`,
     aiEntity: "KI für Hinweise (AI Task)",
     aiEntityHint: "Optional. Eine AI-Task-Entität (ab Home Assistant 2025.7, z. B. OpenAI, Anthropic, Google oder Ollama). Jede Person entscheidet unter „Meine Daten“ selbst, ob ihre Werte ausgewertet werden.",
     aiSection: "KI-Hinweise",
@@ -595,6 +667,42 @@ const TEXT = {
     impedanceEntity: "Impedance sensor",
     impedanceHint: "Only if your scale reports impedance (e.g. Xiaomi Body Composition Scale). Body fat, muscles etc. are estimated from it. Xiaomi S400: “Impedance Low” here, “Impedance High” below.",
     ovPersons: "Choose person",
+    infoAbout: (label) => `What does “${label}” mean?`,
+    infoClose: "Close",
+    infoYourRange: (lo, hi) => `Your standard range: ${lo}–${hi} %.`,
+    segments: { muscle: "Muscle tissue", essential_fat: "Essential fat", storage_fat: "Storage fat", bone: "Bone", other: "Other" },
+    info: {
+      weight: "The weight from the scale. If you marked the measurement “with clothes”, the clothes weight is already deducted. It varies by 1–2 kg from day to day with water, food and digestion, so the trend tells you more.",
+      trend: "The smoothed weight, as in “The Hacker’s Diet”. Every new measurement pulls the trend only 10 % towards it. So you see where things are really going, without the daily ups and downs.",
+      changes: "Change of the trend weight over the last 7 and 30 days and since the first measurement. The rate is the average change per week. Healthy weight loss is usually 0.5–1 % of body weight per week.",
+      bmi: "Body mass index: weight in kg divided by height in metres squared. WHO categories for adults: below 18.5 underweight, 18.5–24.9 normal, 25–29.9 overweight, 30 and above obese. BMI does not distinguish muscle from fat, so very muscular people often have a high BMI without too much fat.",
+      body_score: "An overall score from 10 to 100 following the Xiaomi algorithm. It starts at 100 and deducts points when BMI, body fat, muscle, body water, visceral fat, bone, basal metabolic rate or protein are outside the standard. Good for following the development over weeks. It is not a medical value.",
+      body_fat: "The share of fat in your body weight. The scale sends a weak current through your body: muscles with a lot of water conduct it well, fat hardly does. Fat is estimated from this resistance (impedance). Xiaomi standard at 18–39 years: men 11–22 %, women 21–35 %, slightly higher with age. The value depends on your hydration, so measure at the same time of day if you can.",
+      composition: "How your weight is made up. Muscle tissue is the skeletal muscle you move with. Essential fat is needed for life, about 3 % of body weight in men and 12 % in women. Storage fat is the remaining fat. Bone means the bone minerals. Other covers organs, blood, skin and water outside the muscles. All of these are estimates from impedance.",
+      water: "The share of water in your body weight. Muscles are about three quarters water, fat hardly any. Standard: men from 55 %, women from 45 %. The value changes noticeably with how much you drank or sweated.",
+      muscle: "Muscle mass as defined by Xiaomi: everything except fat and bone, i.e. the muscles including the water in them, and also the organs. That is why it is far higher than skeletal muscle mass. The standard depends on height and sex, for example 49.4–59.5 kg for men from 170 cm.",
+      skeletal_muscle: "Only the muscles you move with. Calculated with the Janssen formula (2000) from height, impedance, age and sex. Typically about 35–45 % of body weight in men and 30–40 % in women. Strength training and enough protein preserve it, especially when losing weight and with age.",
+      protein: "Protein is the building material of muscles, organs and enzymes. Xiaomi estimates its share as muscle rate minus body water. The standard is 16–20 %. Below that it points to little muscle mass or too little protein in your diet.",
+      bone: "The estimated weight of the minerals in your bones, mainly calcium. It changes only very slowly. It is derived from fat-free mass and is not a real bone density measurement.",
+      visceral_fat: "Visceral fat sits in the abdomen around the organs. It is metabolically active and raises the risk of cardiovascular disease and diabetes more than fat under the skin. Xiaomi index: 1–9 standard, 10–14 high, 15 and above very high. Endurance and strength training often lower it faster than other fat.",
+      bmr: "The basal metabolic rate is the energy your body uses per day at complete rest: for breathing, heart, organs and body temperature. Your actual need is about 20–80 % higher depending on activity. More muscle raises it.",
+      whtr: "The waist-to-height ratio: waist circumference divided by height. Rule of thumb: your waist should be less than half your height, i.e. below 0.5. From 50 years the limit rises up to 0.6. It shows belly fat better than BMI. For it, enter your waist circumference under “My details”.",
+      metabolic_age: "Body age compares your metabolism (from weight, height and impedance) with the average for your age. Below your real age, your body is “younger” than average; above it, “older”.",
+      lean_mass: "Fat-free mass is everything except fat: muscles, bones, organs and water. When losing weight, mainly the fat should go down while fat-free mass stays the same if possible.",
+      heart_rate: "The pulse the scale measures through your feet while weighing. At rest, 60–100 beats per minute is normal for adults, often less for endurance athletes. It is higher shortly after exercise, coffee or stress.",
+      body_type: "The body type combines body fat (rows) and muscle mass (columns), each low, normal or high according to the Xiaomi tables. The goal is usually “Balanced” or “Balanced muscular”.",
+      suggestions: "The Xiaomi standard weight is (height in cm − 80) × 0.7 for men and (height in cm − 70) × 0.6 for women. Weight control shows the distance to it. Fat control shows how much fat is above the upper limit of the standard range (or how much room is left). Muscle control shows how much muscle mass is missing to the standard.",
+      ai: "An AI (via AI Task in Home Assistant) assesses your values and gives recommendations. You choose under “My details” which values it gets. The hints may contain mistakes and do not replace medical advice.",
+    },
+    aiFieldsLabel: "The AI may see these values",
+    aiFieldGroups: { profile: "Profile", weight: "Weight", body: "Body values" },
+    aiFieldNames: {
+      sex: "Sex", age: "Age", height: "Height", goal: "Goal weight",
+      weight: "Weight", trend: "Trend", change_7d: "Change 7 days", change_30d: "Change 30 days", change_total: "Total change", rate: "Rate per week", weekly: "Weekly history", bmi: "BMI",
+      body_fat: "Body fat", muscle_mass: "Muscle mass", water: "Body water", bone_mass: "Bone mass", bmr: "Basal metabolic rate", protein: "Protein", visceral_fat: "Visceral fat",
+      metabolic_age: "Body age", skeletal_muscle: "Skeletal muscle mass", body_score: "Body score", body_type: "Body type", heart_rate: "Heart rate", whtr: "Waist-to-height",
+    },
+    aiFieldsNone: "No values selected – the AI has nothing to analyse.",
     sinceLast: "since last measurement",
     bodyReport: "Body score",
     points: "points",
@@ -648,7 +756,7 @@ const TEXT = {
     aiDisclaimer: "Written by an AI – may contain mistakes and does not replace medical advice.",
     aiOffHint: "AI hints are off. Switch them on under “My details”.",
     aiSwitch: "Let the AI analyse my values",
-    aiExplain: (entity) => `After every measurement (at most once an hour) and on request your values go to “${entity}”: weight, trend, body values, age, height and sex – without your name. With a cloud AI this health data leaves your home.`,
+    aiExplain: (entity) => `After every measurement (at most once an hour) and on request the values selected below go to “${entity}” – without your name. With a cloud AI this health data leaves your home.`,
     aiEntity: "AI for hints (AI Task)",
     aiEntityHint: "Optional. An AI Task entity (Home Assistant 2025.7+, e.g. OpenAI, Anthropic, Google or Ollama). Every person decides under “My details” whether their values are analysed.",
     aiSection: "AI hints",
@@ -983,7 +1091,8 @@ const STYLE = `
   .sw { display: inline-flex; align-items: center; gap: 8px; padding: 4px 14px 4px 4px; min-height: 36px; border-radius: 999px; border: 1px solid var(--wt-border); background: var(--wt-card); color: var(--primary-text-color); font: inherit; font-size: 14px; cursor: pointer; }
   .sw[aria-selected="true"] { border-color: var(--primary-color, #03a9f4); background: color-mix(in srgb, var(--primary-color, #03a9f4) 14%, var(--wt-card)); font-weight: 500; }
   .sw:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: 2px; }
-  .report { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; }
+  /* dense: later cards fill gaps left next to shorter rows */
+  .report { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); grid-auto-flow: row dense; gap: 16px; }
   .report .span { grid-column: 1 / -1; }
   .report-hero { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 24%, var(--wt-card)) 0%, var(--wt-card) 75%); }
   .rh-head { display: flex; align-items: center; gap: 12px; }
@@ -1034,6 +1143,31 @@ const STYLE = `
   .ai-summary { margin: 10px 0 8px; line-height: 1.45; }
   .ai-tips { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; line-height: 1.4; }
   .report-note { font-size: 12px; color: var(--wt-muted); line-height: 1.4; }
+  .report.single { grid-template-columns: 1fr; }
+  .sw .avatar.pet { background: rgba(127,127,127,.15); }
+  .info { position: relative; display: inline-grid; place-items: center; width: 18px; height: 18px; margin-left: 4px; padding: 0; vertical-align: 1px;
+    border: 1px solid currentColor; border-radius: 50%; background: transparent; color: var(--wt-muted); font: 600 11px/1 Georgia, serif; font-style: italic; cursor: pointer; }
+  .info::after { content: ""; position: absolute; inset: -8px; }
+  .info:hover { color: var(--primary-color, #03a9f4); }
+  .info:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: 2px; }
+  h2 .info { vertical-align: 2px; }
+  .info-dialog { max-width: min(460px, calc(100vw - 32px)); padding: 20px; border: 1px solid var(--wt-border); border-radius: var(--wt-radius);
+    background: var(--wt-card); color: var(--primary-text-color); box-shadow: 0 8px 32px rgba(0,0,0,.3); }
+  .info-dialog::backdrop { background: rgba(0,0,0,.4); }
+  .info-dialog h2 { margin-bottom: 8px; }
+  .info-dialog p { margin: 0 0 8px; line-height: 1.5; font-size: 14px; }
+  .info-dialog .actions { justify-content: flex-end; margin-top: 12px; }
+  .comp2 { display: grid; grid-template-columns: minmax(110px, 170px) 1fr; gap: 20px; align-items: center; margin-top: 12px; }
+  .comp2 svg { width: 100%; height: auto; max-height: 300px; }
+  .seg-list { display: grid; gap: 10px; }
+  .seg { display: grid; grid-template-columns: 12px 1fr auto; gap: 4px 10px; align-items: baseline; }
+  .seg .sw-dot { width: 12px; height: 12px; border-radius: 3px; align-self: center; }
+  .seg .sv { font-size: 18px; font-weight: 500; text-align: right; white-space: nowrap; }
+  .seg .sv small { font-size: 12px; font-weight: 400; color: var(--wt-muted); }
+  .seg .sl { font-size: 13px; }
+  .seg .skg { grid-column: 2 / -1; font-size: 12px; color: var(--wt-muted); margin-top: -4px; }
+  .ai-fields { margin-top: 12px; }
+  .ai-fields h3 { font-size: 13px; font-weight: 500; color: var(--wt-muted); margin: 12px 0 6px; }
   .card { background: var(--wt-card); border: 1px solid var(--wt-border); border-radius: var(--wt-radius); box-shadow: var(--ha-card-box-shadow, none); padding: 16px; min-width: 0; }
   h2 { font-size: 16px; font-weight: 500; margin: 0; }
   .muted { color: var(--wt-muted); }
@@ -1487,18 +1621,19 @@ class WeightTrackerPanel extends HTMLElement {
         ${this._renderPetList()}
         ${this._renderImportExport()}`);
     } else {
-      const persons = this._entry.persons;
+      // One person, child or pet at a time; the switcher lists all you may see.
+      const current = this._overviewSubject();
+      const person = current.kind === "person" ? current.subject : null;
       this._content(`
         ${this._renderPetSession()}
         ${this._renderPending()}
-        ${persons.length ? `${this._renderSwitcher(this._overviewPerson())}
-        <div class="report">${this._renderReport(this._overviewPerson())}</div>
+        ${this._renderSwitcher(current)}
+        ${person ? `<div class="report">${this._renderReport(person)}</div>
         <div class="card">
           ${this._renderChartHead()}
           <div class="chart" id="chart"></div>
-        </div>` : ""}
-        ${this._renderPets()}
-        ${persons.length ? this._renderMonthly() : ""}`);
+        </div>
+        ${this._renderMonthly()}` : `<div class="report single">${current.kind === "child" ? this._renderChildCard(current.subject) : this._renderPetCard(current.subject)}</div>`}`);
     }
     this._syncCountdown();
     this._mountFields();
@@ -1560,9 +1695,19 @@ class WeightTrackerPanel extends HTMLElement {
       </div>`;
   }
 
-  // The person shown on the overview: last choice, else yourself, else the first.
-  _overviewPerson() {
-    const persons = this._entry.persons;
+  // Everything the overview can show: persons, then children, then pets.
+  _subjects() {
+    const pets = this._entry.pets || [];
+    return [
+      ...this._entry.persons.map((subject) => ({ kind: "person", subject })),
+      ...pets.filter((p) => p.kind === "child").map((subject) => ({ kind: "child", subject })),
+      ...pets.filter((p) => p.kind !== "child").map((subject) => ({ kind: "pet", subject })),
+    ];
+  }
+
+  // The subject shown on the overview: last choice, else yourself, else the first.
+  _overviewSubject() {
+    const all = this._subjects();
     let id = this._subject;
     if (id === undefined) {
       try {
@@ -1571,14 +1716,45 @@ class WeightTrackerPanel extends HTMLElement {
         id = null;
       }
     }
-    return persons.find((p) => p.id === id) || persons.find((p) => p.is_me) || persons[0];
+    return all.find((x) => x.subject.id === id) || all.find((x) => x.kind === "person" && x.subject.is_me) || all[0];
   }
 
   _renderSwitcher(current) {
-    const persons = this._entry.persons;
-    if (persons.length < 2) return "";
-    return `<div class="switcher" role="tablist" aria-label="${esc(this._t.ovPersons)}">${persons.map((p) => `
-      <button class="sw" role="tab" data-action="subject" data-person="${esc(p.id)}" aria-selected="${p === current}">${this._avatar(p, 26)}<span>${esc(p.name)}</span></button>`).join("")}</div>`;
+    const all = this._subjects();
+    if (all.length < 2) return "";
+    const icon = ({ kind, subject }) => kind === "person"
+      ? this._avatar(subject, 26)
+      : `<span class="avatar pet" style="width:26px;height:26px;font-size:15px" aria-hidden="true">${this._emoji(subject)}</span>`;
+    return `<div class="switcher" role="tablist" aria-label="${esc(this._t.ovPersons)}">${all.map((x) => `
+      <button class="sw" role="tab" data-action="subject" data-person="${esc(x.subject.id)}" aria-selected="${x.subject === current.subject}">${icon(x)}<span>${esc(x.subject.name)}</span></button>`).join("")}</div>`;
+  }
+
+  // Small (i) button next to a value; opens its explanation.
+  _info(key, label, person = null) {
+    return `<button class="info" type="button" data-action="info" data-info="${esc(key)}" data-title="${esc(label)}"${person ? ` data-person="${esc(person.id)}"` : ""} aria-label="${esc(this._t.infoAbout(label))}">i</button>`;
+  }
+
+  _showInfo(key, title, personId) {
+    const t = this._t;
+    let dialog = this.shadowRoot.getElementById("wt-info");
+    if (!dialog) {
+      dialog = document.createElement("dialog");
+      dialog.id = "wt-info";
+      dialog.className = "info-dialog";
+      dialog.setAttribute("aria-labelledby", "wt-info-title");
+      // a click on the backdrop closes it
+      dialog.addEventListener("click", (ev) => {
+        if (ev.target === dialog || ev.target.closest("[data-close]")) dialog.close();
+      });
+      this.shadowRoot.appendChild(dialog);
+    }
+    const parts = [t.info[key] || ""];
+    const person = this._entry.persons.find((p) => p.id === personId);
+    const range = person && person.body && person.body.fat_range;
+    if (key === "body_fat" && range) parts.push(t.infoYourRange(this._num(range[0], { digits: 0 }), this._num(range[1], { digits: 0 })));
+    dialog.innerHTML = `<h2 id="wt-info-title">${esc(title)}</h2>${parts.map((text) => `<p>${esc(text)}</p>`).join("")}
+      <div class="actions"><button class="btn primary" data-close autofocus>${esc(t.infoClose)}</button></div>`;
+    if (!dialog.open) dialog.showModal();
   }
 
   _status(status) {
@@ -1625,7 +1801,8 @@ class WeightTrackerPanel extends HTMLElement {
     const num = (v, digits = 1) => this._kg(v, { unit: false, digits });
     const kg = (v) => `${num(v)} <small>${esc(this._unitLabel)}</small>`;
     const signedKg = (v) => `${this._kg(v, { signed: true, unit: false })} <small>${esc(this._unitLabel)}</small>`;
-    const stat = (key, label, value) => `<div class="stat"><div class="label">${esc(label)}</div><div class="val num">${link(key, label, value)}</div></div>`;
+    const info = (key, label) => this._info(key, label, person);
+    const stat = (key, label, value, infoKey = "changes") => `<div class="stat"><div class="label">${esc(label)}${info(infoKey, label)}</div><div class="val num">${link(key, label, value)}</div></div>`;
     const bmiStatus = s.bmi && adult ? (s.bmi < 18.5 ? "low" : s.bmi < 25 ? "standard" : s.bmi < 30 ? "high" : "very_high") : null;
 
     const hero = `
@@ -1633,10 +1810,10 @@ class WeightTrackerPanel extends HTMLElement {
         <div class="rh-head">${this._avatar(person, 44)}
           <div><div class="rh-name">${esc(person.name)}${age !== null ? ` <span class="muted small" style="font-weight:400">· ${esc(t.years(age))}</span>` : ""}</div>
           <div class="muted small">${latestTs ? link("last_measured", t.measured, esc(this._dateTime(latestTs))) : esc(t.noData)}</div></div></div>
-        <div class="rh-weight">${link("weight", t.weight, this._bigWeight(s.latest_weight))}</div>
+        <div class="rh-weight">${link("weight", t.weight, this._bigWeight(s.latest_weight))}${info("weight", t.weight)}</div>
         <div class="rh-class">${bmiStatus ? `<span class="st st-${bmiStatus}">${esc(t.bmiCat(s.bmi))}</span>` : ""}${s.change_last !== null && s.change_last !== undefined ? `${bmiStatus ? " · " : ""}<span class="muted num">${link("change_last", t.weight, this._kg(s.change_last, { signed: true }))} ${esc(t.sinceLast)}</span>` : ""}</div>
         <div class="stats">
-          ${stat("trend", t.trend, this._kg(s.trend))}
+          ${stat("trend", t.trend, this._kg(s.trend), "trend")}
           ${stat("change_7d", t.d7, this._kg(s.change_7d, { signed: true }))}
           ${stat("change_30d", t.d30, this._kg(s.change_30d, { signed: true }))}
           ${stat("rate", t.perWeek, this._kg(s.rate_per_week, { signed: true, digits: 2 }))}
@@ -1658,14 +1835,14 @@ class WeightTrackerPanel extends HTMLElement {
     const ai = person.ai || {};
     const score = a && a.body_score !== undefined ? `
       <div class="card">
-        <h2>${esc(t.bodyReport)}</h2>
+        <h2>${esc(t.bodyReport)}${info("body_score", t.bodyReport)}</h2>
         <div class="score-row">
           <div class="score">${link("body_score", t.bodyReport, `<b class="num">${a.body_score}</b>`)}<span>${esc(t.points)}</span></div>
           <div class="score-text">${esc(advice())}</div>
         </div>
         <div class="pair">
-          <div><div class="pv num">${s.bmi ? link("bmi", t.bmi, num(s.bmi)) : "–"}</div><div class="pl">${esc(t.bmi)}</div>${this._status(bmiStatus)}</div>
-          <div><div class="pv num">${b.body_fat !== null && b.body_fat !== undefined ? link("body_fat", t.bodyFat, `${num(b.body_fat)} <small>%</small>`) : "–"}</div><div class="pl">${esc(t.bodyFat)}</div>${this._status(st.body_fat)}</div>
+          <div><div class="pv num">${s.bmi ? link("bmi", t.bmi, num(s.bmi)) : "–"}</div><div class="pl">${esc(t.bmi)}${info("bmi", t.bmi)}</div>${this._status(bmiStatus)}</div>
+          <div><div class="pv num">${b.body_fat !== null && b.body_fat !== undefined ? link("body_fat", t.bodyFat, `${num(b.body_fat)} <small>%</small>`) : "–"}</div><div class="pl">${esc(t.bodyFat)}${info("body_fat", t.bodyFat)}</div>${this._status(st.body_fat)}</div>
         </div>
       </div>` : "";
 
@@ -1675,7 +1852,7 @@ class WeightTrackerPanel extends HTMLElement {
       const hasText = Boolean(ai.summary || (ai.tips || []).length);
       aiCard = `
         <div class="card" aria-live="polite">
-          <div class="ai-head"><h2>🤖 ${esc(t.aiTitle)}</h2>
+          <div class="ai-head"><h2>🤖 ${esc(t.aiTitle)}${info("ai", t.aiTitle)}</h2>
             ${ai.enabled && person.can_manage ? `<button class="btn" data-action="ai-refresh" data-person="${esc(person.id)}" ${ai.busy ? "disabled" : ""}>${esc(ai.busy ? t.aiBusy : t.aiRefresh)}</button>` : ""}</div>
           ${!ai.enabled ? `<div class="hint" style="margin-top:8px">${esc(t.aiOffHint)}</div>`
             : hasText ? `${ai.summary ? `<p class="ai-summary">${esc(ai.summary)}</p>` : ""}${(ai.tips || []).length ? `<ul class="ai-tips">${ai.tips.map((tip) => `<li>${esc(tip)}</li>`).join("")}</ul>` : ""}`
@@ -1688,51 +1865,70 @@ class WeightTrackerPanel extends HTMLElement {
     const missing = body.missing && body.missing.length
       ? `<div class="card span"><div class="hint">${esc(t.bodyMissing(body.missing.map((k) => t.bodyFields[k]).join(", ")))}</div></div>` : "";
 
-    const compItem = (value, label) => value === null || value === undefined ? "" : `<div class="cv"><b class="num">${num(value)}</b> <small>${esc(this._unitLabel)}</small><div class="cl">${esc(label)}</div></div>`;
-    const composition = a && b.body_fat !== null && b.body_fat !== undefined ? `
+    // Body figure filled with bands, one per part, as high as its share.
+    let composition = "";
+    const segments = (a && a.segments) || [];
+    if (segments.length) {
+      const female = person.sex === "female";
+      const outline = figurePath(female ? FIGURES.female : FIGURES.male);
+      const top = female ? 0 : 6;
+      const span = 398 - top;
+      let y = top;
+      const bands = segments.map((seg, i) => {
+        const h = (seg.pct / 100) * span;
+        const band = `<rect x="0" y="${y.toFixed(1)}" width="200" height="${(h + 0.5).toFixed(1)}" fill="${this._color(i)}"><title>${esc(`${t.segments[seg.key]}: ${this._num(seg.pct)} %`)}</title></rect>`;
+        y += h;
+        return band;
+      });
+      // 2px gaps in the card color between the bands
+      let gapY = top;
+      const gaps = segments.slice(0, -1).map((seg) => {
+        gapY += (seg.pct / 100) * span;
+        return `<line x1="0" x2="200" y1="${gapY.toFixed(1)}" y2="${gapY.toFixed(1)}" stroke="var(--wt-card)" stroke-width="3"/>`;
+      }).join("");
+      const clip = `wt-figure-${esc(person.id)}`;
+      composition = `
       <div class="card">
-        <h2>${esc(t.composition)}</h2>
-        <div class="comp">
-          <svg class="figure" viewBox="0 0 120 200" aria-hidden="true">
-            <defs><linearGradient id="wt-fig" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".45"/><stop offset="1" stop-color="${color}" stop-opacity=".95"/></linearGradient></defs>
-            <circle cx="60" cy="20" r="14" fill="url(#wt-fig)"/>
-            <rect x="54" y="32" width="12" height="10" rx="4" fill="url(#wt-fig)"/>
-            <path fill="url(#wt-fig)" d="M42 40 H78 Q88 40 90 50 L98 102 Q99 108 94 109 Q89 110 88 104 L80 64 L80 184 Q80 190 74 190 Q68 190 67 184 L62 118 L58 118 L53 184 Q52 190 46 190 Q40 190 40 184 L40 64 L32 104 Q31 110 26 109 Q21 108 22 102 L30 50 Q32 40 42 40 Z"/>
+        <h2>${esc(t.composition)}${info("composition", t.composition)}</h2>
+        <div class="comp2">
+          <svg viewBox="0 0 200 400" role="img" aria-label="${esc(`${t.composition}: ${segments.map((seg) => `${t.segments[seg.key]} ${this._num(seg.pct)} %`).join(", ")}`)}">
+            <defs><clipPath id="${clip}"><path d="${outline}"/></clipPath></defs>
+            <g clip-path="url(#${clip})">${bands.join("")}${gaps}</g>
           </svg>
-          <div class="comp-values">
-            ${compItem(a.water_mass, t.waterMass)}
-            ${compItem(a.fat_mass, t.fatMass)}
-            ${compItem(b.bone_mass, t.boneMineral)}
-            ${compItem(a.protein_mass, t.proteinMass)}
-          </div>
+          <div class="seg-list">${segments.map((seg, i) => `
+            <div class="seg"><span class="sw-dot" style="background:${this._color(i)}"></span><span class="sl">${esc(t.segments[seg.key])}</span>
+              <span class="sv num">${this._num(seg.pct)} <small>%</small></span>
+              <span class="skg num">${this._kg(seg.kg)}</span></div>`).join("")}</div>
         </div>
-      </div>` : "";
+      </div>`;
+    }
 
     const facts = this._profileFacts(person, { height: person.height, goal_weight: person.goal, birth_month: person.birth_month, sex: person.sex });
     const whtrStatus = { low: "low", healthy: "standard", increased: "high", high: "very_high" }[facts.whtrClass] || null;
     const heart = body.heart_rate || null;
+    // [sensor key, label, value, format, rating, explanation]
     const tiles = [
-      ["muscle_mass", t.muscle, b.muscle_mass, kg, st.muscle_mass],
-      ["", t.musclePct, a && a.muscle_pct, (v) => `${num(v)} <small>%</small>`, st.muscle_pct],
-      ["body_water", t.waterPct, b.water, (v) => `${num(v)} <small>%</small>`, st.water],
-      ["protein", t.proteinPct, a && a.protein, (v) => `${num(v)} <small>%</small>`, st.protein],
-      ["", t.bonePct, a && a.bone_pct, (v) => `${num(v)} <small>%</small>`, st.bone_pct],
-      ["skeletal_muscle", t.skeletalMuscle, a && a.skeletal_muscle, kg, st.skeletal_muscle],
-      ["visceral_fat", t.visceral, a && a.visceral_fat, (v) => num(v), st.visceral_fat],
-      ["bmr", t.bmr, b.bmr, (v) => `${new Intl.NumberFormat(this._lang).format(v)} <small>kcal</small>`, st.bmr],
-      ["", t.whtr, facts.whtr, (v) => num(v, 2), whtrStatus],
-      ["metabolic_age", t.bodyAge, a && a.metabolic_age, (v) => `${v} <small>${esc(t.yearsUnit)}</small>`, st.metabolic_age],
-      ["", t.leanMass, a && a.lean_mass, kg, null],
-      ["heart_rate", t.heartRate, heart && heart.value, (v) => `${v} <small>bpm</small>`, st.heart_rate || (heart ? (heart.value < 60 ? "low" : heart.value <= 100 ? "standard" : "high") : null)],
+      ["muscle_mass", t.muscle, b.muscle_mass, kg, st.muscle_mass, "muscle"],
+      ["", t.musclePct, a && a.muscle_pct, (v) => `${num(v)} <small>%</small>`, st.muscle_pct, "muscle"],
+      ["body_water", t.waterPct, b.water, (v) => `${num(v)} <small>%</small>`, st.water, "water"],
+      ["protein", t.proteinPct, a && a.protein, (v) => `${num(v)} <small>%</small>`, st.protein, "protein"],
+      ["", t.bonePct, a && a.bone_pct, (v) => `${num(v)} <small>%</small>`, st.bone_pct, "bone"],
+      ["skeletal_muscle", t.skeletalMuscle, a && a.skeletal_muscle, kg, st.skeletal_muscle, "skeletal_muscle"],
+      ["visceral_fat", t.visceral, a && a.visceral_fat, (v) => num(v), st.visceral_fat, "visceral_fat"],
+      ["bmr", t.bmr, b.bmr, (v) => `${new Intl.NumberFormat(this._lang).format(v)} <small>kcal</small>`, st.bmr, "bmr"],
+      ["", t.whtr, facts.whtr, (v) => num(v, 2), whtrStatus, "whtr"],
+      ["metabolic_age", t.bodyAge, a && a.metabolic_age, (v) => `${v} <small>${esc(t.yearsUnit)}</small>`, st.metabolic_age, "metabolic_age"],
+      ["", t.leanMass, a && a.lean_mass, kg, null, "lean_mass"],
+      ["heart_rate", t.heartRate, heart && heart.value, (v) => `${v} <small>bpm</small>`, st.heart_rate || (heart ? (heart.value < 60 ? "low" : heart.value <= 100 ? "standard" : "high") : null), "heart_rate"],
     ].filter(([, , value]) => value !== null && value !== undefined && !Number.isNaN(value));
     const tileGrid = tiles.length ? `
-      <div class="mtiles span">${tiles.map(([key, label, value, fmt, status]) => `
-        <div class="mtile"><div class="mv num">${key ? link(key, label, fmt(value)) : fmt(value)}</div><div class="ml">${esc(label)}</div>${this._status(status)}</div>`).join("")}</div>` : "";
+      <div class="mtiles span">${tiles.map(([key, label, value, fmt, status, infoKey]) => `
+        <div class="mtile"><div class="mv num">${key ? link(key, label, fmt(value)) : fmt(value)}</div><div class="ml">${esc(label)}${info(infoKey, label)}</div>${this._status(status)}</div>`).join("")}</div>` : "";
 
     const types = ["obese", "overweight", "thick_set", "lack_exercise", "balanced", "balanced_muscular", "skinny", "balanced_skinny", "skinny_muscular"];
     const bodyType = a && a.body_type ? `
       <div class="card">
-        <h2>${esc(t.bodyType)}: ${esc(t.bodyTypes[a.body_type])}</h2>
+        <h2>${esc(t.bodyType)}: ${esc(t.bodyTypes[a.body_type])}${info("body_type", t.bodyType)}</h2>
         <div class="bt" role="img" aria-label="${esc(`${t.bodyType}: ${t.bodyTypes[a.body_type]}`)}">
           <div class="bt-rows">${t.fatLevels.map((l) => `<span>${esc(l)}</span>`).join("")}</div>
           <div class="bt-grid">${types.map((k) => `<div class="bt-cell ${k === a.body_type ? "on" : ""}">${esc(t.bodyTypes[k])}</div>`).join("")}</div>
@@ -1744,7 +1940,7 @@ class WeightTrackerPanel extends HTMLElement {
     const sugg = (icon, label, value) => value === null || value === undefined ? "" : `<div class="sg"><span class="ic" aria-hidden="true">${icon}</span><div><div class="sl">${esc(label)}</div><div class="sv num">${value}</div></div></div>`;
     const suggestions = a && a.ideal_weight !== undefined ? `
       <div class="card">
-        <h2>${esc(t.suggestions)}</h2>
+        <h2>${esc(t.suggestions)}${info("suggestions", t.suggestions)}</h2>
         <div class="sugg">
           ${sugg("⚖️", t.idealWeight, kg(a.ideal_weight))}
           ${sugg("🎯", t.weightControl, a.weight_control !== undefined ? signedKg(a.weight_control) : null)}
@@ -1794,18 +1990,6 @@ class WeightTrackerPanel extends HTMLElement {
       clearInterval(this._countdownTimer);
       this._countdownTimer = null;
     }
-  }
-
-  _renderPets() {
-    const t = this._t;
-    const all = this._entry.pets || [];
-    const pets = all.filter((p) => p.kind !== "child");
-    const children = all.filter((p) => p.kind === "child");
-    return `
-      ${children.length ? `<div class="section-title">👶 ${esc(t.children)}</div>
-        <div class="persons">${children.map((child) => this._renderChildCard(child)).join("")}</div>` : ""}
-      ${pets.length ? `<div class="section-title">🐾 ${esc(t.pets)}</div>
-        <div class="persons">${pets.map((pet) => this._renderPetCard(pet)).join("")}</div>` : ""}`;
   }
 
   _renderChildCard(child) {
@@ -2127,6 +2311,24 @@ class WeightTrackerPanel extends HTMLElement {
       ${person.can_manage && this._entry.ai_available ? this._renderAiSettings(person) : ""}`;
   }
 
+  _renderAiFields(formId) {
+    const t = this._t;
+    const chosen = new Set(this._models[formId].ai_fields || []);
+    return `
+      <div class="ai-fields" role="group" aria-label="${esc(t.aiFieldsLabel)}">
+        <div class="flabel" style="display:flex;align-items:center;gap:8px">${esc(t.aiFieldsLabel)}
+          <span class="chips" style="margin-left:auto">
+            <button class="chip" type="button" data-action="ai-fields-all" data-form="${esc(formId)}">${esc(t.sensorAll)}</button>
+            <button class="chip" type="button" data-action="ai-fields-none" data-form="${esc(formId)}">${esc(t.sensorNone)}</button>
+          </span></div>
+        ${Object.entries(AI_FIELDS).map(([group, keys]) => `
+          <h3>${esc(t.aiFieldGroups[group])}</h3>
+          <div class="checks">${keys.map((key) => `
+            <label class="check"><input type="checkbox" data-action="ai-field" data-form="${esc(formId)}" data-key="${key}" ${chosen.has(key) ? "checked" : ""}>${esc(t.aiFieldNames[key])}</label>`).join("")}</div>`).join("")}
+        <div class="hint" id="${esc(formId)}-none" style="margin-top:8px" ${chosen.size ? "hidden" : ""}>${esc(t.aiFieldsNone)}</div>
+      </div>`;
+  }
+
   _renderAiSettings(person) {
     const t = this._t;
     const formId = `ai-form-${person.id}`;
@@ -2138,7 +2340,9 @@ class WeightTrackerPanel extends HTMLElement {
         <h2>🤖 ${esc(t.aiTitle)}</h2>
         <div class="hint" style="margin-top:4px">${esc(t.aiExplain(name))}</div>
         <div class="form" id="${esc(formId)}">
-          ${this._formFields(formId, [this._def("boolean", "ai_insights", t.aiSwitch, { wide: true })], { ai_insights: Boolean(person.ai_insights) })}
+          ${this._formFields(formId, [this._def("boolean", "ai_insights", t.aiSwitch, { wide: true })],
+            { ai_insights: Boolean(person.ai_insights), ai_fields: person.ai_fields ? [...person.ai_fields] : [...AI_FIELD_KEYS] })}
+          ${this._renderAiFields(formId)}
           ${this._formActions(formId)}
         </div>
       </div>`;
@@ -3321,7 +3525,7 @@ class WeightTrackerPanel extends HTMLElement {
         await this._ws({
           type: "weight_tracker/update_profile",
           person_id: formId.slice("ai-form-".length),
-          profile: { ai_insights: Boolean(m.ai_insights) },
+          profile: { ai_insights: Boolean(m.ai_insights), ai_fields: m.ai_fields || [] },
         });
         this._toast(this._t.saved);
       } else if (formId.startsWith("notify-form-")) {
@@ -3745,6 +3949,17 @@ class WeightTrackerPanel extends HTMLElement {
       this._render();
       return;
     }
+    if (action === "info") {
+      this._showInfo(el.dataset.info, el.dataset.title, el.dataset.person);
+      return;
+    }
+    if (action === "ai-fields-all" || action === "ai-fields-none") {
+      const formId = el.dataset.form;
+      this._models[formId].ai_fields = action === "ai-fields-all" ? [...AI_FIELD_KEYS] : [];
+      this._dirty.add(formId);
+      this._render();
+      return;
+    }
     if (action === "ai-refresh") {
       this._ws({ type: "weight_tracker/ai_refresh", person_id: el.dataset.person })
         .catch((err) => this._toast(`${this._t.error}: ${this._errorText(err)}`));
@@ -3904,6 +4119,16 @@ class WeightTrackerPanel extends HTMLElement {
         this._import = { name: file.name, parsed: parseWeightCsv(text, this._lang), target: me ? `person:${me.id}` : firstPet ? `pet:${firstPet.id}` : "", busy: false };
         this._render();
       });
+      return;
+    }
+    if (el.dataset.action === "ai-field") {
+      const model = this._models[el.dataset.form];
+      const set = new Set(model.ai_fields || []);
+      if (el.checked) set.add(el.dataset.key); else set.delete(el.dataset.key);
+      model.ai_fields = AI_FIELD_KEYS.filter((key) => set.has(key));
+      this._dirty.add(el.dataset.form);
+      const none = this.shadowRoot.getElementById(`${el.dataset.form}-none`);
+      if (none) none.hidden = model.ai_fields.length > 0;
       return;
     }
     if (el.dataset.action === "pet-reassign") {

@@ -42,13 +42,14 @@ Das Panel hat drei Tabs. Der dritte heißt für Admins „Einstellungen“ und f
 
 ### Übersicht
 - **Offene Messungen** stehen ganz oben. Ein Klick auf den Namen ordnet die Messung zu.
-- **Körperanalyse pro Person** im Stil der Xiaomi-App. Oben wählst du die Person (alle, die du sehen darfst), das Panel merkt sich die Wahl.
+- **Körperanalyse pro Person** im Stil der Xiaomi-App. Oben wählst du Person, Kind oder Haustier (alle, die du sehen darfst), das Panel merkt sich die Wahl. Kinder und Tiere zeigen ihre Karte mit Verlauf, Perzentilen bzw. Notizen.
   - **Kopf:** großes Gewicht mit BMI-Einstufung, Trend, Veränderung über 7 und 30 Tage und insgesamt, Tempo pro Woche, Min/Max und Fortschritt zum Zielgewicht.
   - **Körperbewertung** (Punkte von 100) mit kurzer Einschätzung, BMI und Körperfett mit Bewertung.
-  - **Körperzusammensetzung:** Körperwasser, Fettmasse, Knochenmineral und Eiweißmasse in kg.
+  - **Körperzusammensetzung als Figur:** männliche oder weibliche Silhouette nach dem eingetragenen Geschlecht, gefüllt mit Bändern für Muskelgewebe (Skelettmuskulatur), essentielles Fett (3 % bzw. 12 % des Gewichts), Speicherfett, Knochen und Sonstiges (Organe, Blut, Haut, Wasser). Jedes Band ist so hoch wie sein Anteil.
   - **Kacheln:** Muskelmasse und -anteil, Körperwasser, Eiweiß, Knochenanteil, Skelettmuskelmasse, Viszeralfett, Grundumsatz, Taille-zu-Größe, Körperalter, fettfreie Masse und Herzfrequenz, jeweils mit Bewertung (Niedrig / Standard / Gut / Hoch).
   - **Körpertyp** in einer 3×3-Matrix aus Körperfett und Muskeln und **Vorschläge zum Gewicht** (Standardgewicht, Gewichts-, Fett- und Muskelkontrolle).
   - **KI-Hinweise**, falls eingeschaltet (siehe [KI-Hinweise](#ki-hinweise)).
+  - **Infoknopf (i)** an jedem Wert: erklärt, wie der Wert entsteht, was er bedeutet und welcher Bereich normal ist.
   - Die Körperwerte erscheinen nur, wenn die Waage Impedanz oder direkte Werte liefert. Sind für die Person Sensoren angelegt, öffnet ein Klick auf einen Wert die Entitätsansicht von Home Assistant.
 - **Verlauf als Graph:** Jede Messung ist ein Punkt, dazu kommt die geglättete Trendlinie und das Zielgewicht als gestrichelte Linie. Zeiträume: 30 Tage, 90 Tage, 1 Jahr, alles. Mit *Veränderung* starten alle Personen bei 0, das ist praktisch für den Vergleich. Personen lassen sich ein- und ausblenden, beim Überfahren zeigt ein Tooltip die Details.
 - **Monatsdurchschnitt** pro Person mit Veränderung zum Vormonat.
@@ -172,10 +173,10 @@ Oben rechts im Panel wählst du **kg**, **lb** oder **st**. Die Wahl gilt für d
 Optional wertet eine KI die Messwerte aus und schreibt eine kurze Einschätzung mit 2–4 Empfehlungen in die Übersicht. Genutzt wird die **AI-Task**-Funktion von Home Assistant (ab 2025.7). Damit funktioniert jede KI-Integration, die AI Task unterstützt, z. B. OpenAI, Anthropic (Claude), Google Gemini oder lokal Ollama. Einen eigenen API-Schlüssel braucht die Integration nicht.
 
 1. **Admin:** *Einstellungen → KI-Hinweise* → AI-Task-Entität wählen.
-2. **Jede Person** schaltet unter *Meine Daten → KI-Hinweise* selbst ein, ob ihre Werte ausgewertet werden. Standard ist aus.
+2. **Jede Person** schaltet unter *Meine Daten → KI-Hinweise* selbst ein, ob ihre Werte ausgewertet werden (Standard: aus), und hakt an, **welche Werte** die KI sehen darf: Profil (Geschlecht, Alter, Größe, Ziel), Gewicht (Gewicht, Trend, Veränderungen, Tempo, Wochenverlauf, BMI) und Körperwerte einzeln.
 3. Die Auswertung läuft nach jeder neuen Messung (höchstens einmal pro Stunde) und mit dem Knopf **Neu auswerten** in der Übersicht.
 
-**Was an die KI geht:** nur Zahlen, also Geschlecht, Alter, Größe, Zielgewicht, Gewicht, Trend und Veränderungen, die Körperwerte mit Bewertung, Herzfrequenz und die Trendwerte der letzten Wochen. Name, Benutzer und Geburtsmonat gehen nicht mit. Bei einer Cloud-KI verlassen diese Gesundheitsdaten trotzdem dein Zuhause. Wer das nicht möchte, nutzt eine lokale KI oder lässt die Hinweise aus.
+**Was an die KI geht:** nur die angehakten Zahlen samt ihrer Bewertung. Name, Benutzer und Geburtsmonat gehen nie mit. Bei einer Cloud-KI verlassen diese Gesundheitsdaten trotzdem dein Zuhause. Wer das nicht möchte, nutzt eine lokale KI oder lässt die Hinweise aus.
 
 Die Hinweise sehen alle, die die Person sehen dürfen. Sie ersetzen keine ärztliche Beratung. Schlägt eine Auswertung fehl (z. B. kein Guthaben), bleibt die letzte sichtbar, und das Panel zeigt den Fehler.
 

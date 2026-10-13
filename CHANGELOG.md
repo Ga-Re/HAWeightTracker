@@ -7,6 +7,17 @@ Alle Versionen der Integration. Die Nummern folgen [Semantic Versioning](https:/
 Jeder Abschnitt wird beim Push automatisch zu einem [GitHub-Release](https://github.com/Ga-Re/HAWeightTracker/releases)
 (siehe `.github/workflows/release.yml`). HACS zeigt diese Releases als Updates an.
 
+## [2.6.0] – 2026-10-13
+
+### Neu
+- **Infoknopf (i) an jedem Wert** der Übersicht: Erklärung, wie der Wert entsteht, was er bedeutet und welcher Bereich normal ist; beim Körperfett mit dem persönlichen Standardbereich.
+- **Körperzusammensetzung als Figur:** männliche oder weibliche Silhouette (nach dem eingetragenen Geschlecht), gefüllt mit Bändern für Muskelgewebe, essentielles Fett, Speicherfett, Knochen und Sonstiges, jeweils so hoch wie ihr Anteil; daneben Legende mit Prozent und kg.
+- **KI: Werte selbst auswählen.** Unter *Meine Daten → KI-Hinweise* legt jede Person einzeln fest, welche Werte an die KI gehen (Profil, Gewicht, Körperwerte; *Alle*/*Keine*).
+- **Umschalter in der Übersicht mit Kindern und Haustieren:** alle Personen, Kinder und Tiere, die man sehen darf.
+
+### Geändert
+- Kinder und Haustiere stehen nicht mehr als eigener Abschnitt unter der Übersicht, sondern im Umschalter.
+
 ## [2.5.0] – 2026-10-13
 
 ### Neu

@@ -386,5 +386,42 @@ def analyze(
                 water=c.water, visceral=visceral, bone=c.bone_mass, bmr=c.bmr,
                 protein=out["protein"], fats=fats, muscles=muscles,
             )
+        segments = composition_segments(weight, sex, c, out.get("skeletal_muscle"))
+        if segments:
+            out["segments"] = segments
     out["status"] = status
     return out
+
+
+# Essential fat in % of body weight (needed for life; ACE guidelines).
+ESSENTIAL_FAT = {MALE: 3.0, FEMALE: 12.0}
+
+
+def composition_segments(
+    weight: float, sex: str | None, c: Composition, skeletal_muscle: float | None
+) -> list[dict[str, object]] | None:
+    """Body weight split into parts that add up to 100 % (for the body figure).
+
+    muscle (skeletal muscle), essential fat, storage fat, bone and other
+    (organs, blood, skin, water outside the muscles). Without the skeletal
+    muscle estimate, "muscle" is the Xiaomi muscle mass and there is no "other".
+    """
+    if c.body_fat is None or c.bone_mass is None or sex not in ESSENTIAL_FAT:
+        return None
+    fat = weight * c.body_fat / 100
+    essential = min(fat, weight * ESSENTIAL_FAT[sex] / 100)
+    rest = max(0.0, weight - fat - c.bone_mass)
+    if skeletal_muscle:
+        muscle = min(skeletal_muscle, rest)
+    elif c.muscle_mass is not None:
+        muscle = min(c.muscle_mass, rest)
+    else:
+        return None
+    parts = (
+        ("muscle", muscle), ("essential_fat", essential), ("storage_fat", fat - essential),
+        ("bone", c.bone_mass), ("other", rest - muscle),
+    )
+    return [
+        {"key": key, "kg": round(kg, 1), "pct": round(kg / weight * 100, 1)}
+        for key, kg in parts if kg > 0.05
+    ]

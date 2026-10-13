@@ -61,6 +61,7 @@ from .const import (
     AI_MIN_INTERVAL,
     AI_TIMEOUT,
     CONF_AI_ENTITY,
+    CONF_AI_FIELDS,
     CONF_AI_INSIGHTS,
     CONF_BIRTH_MONTH,
     CLOTHES_ACTION_PREFIX,
@@ -1432,6 +1433,11 @@ class WeightTrackerManager:
                 weekly.append(round(values[-1], 1))
         facts["weekly"] = weekly or None
         facts["status"] = analysis.get("status") or {}
+        # Only what the person allowed (no setting = everything).
+        allowed = person.get(CONF_AI_FIELDS)
+        if allowed is not None:
+            facts = {k: v for k, v in facts.items() if k in allowed}
+            facts["status"] = {k: v for k, v in (analysis.get("status") or {}).items() if k in allowed}
         return facts
 
     async def _async_run_ai(self, person_id: str) -> None:
@@ -1440,7 +1446,12 @@ class WeightTrackerManager:
         try:
             if not self.hass.services.has_service("ai_task", "generate_data"):
                 raise RuntimeError("AI Task is not available (Home Assistant 2025.7 or newer with an AI integration)")
-            prompt = build_prompt(self._german(), self.ai_facts(person_id))
+            facts = self.ai_facts(person_id)
+            if not any(v is not None for k, v in facts.items() if k != "status"):
+                raise RuntimeError(
+                    "Keine Werte für die KI ausgewählt" if self._german() else "No values selected for the AI"
+                )
+            prompt = build_prompt(self._german(), facts)
             async with asyncio.timeout(AI_TIMEOUT):
                 response = await self.hass.services.async_call(
                     "ai_task",

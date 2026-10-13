@@ -14,6 +14,7 @@ from homeassistant.const import CONF_NAME
 from homeassistant.helpers import config_validation as cv
 
 from .const import (
+    AI_FACT_KEYS,
     CONF_AMBIGUITY_MARGIN,
     CONF_BIRTH_DATE,
     CONF_BIRTH_MONTH,
@@ -24,6 +25,7 @@ from .const import (
     CONF_BODY_FAT_ENTITY,
     CONF_BONE_ENTITY,
     CONF_AI_ENTITY,
+    CONF_AI_FIELDS,
     CONF_AI_INSIGHTS,
     CONF_CLOTHES,
     CONF_CLOTHES_KG,
@@ -114,6 +116,7 @@ PROFILE_SCHEMA = vol.Schema(
         vol.Optional(CONF_SEX): vol.Any(None, "", vol.In(SEXES)),
         vol.Optional(CONF_CLOTHES): cv.boolean,
         vol.Optional(CONF_AI_INSIGHTS): cv.boolean,
+        vol.Optional(CONF_AI_FIELDS): vol.All(cv.ensure_list, [vol.In(AI_FACT_KEYS)]),
         vol.Optional(CONF_CLOTHES_KG): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0, max=4))),
     }
 )
@@ -128,6 +131,7 @@ PROFILE_KEYS = (
     CONF_SEX,
     CONF_CLOTHES,
     CONF_AI_INSIGHTS,
+    CONF_AI_FIELDS,
     CONF_CLOTHES_KG,
 )
 
@@ -240,7 +244,7 @@ def keep_personal_settings(new: dict[str, Any], old: dict[str, Any]) -> dict[str
     """Settings a person made for themselves (and the sensor choice) survive an admin edit."""
     if CONF_SENSORS in old:
         new[CONF_SENSORS] = old[CONF_SENSORS]
-    for key in (CONF_NOTIFY_WEIGH, CONF_NOTIFY_PET_WARNINGS, CONF_REMINDER_DAYS, CONF_CLOTHES, CONF_CLOTHES_KG, CONF_AI_INSIGHTS):
+    for key in (CONF_NOTIFY_WEIGH, CONF_NOTIFY_PET_WARNINGS, CONF_REMINDER_DAYS, CONF_CLOTHES, CONF_CLOTHES_KG, CONF_AI_INSIGHTS, CONF_AI_FIELDS):
         if key in old and key not in new:
             new[key] = old[key]
     return new
