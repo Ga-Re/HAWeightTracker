@@ -1145,12 +1145,12 @@ const STYLE = `
   .report-note { font-size: 12px; color: var(--wt-muted); line-height: 1.4; }
   .report.single { grid-template-columns: 1fr; }
   .sw .avatar.pet { background: rgba(127,127,127,.15); }
-  .info { position: relative; display: inline-grid; place-items: center; width: 18px; height: 18px; margin-left: 4px; padding: 0; vertical-align: 1px;
+  .info-btn { position: relative; display: inline-grid; place-items: center; width: 18px; height: 18px; margin-left: 4px; padding: 0; vertical-align: 1px;
     border: 1px solid currentColor; border-radius: 50%; background: transparent; color: var(--wt-muted); font: 600 11px/1 Georgia, serif; font-style: italic; cursor: pointer; }
-  .info::after { content: ""; position: absolute; inset: -8px; }
-  .info:hover { color: var(--primary-color, #03a9f4); }
-  .info:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: 2px; }
-  h2 .info { vertical-align: 2px; }
+  .info-btn::after { content: ""; position: absolute; inset: -8px; }
+  .info-btn:hover { color: var(--primary-color, #03a9f4); }
+  .info-btn:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: 2px; }
+  h2 .info-btn { vertical-align: 2px; }
   .info-dialog { max-width: min(460px, calc(100vw - 32px)); padding: 20px; border: 1px solid var(--wt-border); border-radius: var(--wt-radius);
     background: var(--wt-card); color: var(--primary-text-color); box-shadow: 0 8px 32px rgba(0,0,0,.3); }
   .info-dialog::backdrop { background: rgba(0,0,0,.4); }
@@ -1731,7 +1731,7 @@ class WeightTrackerPanel extends HTMLElement {
 
   // Small (i) button next to a value; opens its explanation.
   _info(key, label, person = null) {
-    return `<button class="info" type="button" data-action="info" data-info="${esc(key)}" data-title="${esc(label)}"${person ? ` data-person="${esc(person.id)}"` : ""} aria-label="${esc(this._t.infoAbout(label))}">i</button>`;
+    return `<button class="info-btn" type="button" data-action="info" data-info="${esc(key)}" data-title="${esc(label)}"${person ? ` data-person="${esc(person.id)}"` : ""} aria-label="${esc(this._t.infoAbout(label))}">i</button>`;
   }
 
   _showInfo(key, title, personId) {

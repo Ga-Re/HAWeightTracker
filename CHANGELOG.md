@@ -7,6 +7,11 @@ Alle Versionen der Integration. Die Nummern folgen [Semantic Versioning](https:/
 Jeder Abschnitt wird beim Push automatisch zu einem [GitHub-Release](https://github.com/Ga-Re/HAWeightTracker/releases)
 (siehe `.github/workflows/release.yml`). HACS zeigt diese Releases als Updates an.
 
+## [2.6.1] – 2026-10-13
+
+### Behoben
+- Einstellungen: Die Listen der Personen, Kinder, Haustiere und „Werte als HA-Sensoren“ wurden verzerrt dargestellt (kursive Ovale, überlappende Häkchen). Die neuen Infoknöpfe hatten denselben CSS-Klassennamen wie diese Listen.
+
 ## [2.6.0] – 2026-10-13
 
 ### Neu
