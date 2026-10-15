@@ -7,6 +7,14 @@ Alle Versionen der Integration. Die Nummern folgen [Semantic Versioning](https:/
 Jeder Abschnitt wird beim Push automatisch zu einem [GitHub-Release](https://github.com/Ga-Re/HAWeightTracker/releases)
 (siehe `.github/workflows/release.yml`). HACS zeigt diese Releases als Updates an.
 
+## [2.14.0] – 2026-10-15
+
+### Neu
+- **KI-Anweisungen anpassen:** Admins können unter *Einstellungen → Verwaltung → KI-Hinweise* den Prompt ändern. Das Feld ist mit dem Standard-Prompt vorausgefüllt; *Auf Standard zurücksetzen* stellt ihn wieder her. Die freigegebenen Messwerte jeder Person werden immer automatisch angehängt. Gespeichert wird nur ein eigener Text – der Standard bleibt so bei Updates aktuell.
+
+### Behoben
+- Aktivitätslevel, Gesamtumsatz und VO₂max kamen trotz Freigabe nicht bei der KI an (im Prompt fehlte ihre Beschriftung).
+
 ## [2.13.0] – 2026-10-15
 
 ### Neu

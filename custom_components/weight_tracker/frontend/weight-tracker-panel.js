@@ -331,6 +331,9 @@ const TEXT = {
     },
     chartUnits: { body_score: "Punkte", metabolic_age: "Jahre" },
     chartNoMetric: (name) => `Noch keine Werte für „${name}“ in diesem Zeitraum.`,
+    aiPrompt: "Anweisungen an die KI",
+    aiPromptHint: "Was die KI tun soll und wie sie antwortet. Die freigegebenen Messwerte jeder Person werden automatisch darunter angehängt. Damit die Hinweise sauber angezeigt werden: erste Zeile eine Einschätzung, danach Empfehlungen als Zeilen mit „- “.",
+    aiPromptReset: "Auf Standard zurücksetzen",
     valuesTitle: "Körperwerte",
     valueGroupsExtra: { heart: "Herz und Fitness", indices: "Weitere Kennzahlen" },
     bmrMifflin: "Grundumsatz (Mifflin-St Jeor)",
@@ -797,6 +800,9 @@ const TEXT = {
     },
     chartUnits: { body_score: "points", metabolic_age: "years" },
     chartNoMetric: (name) => `No values for “${name}” in this period yet.`,
+    aiPrompt: "Instructions for the AI",
+    aiPromptHint: "What the AI should do and how it answers. Each person's shared values are appended automatically. For the hints to show nicely: first line an assessment, then recommendations as lines starting with “- ”.",
+    aiPromptReset: "Reset to default",
     valuesTitle: "Body values",
     valueGroupsExtra: { heart: "Heart and fitness", indices: "More figures" },
     bmrMifflin: "Basal metabolic rate (Mifflin-St Jeor)",
@@ -3350,7 +3356,7 @@ class WeightTrackerPanel extends HTMLElement {
   // Field definition: { name, label, helper, required, wide, kind, selector, ... }
   _def(kind, name, label, opts = {}) {
     const def = { kind, name, label, ...opts };
-    if (kind === "text") def.selector = { text: {} };
+    if (kind === "text") def.selector = { text: opts.multiline ? { multiline: true } : {} };
     if (kind === "number") {
       def.selector = { number: { min: opts.min ?? 0, max: opts.max ?? 500, step: opts.step ?? 0.1, mode: "box", unit_of_measurement: opts.unit } };
     }
@@ -3553,11 +3559,13 @@ class WeightTrackerPanel extends HTMLElement {
       control = `<input type="datetime-local" value="${esc(String(value || "").replace(" ", "T").slice(0, 16))}">`;
     } else if (def.kind === "date") {
       control = `<input type="date" value="${esc(value || "")}">`;
+    } else if (def.multiline) {
+      control = `<textarea rows="10">${esc(value ?? "")}</textarea>`;
     } else {
       control = `<input type="text" value="${esc(value ?? "")}">`;
     }
     wrap.innerHTML = `${label}${def.unit ? ` (${esc(def.unit)})` : ""}${control}${helper}`;
-    const input = wrap.querySelector("input, select");
+    const input = wrap.querySelector("input, select, textarea");
     input.addEventListener(input.tagName === "SELECT" ? "change" : "input", () => {
       const raw = input.value;
       if (def.kind === "number") {
@@ -3679,8 +3687,11 @@ class WeightTrackerPanel extends HTMLElement {
         </div>`, { open: !cfg.source_entity || Boolean(suggestionBox) }) + this._section("ai", "mdi:robot-outline", "🤖", t.aiSection, `
         <div class="hint">${esc(t.aiSectionHint)}</div>
         <div class="form" id="ai-settings-form">
-          ${this._formFields("ai-settings-form", [this._def("entity", "ai_task_entity", t.aiEntity, { filter: { domain: "ai_task" }, helper: t.aiEntityHint, wide: true })], defaults)}
-          ${this._formActions("ai-settings-form")}
+          ${this._formFields("ai-settings-form", [
+            this._def("entity", "ai_task_entity", t.aiEntity, { filter: { domain: "ai_task" }, helper: t.aiEntityHint, wide: true }),
+            this._def("text", "ai_prompt", t.aiPrompt, { multiline: true, helper: t.aiPromptHint, wide: true }),
+          ], { ...defaults, ai_prompt: cfg.ai_prompt || cfg.ai_prompt_default || "" })}
+          ${this._formActions("ai-settings-form", `<button class="btn" type="button" data-action="ai-prompt-reset" ${(this._models["ai-settings-form"] || {}).ai_prompt === cfg.ai_prompt_default ? "disabled" : ""}>${esc(t.aiPromptReset)}</button>`)}
         </div>`);
   }
 
@@ -4032,6 +4043,8 @@ class WeightTrackerPanel extends HTMLElement {
             heart_rate_entity: m.heart_rate_entity || null,
             body_model: m.body_model || "standard",
             ai_task_entity: m.ai_task_entity || null,
+            // the built-in text is not stored, so later improvements of it apply
+            ai_prompt: m.ai_prompt && m.ai_prompt.trim() && m.ai_prompt.trim() !== String(m.ai_prompt_default || "").trim() ? m.ai_prompt.trim() : null,
             body_fat_entity: m.body_fat_entity || null,
             muscle_mass_entity: m.muscle_mass_entity || null,
             water_entity: m.water_entity || null,
@@ -4514,6 +4527,13 @@ class WeightTrackerPanel extends HTMLElement {
       } catch (err) {
         // only a convenience
       }
+      this._render();
+      return;
+    }
+    if (action === "ai-prompt-reset") {
+      const cfg = this._entry.settings || {};
+      (this._models["ai-settings-form"] = this._models["ai-settings-form"] || { ...cfg }).ai_prompt = cfg.ai_prompt_default || "";
+      this._dirty.add("ai-settings-form");
       this._render();
       return;
     }

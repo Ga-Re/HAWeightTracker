@@ -23,6 +23,8 @@ _LABELS = {
         "metabolic_age": "Körperalter (Jahre)", "skeletal_muscle": "Skelettmuskelmasse (kg)",
         "body_score": "Körperbewertung (Punkte von 100)", "body_type": "Körpertyp",
         "heart_rate": "Herzfrequenz (bpm)", "whtr": "Taille-zu-Größe-Verhältnis",
+        "activity": "Aktivitätslevel (PAL, 1,2 = sitzend bis 1,9 = sehr aktiv)", "tdee": "Gesamtumsatz (kcal pro Tag)",
+        "vo2max": "VO2max geschätzt (ml/kg/min)",
         "weekly": "Trendgewicht der letzten Wochen, älteste zuerst (kg)",
         "status": "Bewertung",
     },
@@ -37,6 +39,8 @@ _LABELS = {
         "metabolic_age": "Body age (years)", "skeletal_muscle": "Skeletal muscle mass (kg)",
         "body_score": "Body score (points of 100)", "body_type": "Body type",
         "heart_rate": "Heart rate (bpm)", "whtr": "Waist-to-height ratio",
+        "activity": "Activity level (PAL, 1.2 = sedentary to 1.9 = very active)", "tdee": "Total energy expenditure (kcal per day)",
+        "vo2max": "VO2max estimated (ml/kg/min)",
         "weekly": "Trend weight of the last weeks, oldest first (kg)",
         "status": "rating",
     },
@@ -53,7 +57,7 @@ _INSTRUCTIONS = {
         "(Ernährung, Bewegung, Schlaf, Trinken), je höchstens 25 Wörter.\n"
         "Stelle keine Diagnosen und empfiehl keine Medikamente oder Nahrungsergänzungsmittel. "
         "Bei deutlich auffälligen Werten empfiehl, das ärztlich abklären zu lassen. "
-        "Nenne nur Zahlen, die in den Daten stehen.\n\nDaten:\n"
+        "Nenne nur Zahlen, die in den Daten stehen."
     ),
     "en": (
         "You are a factual, friendly health and fitness coach. Evaluate the measurements of a "
@@ -64,7 +68,7 @@ _INSTRUCTIONS = {
         "- Then 2 to 4 lines, each starting with \"- \": concrete, actionable recommendations "
         "(nutrition, exercise, sleep, drinking), at most 25 words each.\n"
         "Do not diagnose and do not recommend medication or supplements. If values are clearly "
-        "abnormal, recommend having them checked by a doctor. Only quote numbers from the data.\n\nData:\n"
+        "abnormal, recommend having them checked by a doctor. Only quote numbers from the data."
     ),
 }
 
@@ -93,11 +97,20 @@ def _fmt(value: Any) -> str:
     return str(value)
 
 
-def build_prompt(german: bool, facts: dict[str, Any]) -> str:
+_DATA_HEADER = {"de": "Daten:", "en": "Data:"}
+
+
+def default_instructions(german: bool) -> str:
+    """The built-in instructions (an admin may replace them)."""
+    return _INSTRUCTIONS["de" if german else "en"]
+
+
+def build_prompt(german: bool, facts: dict[str, Any], instructions: str | None = None) -> str:
     """Instructions plus one "label: value" line per known fact.
 
     facts may hold the keys of _LABELS, "weekly" (list of kg) and "status"
     (key -> rating like "high"), which is appended to the matching line.
+    Own instructions replace the built-in ones; the data is always appended.
     """
     lang = "de" if german else "en"
     labels = _LABELS[lang]
@@ -118,7 +131,8 @@ def build_prompt(german: bool, facts: dict[str, Any]) -> str:
             value = _fmt(value)
         rating = f" ({labels['status']}: {words.get(status[key], status[key])})" if key in status else ""
         lines.append(f"{label}: {value}{rating}")
-    return _INSTRUCTIONS[lang] + "\n".join(lines)
+    text = (instructions or "").strip() or _INSTRUCTIONS[lang]
+    return f"{text}\n\n{_DATA_HEADER[lang]}\n" + "\n".join(lines)
 
 
 def parse_answer(answer: Any) -> dict[str, Any]:

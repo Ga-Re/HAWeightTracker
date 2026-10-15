@@ -30,6 +30,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
 
+from .ai import default_instructions
 from .access import async_assignable_users, can_manage, can_view, is_unrestricted
 from .settings import (
     PERSON_SCHEMA,
@@ -50,6 +51,7 @@ from .const import (
     CONF_BODY_FAT_ENTITY,
     CONF_ACTIVITY,
     CONF_AI_ENTITY,
+    CONF_AI_PROMPT,
     CONF_AI_FIELDS,
     CONF_AI_INSIGHTS,
     CONF_CLOTHES,
@@ -426,6 +428,9 @@ async def _snapshot(hass: HomeAssistant, user: User) -> dict[str, Any]:
                 CONF_SOURCE: entry.options.get(CONF_SOURCE),
                 CONF_STABLE_ENTITY: entry.options.get(CONF_STABLE_ENTITY) or None,
                 CONF_AI_ENTITY: entry.options.get(CONF_AI_ENTITY) or None,
+                CONF_AI_PROMPT: entry.options.get(CONF_AI_PROMPT) or None,
+                # shown in the editor and used for "reset"
+                "ai_prompt_default": default_instructions((hass.config.language or "").startswith("de")),
                 **{conf: entry.options.get(conf) or None for conf in EXTRA_ENTITIES.values()},
                 **{k: entry.options.get(k, v) for k, v in SETTING_DEFAULTS.items()},
             }

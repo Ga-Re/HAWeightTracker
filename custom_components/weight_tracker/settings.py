@@ -15,6 +15,8 @@ from homeassistant.helpers import config_validation as cv
 
 from .body import ACTIVITY_LEVELS, BODY_MODELS
 from .const import (
+    AI_PROMPT_MAX,
+    CONF_AI_PROMPT,
     BODY_SENSOR_KEYS_2_7,
     CONF_ACTIVITY,
     CONF_BODY_MODEL,
@@ -159,6 +161,7 @@ SETTINGS_SCHEMA = vol.Schema(
         vol.Optional(CONF_BODY_MODEL): vol.In(BODY_MODELS),
         vol.Optional(CONF_HEART_RATE_ENTITY): vol.Any(None, "", cv.entity_domain("sensor")),
         vol.Optional(CONF_AI_ENTITY): vol.Any(None, "", cv.entity_domain("ai_task")),
+        vol.Optional(CONF_AI_PROMPT): vol.Any(None, vol.All(cv.string, vol.Length(max=AI_PROMPT_MAX))),
         vol.Optional(CONF_BODY_FAT_ENTITY): vol.Any(None, "", cv.entity_domain("sensor")),
         vol.Optional(CONF_MUSCLE_ENTITY): vol.Any(None, "", cv.entity_domain("sensor")),
         vol.Optional(CONF_WATER_ENTITY): vol.Any(None, "", cv.entity_domain("sensor")),

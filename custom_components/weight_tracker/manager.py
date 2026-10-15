@@ -61,6 +61,7 @@ from .const import (
     AI_MIN_INTERVAL,
     AI_TIMEOUT,
     CONF_AI_ENTITY,
+    CONF_AI_PROMPT,
     CONF_AI_FIELDS,
     CONF_AI_INSIGHTS,
     CONF_ACTIVITY,
@@ -1554,7 +1555,7 @@ class WeightTrackerManager:
                 raise RuntimeError(
                     "Keine Werte für die KI ausgewählt" if self._german() else "No values selected for the AI"
                 )
-            prompt = build_prompt(self._german(), facts)
+            prompt = build_prompt(self._german(), facts, self.options.get(CONF_AI_PROMPT))
             async with asyncio.timeout(AI_TIMEOUT):
                 response = await self.hass.services.async_call(
                     "ai_task",

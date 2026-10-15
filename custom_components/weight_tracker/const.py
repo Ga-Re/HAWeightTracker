@@ -66,6 +66,9 @@ CONF_NOTIFY_PET_WARNINGS = "notify_pet_warnings"
 CONF_CLOTHES = "clothes"
 # AI hints (HA "AI Task"): the admin picks the entity, each person opts in.
 CONF_AI_ENTITY = "ai_task_entity"
+# Own instructions for the AI (empty = the built-in ones)
+CONF_AI_PROMPT = "ai_prompt"
+AI_PROMPT_MAX = 4000
 CONF_AI_INSIGHTS = "ai_insights"
 # Physical activity level (PAL) of a person, for the total energy use
 CONF_ACTIVITY = "activity_level"

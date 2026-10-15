@@ -190,7 +190,7 @@ Oben rechts im Panel wählst du **kg**, **lb** oder **st**. Die Wahl gilt für d
 
 Optional wertet eine KI die Messwerte aus und schreibt eine kurze Einschätzung mit 2–4 Empfehlungen in die Übersicht. Genutzt wird die **AI-Task**-Funktion von Home Assistant (ab 2025.7). Damit funktioniert jede KI-Integration, die AI Task unterstützt, z. B. OpenAI, Anthropic (Claude), Google Gemini oder lokal Ollama. Einen eigenen API-Schlüssel braucht die Integration nicht.
 
-1. **Admin:** *Einstellungen → KI-Hinweise* → AI-Task-Entität wählen.
+1. **Admin:** *Einstellungen → Verwaltung → KI-Hinweise* → AI-Task-Entität wählen. Darunter lassen sich die **Anweisungen an die KI** anpassen (vorausgefüllt mit dem Standard-Prompt in der Sprache von Home Assistant; *Auf Standard zurücksetzen* stellt ihn wieder her). Die freigegebenen Messwerte werden immer automatisch angehängt. Der Standard-Prompt steht in `ai.py`, nicht in den Übersetzungsdateien – die sind nur für Texte der Home-Assistant-Oberfläche gedacht.
 2. **Jede Person** schaltet unter *Meine Daten → KI-Hinweise* selbst ein, ob ihre Werte ausgewertet werden (Standard: aus), und hakt an, **welche Werte** die KI sehen darf: Profil (Geschlecht, Alter, Größe, Ziel), Gewicht (Gewicht, Trend, Veränderungen, Tempo, Wochenverlauf, BMI) und Körperwerte einzeln.
 3. Die Auswertung läuft nach jeder neuen Messung (höchstens einmal pro Stunde) und mit dem Knopf **Neu auswerten** in der Übersicht.
 
