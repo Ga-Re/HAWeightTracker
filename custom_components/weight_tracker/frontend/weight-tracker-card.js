@@ -1,5 +1,5 @@
 /*
- * Weight Tracker – dashboard card.
+ * Body Tracker – dashboard card.
  *
  *   type: custom:weight-tracker-card
  *   person: Gabriel      # optional: person or pet name; default = yourself
@@ -229,7 +229,7 @@ if (!customElements.get("weight-tracker-card")) {
   window.customCards = window.customCards || [];
   window.customCards.push({
     type: "weight-tracker-card",
-    name: "Weight Tracker",
+    name: "Body Tracker",
     description: "Gewicht, Trend, Ziel und Verlauf einer Person oder eines Haustiers.",
     preview: true,
     documentationURL: "https://github.com/Ga-Re/HAWeightTracker",

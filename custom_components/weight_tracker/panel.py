@@ -173,12 +173,11 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     if not (file_hash := hass.data.get(DATA_PANEL_HASH)):
         return  # file missing, already reported in async_setup_frontend
     hass.data[DATA_PANEL_REGISTERED] = True
-    german = (hass.config.language or "").startswith("de")
     await panel_custom.async_register_panel(
         hass,
         frontend_url_path=PANEL_URL_PATH,
         webcomponent_name=PANEL_COMPONENT,
-        sidebar_title="Gewicht" if german else "Weight",
+        sidebar_title="Body Tracker",
         sidebar_icon="mdi:scale-bathroom",
         module_url=f"{STATIC_URL}/{PANEL_COMPONENT}.js?v={file_hash}",
         require_admin=False,

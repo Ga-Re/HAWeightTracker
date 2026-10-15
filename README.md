@@ -1,16 +1,16 @@
-# Weight Tracker für Home Assistant
+# Body Tracker für Home Assistant
 
 [![Release](https://img.shields.io/github/v/release/Ga-Re/HAWeightTracker)](https://github.com/Ga-Re/HAWeightTracker/releases) [![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 
-Custom Integration, die die Messwerte **einer** Waage automatisch den richtigen Personen zuordnet und pro Person Gewicht, Trend, Veränderungen, BMI und Zielprognose als Sensoren bereitstellt. Ein eigenes Panel **„Gewicht“ in der Seitenleiste** zeigt alles auf einen Blick – ohne Dashboard-Konfiguration.
+Custom Integration, die die Messwerte **einer** Waage automatisch den richtigen Personen zuordnet und pro Person Gewicht, Trend, Veränderungen, BMI, Zielprognose und – bei Waagen mit Impedanz – die Körperanalyse als Sensoren bereitstellt. Auch Kinder und Haustiere lassen sich erfassen. Ein eigenes Panel **„Body Tracker“ in der Seitenleiste** zeigt alles auf einen Blick – ohne Dashboard-Konfiguration. (Bis Version 2.16 hieß die Integration „Weight Tracker“, das Panel „Gewicht“.)
 
 ## Installation
 
 1. Den Ordner `custom_components/weight_tracker` nach `/config/custom_components/weight_tracker` kopieren (z. B. per Samba, File-Editor oder Studio Code Server).
-   Alternativ über HACS: ⋮ → *Benutzerdefinierte Repositories* → `https://github.com/Ga-Re/HAWeightTracker`, Typ „Integration“. Danach „Weight Tracker“ herunterladen.
+   Alternativ über HACS: ⋮ → *Benutzerdefinierte Repositories* → `https://github.com/Ga-Re/HAWeightTracker`, Typ „Integration“. Danach „Body Tracker“ herunterladen.
 2. Home Assistant neu starten.
-3. **Einstellungen → Geräte & Dienste → Integration hinzufügen → „Weight Tracker“**: einen Namen vergeben und den Gewichtssensor der Waage wählen. Das ist der Sensor, der beim Wiegen den neuen Wert bekommt.
-4. In der Seitenleiste **Gewicht → Einstellungen** öffnen und die Personen anlegen. Alles Weitere stellst du dort ein.
+3. **Einstellungen → Geräte & Dienste → Integration hinzufügen → „Body Tracker“**: einen Namen vergeben und den Gewichtssensor der Waage wählen. Das ist der Sensor, der beim Wiegen den neuen Wert bekommt.
+4. In der Seitenleiste **Body Tracker** öffnen, über das Zahnrad **⚙ Einstellungen** aufrufen und die Personen anlegen. Alles Weitere stellst du dort ein.
 
 Voraussetzung: Home Assistant **2025.3** oder neuer. Das Integrations-Icon aus dem Ordner `brand/` zeigt Home Assistant erst ab **2026.3** an.
 
@@ -34,9 +34,9 @@ Auf dem Home Assistant muss danach genau diese Struktur liegen. Wichtig ist der 
     └── en.json
 ```
 
-Nach der Einrichtung erscheint in der Seitenleiste der Eintrag **Gewicht** (bzw. *Weight* bei englischer Oberfläche).
+Nach der Einrichtung erscheint in der Seitenleiste der Eintrag **Body Tracker**.
 
-## Das Panel „Gewicht“
+## Das Panel „Body Tracker“
 
 Das Panel hat die Tabs **Übersicht**, **Verlauf**, **Messungen** und **Meine Daten** (für alle, die mit einer Person verknüpft sind). Die **Einstellungen** öffnet das Zahnrad ⚙ oben rechts. Ein **„+ Eintragen“**-Knopf unten rechts trägt von überall eine Messung ein oder startet das Wiegen eines Haustiers oder Kindes.
 
@@ -110,7 +110,7 @@ Stabilisiert-, Impedanz- und Herzfrequenz-Sensor werden automatisch vorgeschlage
 - **Prognose im Graph:** Mit Zielgewicht verlängert eine gestrichelte Linie den Trend bis zum voraussichtlichen Datum, eine Linie markiert „Heute“. Ein- und ausschaltbar über *📈 Prognose*.
 - **Kalender** (unter *Meine Daten*): ein Jahr auf einen Blick, ein Kästchen pro Tag. Blau: Trend in Richtung Ziel, Rot: weg vom Ziel, Grau: kaum Veränderung, leer: nicht gewogen. Dazu Messtage und längste Serie.
 - **CSV-Export und -Import** (unter *Messungen*): Export aller sichtbaren Messungen als CSV. Der Import übernimmt alte Daten aus anderen Apps (Withings, Zepp/Mi Fit, Garmin oder eigene Tabellen). Spalten, Trennzeichen, Datumsformat, Pfund und Körperfett (in % oder kg) werden erkannt. Vor dem Import zeigt eine Vorschau, was übernommen wird, Duplikate werden übersprungen. Ein Import löst keine Benachrichtigungen aus.
-- **Dashboard-Karte:** In jedem Dashboard gibt es in der Kartenauswahl die Karte **Weight Tracker**. Sie zeigt Gewicht, Trend, Ziel und Verlauf von dir selbst, einer anderen Person oder einem Haustier, jeweils nur soweit freigegeben. Eine manuelle Ressource ist nicht nötig. Ein Klick öffnet das Panel.
+- **Dashboard-Karte:** In jedem Dashboard gibt es in der Kartenauswahl die Karte **Body Tracker**. Sie zeigt Gewicht, Trend, Ziel und Verlauf von dir selbst, einer anderen Person oder einem Haustier, jeweils nur soweit freigegeben. Eine manuelle Ressource ist nicht nötig. Ein Klick öffnet das Panel.
 
 ```yaml
 type: custom:weight-tracker-card
@@ -210,7 +210,7 @@ Jede Person sieht standardmäßig **nur ihre eigenen Daten**.
 | **Freigegebener Benutzer** | die freigegebene Person | nur ansehen |
 | **Alle anderen** | nichts | nichts |
 
-**Einstellen:** Im Panel **Gewicht → Einstellungen** steht die Karte **🔒 Freigaben**: eine Tabelle mit den Benutzern als Zeilen und den Personen als Spalten. Für jede Zelle wählst du *kein Zugriff*, *darf ansehen* oder *ist diese Person*. Änderungen gelten sofort. Dieselben Angaben lassen sich auch beim Bearbeiten einer Person setzen.
+**Einstellen:** Im Panel **Body Tracker → ⚙ Einstellungen** steht die Karte **🔒 Freigaben**: eine Tabelle mit den Benutzern als Zeilen und den Personen als Spalten. Für jede Zelle wählst du *kein Zugriff*, *darf ansehen* oder *ist diese Person*. Änderungen gelten sofort. Dieselben Angaben lassen sich auch beim Bearbeiten einer Person setzen.
 
 So ist die Privatsphäre abgesichert:
 - Der Server schickt jedem Benutzer nur die Daten, die er sehen darf. Es wird nicht bloß im Browser ausgeblendet.
@@ -305,7 +305,7 @@ automation:
 
 ## Fehlersuche
 
-**Kein Logo in der Updates-Liste:** Die Updates-Liste zeigt das Bild der HACS-Update-Entität. HACS verweist dafür noch auf das alte Brands-CDN und kennt den `brand/`-Ordner nicht, den Home Assistant seit 2026.3 nutzt. Unter Geräte & Dienste erscheint das Icon trotzdem. Für die Updates-Liste gibt es einen Umweg: Die Integration stellt ihr Icon unter `/weight_tracker_brand/icon.png` bereit. Trag in der `configuration.yaml` Folgendes ein und starte neu (den Entitätsnamen findest du unter Einstellungen → Entitäten, Suche „Weight Tracker update“):
+**Kein Logo in der Updates-Liste:** Die Updates-Liste zeigt das Bild der HACS-Update-Entität. HACS verweist dafür noch auf das alte Brands-CDN und kennt den `brand/`-Ordner nicht, den Home Assistant seit 2026.3 nutzt. Unter Geräte & Dienste erscheint das Icon trotzdem. Für die Updates-Liste gibt es einen Umweg: Die Integration stellt ihr Icon unter `/weight_tracker_brand/icon.png` bereit. Trag in der `configuration.yaml` Folgendes ein und starte neu (den Entitätsnamen findest du unter Einstellungen → Entitäten, Suche „Body Tracker update“):
 
 ```yaml
 homeassistant:

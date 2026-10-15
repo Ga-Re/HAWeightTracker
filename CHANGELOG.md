@@ -7,6 +7,12 @@ Alle Versionen der Integration. Die Nummern folgen [Semantic Versioning](https:/
 Jeder Abschnitt wird beim Push automatisch zu einem [GitHub-Release](https://github.com/Ga-Re/HAWeightTracker/releases)
 (siehe `.github/workflows/release.yml`). HACS zeigt diese Releases als Updates an.
 
+## [2.17.0] – 2026-10-15
+
+### Geändert
+- **Neuer Name: Body Tracker.** Die Integration kann längst mehr als Gewicht (Körperanalyse, Kinder, Haustiere, KI-Hinweise). Integrationsliste, HACS, Seitenleiste, Panel-Titel und Dashboard-Karte heißen jetzt „Body Tracker“ (vorher „Weight Tracker“ bzw. „Gewicht“).
+- Intern bleibt alles gleich: Domain `weight_tracker`, Entitäten, Aktionen, Automationen, Panel-Adresse und GitHub-Repository ändern sich nicht. Die neue Bezeichnung in der Seitenleiste erscheint nach dem Neustart von Home Assistant.
+
 ## [2.16.0] – 2026-10-15
 
 ### Geändert

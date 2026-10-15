@@ -65,7 +65,7 @@ def _manager(hass: HomeAssistant, call: ServiceCall) -> WeightTrackerManager:
     if entry_id := call.data.get(ATTR_CONFIG_ENTRY_ID):
         entries = [entry for entry in entries if entry.entry_id == entry_id]
     if not entries:
-        raise ServiceValidationError("No loaded Weight Tracker scale found")
+        raise ServiceValidationError("No loaded Body Tracker scale found")
     if len(entries) > 1:
         raise ServiceValidationError("Several scales configured, set config_entry_id")
     return entries[0].runtime_data

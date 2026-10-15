@@ -105,7 +105,7 @@ const RANGES = [
 
 const TEXT = {
   de: {
-    title: "Gewicht",
+    title: "Body Tracker",
     noScale: "Noch keine Waage eingerichtet. Füge unter Einstellungen → Geräte & Dienste die Integration „Weight Tracker“ hinzu.",
     loading: "Lade Daten …",
     pendingTitle: (n) => (n === 1 ? "1 Messung wartet auf Zuordnung" : `${n} Messungen warten auf Zuordnung`),
@@ -589,7 +589,7 @@ const TEXT = {
     },
   },
   en: {
-    title: "Weight",
+    title: "Body Tracker",
     noScale: "No scale set up yet. Add the “Weight Tracker” integration under Settings → Devices & services.",
     loading: "Loading …",
     pendingTitle: (n) => (n === 1 ? "1 measurement needs assignment" : `${n} measurements need assignment`),

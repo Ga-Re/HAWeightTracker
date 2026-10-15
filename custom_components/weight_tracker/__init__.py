@@ -1,4 +1,4 @@
-"""Weight Tracker: assigns scale readings to persons and tracks their weight."""
+"""Body Tracker: assigns scale readings to persons and tracks their weight."""
 
 from __future__ import annotations
 
