@@ -7,6 +7,13 @@ Alle Versionen der Integration. Die Nummern folgen [Semantic Versioning](https:/
 Jeder Abschnitt wird beim Push automatisch zu einem [GitHub-Release](https://github.com/Ga-Re/HAWeightTracker/releases)
 (siehe `.github/workflows/release.yml`). HACS zeigt diese Releases als Updates an.
 
+## [2.16.0] – 2026-10-15
+
+### Geändert
+- **Anpassen der Übersicht:** *Fertig* und *Zurücksetzen* schweben jetzt unten rechts (wie der +-Knopf), statt ganz unten unter allen Karten zu stehen.
+- **Vorschläge zum Gewicht** neu gestaltet: echte Icons (Material Design Icons wie in Home Assistant) statt Emojis, eingefärbt in der Farbe der Bewertung. Jeder Wert zeigt die Menge ohne Vorzeichen und darunter, was zu tun ist (abnehmen / zunehmen / im Standard, Fett abbauen / Spielraum, aufbauen / im Normalbereich). In Größe S steht die Gewichtskontrolle im Mittelpunkt, das Standardgewicht als Zeile darunter.
+- Der Knopf *Anpassen* hat ein Stift-Icon statt des ✎-Zeichens.
+
 ## [2.15.0] – 2026-10-15
 
 ### Neu

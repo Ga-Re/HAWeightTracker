@@ -49,6 +49,18 @@ const COLORS = {
   dark: ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"],
 };
 
+// Icons from Material Design Icons (Apache 2.0, pictogrammers.com), the set Home Assistant uses.
+const ICONS = {
+  scale: "M5,2H19A2,2 0 0,1 21,4V20A2,2 0 0,1 19,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2M12,4A4,4 0 0,0 8,8H11.26L10.85,5.23L12.9,8H16A4,4 0 0,0 12,4M5,10V20H19V10H5Z",
+  target: "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12C22,10.84 21.79,9.69 21.39,8.61L19.79,10.21C19.93,10.8 20,11.4 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4C12.6,4 13.2,4.07 13.79,4.21L15.4,2.6C14.31,2.21 13.16,2 12,2M19,2L15,6V7.5L12.45,10.05C12.3,10 12.15,10 12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12C14,11.85 14,11.7 13.95,11.55L16.5,9H18L22,5H19V2M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12H16A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8V6Z",
+  fire: "M17.66 11.2C17.43 10.9 17.15 10.64 16.89 10.38C16.22 9.78 15.46 9.35 14.82 8.72C13.33 7.26 13 4.85 13.95 3C13 3.23 12.17 3.75 11.46 4.32C8.87 6.4 7.85 10.07 9.07 13.22C9.11 13.32 9.15 13.42 9.15 13.55C9.15 13.77 9 13.97 8.8 14.05C8.57 14.15 8.33 14.09 8.14 13.93C8.08 13.88 8.04 13.83 8 13.76C6.87 12.33 6.69 10.28 7.45 8.64C5.78 10 4.87 12.3 5 14.47C5.06 14.97 5.12 15.47 5.29 15.97C5.43 16.57 5.7 17.17 6 17.7C7.08 19.43 8.95 20.67 10.96 20.92C13.1 21.19 15.39 20.8 17.03 19.32C18.86 17.66 19.5 15 18.56 12.72L18.43 12.46C18.22 12 17.66 11.2 17.66 11.2M14.5 17.5C14.22 17.74 13.76 18 13.4 18.1C12.28 18.5 11.16 17.94 10.5 17.28C11.69 17 12.4 16.12 12.61 15.23C12.78 14.43 12.46 13.77 12.33 13C12.21 12.26 12.23 11.63 12.5 10.94C12.69 11.32 12.89 11.7 13.13 12C13.9 13 15.11 13.44 15.37 14.8C15.41 14.94 15.43 15.08 15.43 15.23C15.46 16.05 15.1 16.95 14.5 17.5H14.5Z",
+  arm: "M3 18.34C3 18.34 4 7.09 7 3L12 4L11 7.09H9V14.25H10C12 11.18 16.14 10.06 18.64 11.18C21.94 12.71 21.64 17.32 18.64 19.36C16.24 21 9 22.43 3 18.34Z",
+  check: "M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z",
+  restore: "M13,3A9,9 0 0,0 4,12H1L4.89,15.89L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3Z",
+  pencil: "M14.06,9L15,9.94L5.92,19H5V18.08L14.06,9M17.66,3C17.41,3 17.15,3.1 16.96,3.29L15.13,5.12L18.88,8.87L20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18.17,3.09 17.92,3 17.66,3M14.06,6.19L3,17.25V21H6.75L17.81,9.94L14.06,6.19Z",
+};
+const icon = (name) => `<svg class="mdi" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[name]}"/></svg>`;
+
 // Overview cards: allowed sizes and the size they start with, in their default order.
 const BOARD_CARDS = {
   main: { sizes: ["S", "M", "L", "XL"], size: "L" },
@@ -471,7 +483,7 @@ const TEXT = {
     weightControl: "Gewichtskontrolle",
     fatControl: "Fettkontrolle",
     muscleControl: "Muskelkontrolle",
-    keepUp: "Weiter beibehalten",
+    sugg: { lose: "abnehmen", gain: "zunehmen", onTarget: "im Standard", reduceFat: "Fett abbauen", fatRoom: "Spielraum", build: "aufbauen", keep: "Halten", inRange: "im Normalbereich" },
     advice: {
       fat: "Dein Körperfett liegt über dem Standard. Etwas weniger Kalorien, mehr Eiweiß und regelmäßige Bewegung helfen, es langsam zu senken.",
       visceral: "Das Viszeralfett ist erhöht. Ausdauer- und Krafttraining sowie weniger Zucker und Alkohol senken es am wirksamsten.",
@@ -955,7 +967,7 @@ const TEXT = {
     weightControl: "Weight control",
     fatControl: "Fat control",
     muscleControl: "Muscle control",
-    keepUp: "Keep it up",
+    sugg: { lose: "to lose", gain: "to gain", onTarget: "on target", reduceFat: "fat to lose", fatRoom: "room left", build: "to build", keep: "Keep", inRange: "in range" },
     advice: {
       fat: "Your body fat is above standard. Slightly fewer calories, more protein and regular exercise help to lower it slowly.",
       visceral: "Visceral fat is increased. Endurance and strength training plus less sugar and alcohol lower it most effectively.",
@@ -1320,7 +1332,6 @@ const STYLE = `
   .report { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); grid-auto-flow: row dense; gap: 16px; }
   .report-hero .stats { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
   .sub-h { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--wt-grid); }
-  .sugg { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
   .report .span { grid-column: 1 / -1; }
   .report-hero { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 24%, var(--wt-card)) 0%, var(--wt-card) 75%); }
   .rh-head { display: flex; align-items: center; gap: 12px; }
@@ -1370,10 +1381,17 @@ const STYLE = `
   .bt2-cell.on { color: #fff; font-weight: 600; align-content: start; padding-top: 8px; }
   .bt2-dot { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #fff;
     box-shadow: 0 0 0 2px rgba(0,0,0,.55); pointer-events: none; }
-  .sugg { display: grid; gap: 14px; margin-top: 12px; }
-  .sg { display: flex; align-items: center; gap: 12px; }
-  .sg .ic { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: rgba(127,127,127,.12); font-size: 17px; }
-  .sg .sv { font-size: 20px; font-weight: 500; }
+  .mdi { width: 24px; height: 24px; fill: currentColor; flex: none; }
+  /* weight suggestions: tiles with an icon tinted in the colour of their rating */
+  .sugg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; margin-top: 10px; }
+  .sg { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .sg-ic { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+    background: color-mix(in srgb, var(--tone) 16%, transparent); color: var(--tone); }
+  .sg-ic .mdi { width: 22px; height: 22px; }
+  .sg-t { min-width: 0; }
+  .sg .sl { line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sg .sv { font-size: 18px; font-weight: 500; line-height: 22px; white-space: nowrap; }
+  .sg .st { display: block; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ai-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .ai-head h2 { flex: 1; }
   .ai-summary { margin: 10px 0 8px; line-height: 1.45; }
@@ -1397,6 +1415,7 @@ const STYLE = `
     .hero-l .stat .st { font-size: 0; }
     .hero-l .stat .st::before { margin-right: 0; width: 8px; height: 8px; }
     .hero-l .rh-mini > .ml { display: none; }
+    .size-s .sg .sl { display: none; }  /* "17,8 kg · abnehmen" says it; the label would be cut off */
   }
   .bc { position: relative; min-width: 0; min-height: 0; }
   .bc.size-s { grid-column: span 1; grid-row: span 1; }
@@ -1443,12 +1462,27 @@ const STYLE = `
   .card-dialog .card-full > h2:first-child, .card-dialog .card-full .ai-head h2 { display: none; }
   .card-dialog .card-full .ai-head { justify-content: flex-end; }
   .board-hidden { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 14px; border: 1px dashed var(--wt-border); border-radius: var(--wt-radius); }
-  .board-hidden .spacer { flex: 1; }
+  /* while customising: Reset and Done float at the bottom right, like the + button */
+  .board-fab { position: fixed; right: 24px; bottom: 24px; z-index: 5; display: flex; gap: 6px; padding: 6px; border-radius: 30px;
+    background: var(--wt-card); border: 1px solid var(--wt-border); box-shadow: 0 4px 18px rgba(0,0,0,.28); }
+  .bf-btn { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px 0 14px; border: 0; border-radius: 22px;
+    background: transparent; color: var(--primary-text-color); font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; }
+  .bf-btn .mdi { width: 20px; height: 20px; }
+  .bf-btn:hover { background: rgba(127,127,127,.14); }
+  .bf-btn.primary { background: var(--primary-color, #03a9f4); color: var(--text-primary-color, #fff); }
+  .bf-btn.primary:hover { filter: brightness(1.08); }
+  .bf-btn:focus-visible { outline: 3px solid var(--primary-text-color); outline-offset: 2px; }
+  .content:has(.board-fab) { padding-bottom: 96px; }
+  @media (max-width: 600px) { .board-fab { right: 16px; bottom: 16px; } }
+  .board-btn .mdi { width: 18px; height: 18px; }
   /* size-dependent content */
   .size-s .rh-weight .int { font-size: 44px; }
   .size-s .rh-weight .dec { font-size: 24px; }
   .size-s .score b { font-size: 36px; }
-  .size-s .sugg { grid-template-columns: 1fr; gap: 8px; }
+  .size-s .sugg { grid-template-columns: minmax(0, 1fr); }
+  .sg-foot { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--wt-grid); font-size: 12px; color: var(--wt-muted); }
+  .sg-foot b { font-weight: 500; color: var(--primary-text-color); white-space: nowrap; }
+  .sg-foot small { color: var(--wt-muted); }
   .size-s .rh-class, .size-m .rh-class { text-align: left; }
   .size-s .rh-label, .size-s .rh-weight, .size-m .rh-label, .size-m .rh-weight { text-align: left; }
   .hero-xl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 24px; align-items: center; }
@@ -2079,7 +2113,7 @@ class WeightTrackerPanel extends HTMLElement {
         ${this._renderPetSession()}
         ${this._renderPendingBar()}
         <div class="ov-head">${this._renderSwitcher(current)}
-          ${person && !this._boardEdit ? `<button class="btn quiet board-btn" data-action="board-edit">✎ ${esc(t.boardEdit)}</button>` : ""}</div>
+          ${person && !this._boardEdit ? `<button class="btn quiet board-btn" data-action="board-edit">${icon("pencil")}${esc(t.boardEdit)}</button>` : ""}</div>
         ${person ? this._renderReport(person) : `<div class="report single">${current.kind === "child" ? this._renderChildCard(current.subject) : this._renderPetCard(current.subject)}</div>`}
         ${fab}`);
     }
@@ -2337,7 +2371,6 @@ class WeightTrackerPanel extends HTMLElement {
     const latestTs = s.latest_ts ? Date.parse(s.latest_ts) : null;
     const num = (v, digits = 1) => this._kg(v, { unit: false, digits });
     const kg = (v) => `${num(v)} <small>${esc(this._unitLabel)}</small>`;
-    const signedKg = (v) => `${this._kg(v, { signed: true, unit: false })} <small>${esc(this._unitLabel)}</small>`;
     // A label that opens its explanation when tapped.
     const term = (key, label) => `<button class="term" type="button" data-action="info" data-info="${esc(key)}" data-title="${esc(label)}" data-person="${esc(person.id)}" aria-label="${esc(`${label} – ${t.infoAbout(label)}`)}">${esc(label)}</button>`;
     const stat = (key, label, value, infoKey = "changes", rating = null) => `<div class="stat"><div class="label">${term(infoKey, label)}</div><div class="val num">${link(key, label, value)}</div>${this._status(rating)}</div>`;
@@ -2585,16 +2618,30 @@ class WeightTrackerPanel extends HTMLElement {
       };
     }
 
-    const sugg = (icon, label, value) => value === null || value === undefined ? "" : `<div class="sg"><span class="ic" aria-hidden="true">${icon}</span><div><div class="sl">${esc(label)}</div><div class="sv num">${value}</div></div></div>`;
+    // Each suggestion: amount without sign, what to do in words below, icon in the rating colour.
+    const tones = { good: "var(--wt-st-good)", high: "var(--wt-st-high)", low: "var(--wt-st-low)" };
+    const sugg = (name, label, value, status) => value === null || value === undefined ? "" : `
+            <div class="sg" style="--tone:${tones[status[0]] || "var(--primary-color, #03a9f4)"}">
+              <span class="sg-ic">${icon(name)}</span>
+              <div class="sg-t"><div class="sl">${esc(label)}</div><div class="sv num">${value}</div>${this._status(status)}</div>
+            </div>`;
     if (a && a.ideal_weight !== undefined) {
+      const wc = a.weight_control, fc = a.fat_control, mc = a.muscle_control;
+      const amount = (v) => kg(Math.abs(v));
+      const ideal = sugg("scale", t.idealWeight, kg(a.ideal_weight), ["guide", t.status.guide]);
+      const weight = wc === undefined ? "" : sugg("target", t.weightControl, amount(wc),
+        Math.abs(wc) < 0.5 ? ["good", t.sugg.onTarget] : wc < 0 ? ["high", t.sugg.lose] : ["low", t.sugg.gain]);
       cards.suggestions = {
-        build: (size) => `
+        // S: what to do with the weight, the standard weight as one line below
+        build: (size) => size === "S" && weight ? `
+          <h2>${term("suggestions", t.suggestions)}</h2>
+          <div class="sugg">${weight}</div>
+          <div class="sg-foot">${esc(t.idealWeight)} <b class="num">${kg(a.ideal_weight)}</b></div>` : `
           <h2>${term("suggestions", t.suggestions)}</h2>
           <div class="sugg">
-            ${sugg("⚖️", t.idealWeight, kg(a.ideal_weight))}
-            ${sugg("🎯", t.weightControl, a.weight_control !== undefined ? signedKg(a.weight_control) : null)}
-            ${size === "S" ? "" : sugg("🔥", t.fatControl, a.fat_control !== undefined ? signedKg(a.fat_control) : null)}
-            ${size === "S" ? "" : sugg("💪", t.muscleControl, a.muscle_control === undefined ? null : a.muscle_control > 0 ? signedKg(a.muscle_control) : esc(t.keepUp))}
+            ${ideal}${weight}
+            ${fc === undefined ? "" : sugg("fire", t.fatControl, amount(fc), fc < 0 ? ["high", t.sugg.reduceFat] : ["good", t.sugg.fatRoom])}
+            ${mc === undefined ? "" : sugg("arm", t.muscleControl, mc > 0 ? amount(mc) : esc(t.sugg.keep), mc > 0 ? ["low", t.sugg.build] : ["good", t.sugg.inRange])}
           </div>`,
       };
     }
@@ -2675,9 +2722,10 @@ class WeightTrackerPanel extends HTMLElement {
       ${editing ? `
         <div class="board-hidden">
           ${hidden.length ? `<span class="muted small">${esc(t.hiddenCards)}:</span>${hidden.map((id) => `<button class="chip" data-action="card-show" data-card="${id}">+ ${esc(t.cardNames[id])}</button>`).join("")}` : `<span class="muted small">${esc(t.noHiddenCards)}</span>`}
-          <span class="spacer"></span>
-          <button class="btn" data-action="board-reset">${esc(t.boardReset)}</button>
-          <button class="btn primary" data-action="board-edit">${esc(t.boardDone)}</button>
+        </div>
+        <div class="board-fab" role="toolbar" aria-label="${esc(t.boardEdit)}">
+          <button class="bf-btn" data-action="board-reset">${icon("restore")}<span>${esc(t.boardReset)}</span></button>
+          <button class="bf-btn primary" data-action="board-edit">${icon("check")}<span>${esc(t.boardDone)}</span></button>
         </div>` : ""}`;
   }
 
