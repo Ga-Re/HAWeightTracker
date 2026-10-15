@@ -49,6 +49,25 @@ const COLORS = {
   dark: ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"],
 };
 
+// Values the history chart can show: key, unit, decimals, kg (follows the display unit).
+const CHART_METRICS = [
+  { key: "weight", unit: "kg", digits: 1, kg: true },
+  { key: "bmi", unit: "", digits: 1 },
+  { key: "body_fat", unit: "%", digits: 1 },
+  { key: "fat_mass", unit: "kg", digits: 1, kg: true },
+  { key: "lean_mass", unit: "kg", digits: 1, kg: true },
+  { key: "muscle_mass", unit: "kg", digits: 1, kg: true },
+  { key: "skeletal_muscle", unit: "kg", digits: 1, kg: true },
+  { key: "water", unit: "%", digits: 1 },
+  { key: "visceral_fat", unit: "", digits: 1 },
+  { key: "protein", unit: "%", digits: 1 },
+  { key: "bmr", unit: "kcal", digits: 0 },
+  { key: "body_score", unit: "", digits: 0 },
+  { key: "metabolic_age", unit: "", digits: 0 },
+  { key: "heart_rate", unit: "bpm", digits: 0 },
+  { key: "waist", unit: "cm", digits: 1 },
+];
+
 const RANGES = [
   { key: 30, de: "30 T", en: "30 d" },
   { key: 90, de: "90 T", en: "90 d" },
@@ -304,6 +323,14 @@ const TEXT = {
     closeLabel: "Schließen",
     last30: "Letzte 30 Tage",
     noHistory: "Noch kein Verlauf – dafür braucht es Messungen von Personen.",
+    chartMetric: "Wert",
+    chartMetrics: {
+      weight: "Gewicht", bmi: "BMI", body_fat: "Körperfett", fat_mass: "Fettmasse", lean_mass: "Fettfreie Masse",
+      muscle_mass: "Muskelmasse", skeletal_muscle: "Skelettmuskelmasse", water: "Körperwasser", visceral_fat: "Viszeralfett",
+      protein: "Eiweiß", bmr: "Grundumsatz", body_score: "Körperbewertung", metabolic_age: "Körperalter", heart_rate: "Puls", waist: "Taille",
+    },
+    chartUnits: { body_score: "Punkte", metabolic_age: "Jahre" },
+    chartNoMetric: (name) => `Noch keine Werte für „${name}“ in diesem Zeitraum.`,
     valuesTitle: "Körperwerte",
     valueGroupsExtra: { heart: "Herz und Fitness", indices: "Weitere Kennzahlen" },
     bmrMifflin: "Grundumsatz (Mifflin-St Jeor)",
@@ -762,6 +789,14 @@ const TEXT = {
     closeLabel: "Close",
     last30: "Last 30 days",
     noHistory: "No history yet – it needs measurements of persons.",
+    chartMetric: "Value",
+    chartMetrics: {
+      weight: "Weight", bmi: "BMI", body_fat: "Body fat", fat_mass: "Fat mass", lean_mass: "Fat-free mass",
+      muscle_mass: "Muscle mass", skeletal_muscle: "Skeletal muscle mass", water: "Body water", visceral_fat: "Visceral fat",
+      protein: "Protein", bmr: "Basal metabolic rate", body_score: "Body score", metabolic_age: "Body age", heart_rate: "Pulse", waist: "Waist",
+    },
+    chartUnits: { body_score: "points", metabolic_age: "years" },
+    chartNoMetric: (name) => `No values for “${name}” in this period yet.`,
     valuesTitle: "Body values",
     valueGroupsExtra: { heart: "Heart and fitness", indices: "More figures" },
     bmrMifflin: "Basal metabolic rate (Mifflin-St Jeor)",
@@ -1788,6 +1823,55 @@ class WeightTrackerPanel extends HTMLElement {
   // Weight without clothes (what statistics use); the raw reading stays in m.weight.
   _w(m) {
     return m.clothes_kg ? m.weight - m.clothes_kg : m.weight;
+  }
+
+  // Values a person has for the history chart (weight is always there).
+  _metricAvailable(person, key) {
+    if (key === "weight") return true;
+    if (key === "bmi") return Boolean(person.height);
+    if (key === "waist") return (person.waist || []).length > 0;
+    return ((person.body && person.body.series && person.body.series[key]) || []).length > 0;
+  }
+
+  // The chosen value of the history chart (falls back to weight).
+  _chartMetric() {
+    if (this._metric === undefined) {
+      try {
+        this._metric = localStorage.getItem("wt-metric") || "weight";
+      } catch (err) {
+        this._metric = "weight";
+      }
+    }
+    const persons = this._entry.persons;
+    const available = CHART_METRICS.filter((d) => persons.some((p) => this._metricAvailable(p, d.key)));
+    return available.find((d) => d.key === this._metric) || CHART_METRICS[0];
+  }
+
+  // Points {ts, weight: value, trend} of another value than weight; the trend is
+  // smoothed like the weight (body values vary a lot from day to day).
+  _metricPoints(person, key) {
+    if (key === "bmi") {
+      const h = (person.height || 0) / 100;
+      if (!h) return [];
+      return this._assigned(person.id).map((m) => ({
+        ts: m.ts, weight: this._w(m) / (h * h), trend: m.trend !== null && m.trend !== undefined ? m.trend / (h * h) : null, note: m.note,
+      }));
+    }
+    const raw = key === "waist"
+      ? (person.waist || []).map((w) => [w.ts, w.cm])
+      : ((person.body && person.body.series && person.body.series[key]) || []);
+    let trend = null;
+    return raw.map(([ts, value]) => {
+      trend = trend === null ? value : trend + 0.25 * (value - trend);
+      return { ts, weight: value, trend };
+    });
+  }
+
+  // A value of the chosen metric as text (kg values follow the display unit).
+  _metricText(metric, value, signed = false) {
+    if (metric.kg) return this._kg(value, { signed });
+    const unit = this._t.chartUnits[metric.key] || metric.unit;
+    return `${this._num(value, { digits: metric.digits, signed })}${unit ? ` ${unit}` : ""}`;
   }
 
   _assigned(personId) {
@@ -3041,19 +3125,24 @@ class WeightTrackerPanel extends HTMLElement {
 
   _renderChartHead() {
     const t = this._t;
+    const metric = this._chartMetric();
     const de = t === TEXT.de;
     return `
       <div class="chart-head">
         <h2>${esc(t.history)}</h2>
+        <label class="muted small">${esc(t.chartMetric)}
+          <select class="inline" data-action="metric" aria-label="${esc(t.chartMetric)}">${CHART_METRICS
+            .filter((d) => this._entry.persons.some((p) => this._metricAvailable(p, d.key)))
+            .map((d) => `<option value="${d.key}" ${d.key === metric.key ? "selected" : ""}>${esc(t.chartMetrics[d.key])}</option>`).join("")}</select></label>
         <div class="chips" role="group" aria-label="${esc(t.history)}">
           ${this._entry.persons.map((p, i) => `
             <button class="chip legend ${this._hidden.has(p.id) ? "off" : ""}" data-action="toggle" data-person="${esc(p.id)}" aria-pressed="${!this._hidden.has(p.id)}">
               <span class="dot" style="background:${this._color(p.color_index)}"></span>${esc(p.name)}</button>`).join("")}
         </div>
         <div class="chips" role="group">
-          <button class="chip" data-action="mode" data-mode="abs" aria-pressed="${this._mode === "abs"}">${esc(t.absolute)}</button>
+          <button class="chip" data-action="mode" data-mode="abs" aria-pressed="${this._mode === "abs"}">${esc(metric.key === "weight" ? t.absolute : t.chartMetrics[metric.key])}</button>
           <button class="chip" data-action="mode" data-mode="rel" aria-pressed="${this._mode === "rel"}">${esc(t.relative)}</button>
-          ${this._mode === "abs" ? `<button class="chip" data-action="forecast" aria-pressed="${this._forecast}">📈 ${esc(t.forecast)}</button>` : ""}
+          ${this._mode === "abs" && metric.key === "weight" ? `<button class="chip" data-action="forecast" aria-pressed="${this._forecast}">📈 ${esc(t.forecast)}</button>` : ""}
         </div>
         <div class="chips" role="group">
           ${RANGES.map((r) => `<button class="chip" data-action="range" data-range="${r.key}" aria-pressed="${this._range === r.key}">${de ? r.de : r.en}</button>`).join("")}
@@ -4157,11 +4246,13 @@ class WeightTrackerPanel extends HTMLElement {
     const height = width < 600 ? 260 : 320;
     const now = Date.now();
 
+    const metric = this._chartMetric();
+    const isWeight = metric.key === "weight";
     const series = [];
     let firstTs = Infinity;
     this._entry.persons.forEach((person, index) => {
       if (this._hidden.has(person.id)) return;
-      const all = this._assigned(person.id);
+      const all = isWeight ? this._assigned(person.id) : this._metricPoints(person, metric.key);
       const pts = all.filter((m) => !this._range || m.ts >= now - this._range * DAY);
       if (!pts.length) return;
       firstTs = Math.min(firstTs, pts[0].ts);
@@ -4171,7 +4262,7 @@ class WeightTrackerPanel extends HTMLElement {
     });
 
     if (!series.length) {
-      el.innerHTML = `<div class="message">${esc(this._entry.measurements.length ? t.chartEmpty : t.noData)}</div>`;
+      el.innerHTML = `<div class="message">${esc(!isWeight ? t.chartNoMetric(t.chartMetrics[metric.key]) : this._entry.measurements.length ? t.chartEmpty : t.noData)}</div>`;
       this._chartPoints = [];
       return;
     }
@@ -4179,7 +4270,7 @@ class WeightTrackerPanel extends HTMLElement {
     let t0 = Math.min(firstTs - (now - firstTs) * 0.02, now - DAY);
     // Forecast: trend extended to the goal at the expected date (max. one year ahead).
     let tEnd = now;
-    if (this._mode === "abs" && this._forecast) {
+    if (this._mode === "abs" && this._forecast && isWeight) {
       for (const s of series) {
         const st = s.person.stats || {};
         const last = s.pts[s.pts.length - 1];
@@ -4192,7 +4283,7 @@ class WeightTrackerPanel extends HTMLElement {
       tEnd = Math.min(tEnd, now + Math.max(now - t0, 14 * DAY));
     }
 
-    const uf = this._factor;  // chart works in the display unit
+    const uf = metric.kg ? this._factor : 1;  // chart works in the display unit
     let lo = Infinity, hi = -Infinity;
     for (const s of series) {
       for (const m of s.pts) {
@@ -4202,25 +4293,27 @@ class WeightTrackerPanel extends HTMLElement {
           hi = Math.max(hi, (v - s.base) * uf);
         }
       }
-      if (this._mode === "abs" && s.person.goal !== null && s.person.goal !== undefined) {
+      if (this._mode === "abs" && isWeight && s.person.goal !== null && s.person.goal !== undefined) {
         lo = Math.min(lo, s.person.goal * uf);
         hi = Math.max(hi, s.person.goal * uf);
       }
     }
     if (this._mode === "rel") { lo = Math.min(lo, 0); hi = Math.max(hi, 0); }
-    const spanY = Math.max(hi - lo, 1);
-    const step = [0.5, 1, 2, 5, 10, 20, 50].find((s) => spanY / s <= 6) || 50;
+    const spanY = Math.max(hi - lo, isWeight ? 1 : (Math.abs(hi) || 1) * 0.02);
+    const step = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500].find((s) => spanY / s <= 6) || 1000;
     lo = Math.floor((lo - spanY * 0.05) / step) * step;
     hi = Math.ceil((hi + spanY * 0.05) / step) * step;
 
     const labelWidth = Math.min(110, Math.max(...series.map((s) => s.person.name.length)) * 7 + 16);
-    const m = { l: 44, r: width < 500 ? 12 : labelWidth, t: 12, b: 28 };
+    const unitLabel = metric.kg ? this._unitLabel : this._t.chartUnits[metric.key] || metric.unit;
+    const m = { l: 44, r: width < 500 ? 12 : labelWidth, t: unitLabel ? 22 : 12, b: 28 };
     const iw = width - m.l - m.r, ih = height - m.t - m.b;
     const x = (ts) => m.l + ((ts - t0) / (tEnd - t0)) * iw;
     const y = (v) => m.t + (1 - (v - lo) / (hi - lo)) * ih;
 
-    let svg = `<svg viewBox="0 0 ${width} ${height}" height="${height}" role="img" aria-label="${esc(t.history)}">`;
-    // grid + y axis
+    let svg = `<svg viewBox="0 0 ${width} ${height}" height="${height}" role="img" aria-label="${esc(`${t.history}: ${t.chartMetrics[metric.key]}`)}">`;
+    // grid + y axis (unit above the axis labels)
+    if (unitLabel) svg += `<text x="${m.l - 8}" y="10" text-anchor="end">${esc(unitLabel)}</text>`;
     for (let v = lo; v <= hi + 1e-9; v += step) {
       const yy = y(v).toFixed(1);
       const zero = this._mode === "rel" && Math.abs(v) < 1e-9;
@@ -4244,7 +4337,7 @@ class WeightTrackerPanel extends HTMLElement {
     const labels = [];
     for (const s of series) {
       // goal line
-      if (this._mode === "abs" && s.person.goal !== null && s.person.goal !== undefined) {
+      if (this._mode === "abs" && isWeight && s.person.goal !== null && s.person.goal !== undefined) {
         const gy = y(s.person.goal * uf).toFixed(1);
         svg += `<line x1="${m.l}" x2="${width - m.r}" y1="${gy}" y2="${gy}" stroke="${s.color}" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.7"/>`;
         svg += `<text x="${m.l + 4}" y="${(y(s.person.goal * uf) - 5).toFixed(1)}">${esc(t.goal)} ${esc(s.person.name)}</text>`;
@@ -4341,13 +4434,15 @@ class WeightTrackerPanel extends HTMLElement {
       <line x1="${best.px.toFixed(1)}" x2="${best.px.toFixed(1)}" y1="${m.t}" y2="${height - m.b}" stroke="var(--wt-muted)" stroke-width="1" stroke-dasharray="3 3"/>
       <circle cx="${best.px.toFixed(1)}" cy="${best.py.toFixed(1)}" r="6" fill="${best.s.color}" stroke="var(--wt-card)" stroke-width="2"/>`;
     const tip = this.shadowRoot.getElementById("tooltip");
-    const rel = this._mode === "rel" ? `<div class="muted small">${esc(t.relative)}: ${this._kg(this._w(best.m) - best.s.base, { signed: true })}</div>` : "";
+    const metric = this._chartMetric();
+    const fmt = (v, signed = false) => esc(this._metricText(metric, v, signed));
+    const rel = this._mode === "rel" ? `<div class="muted small">${esc(t.relative)}: ${fmt(this._w(best.m) - best.s.base, true)}</div>` : "";
     tip.innerHTML = `
       <div class="t-head"><span class="dot" style="background:${best.s.color}"></span>${esc(best.s.person.name)}</div>
       <div class="muted small">${esc(this._dateTime(best.m.ts))}</div>
-      <div>${esc(t.measurement)}: <b class="num">${this._kg(this._w(best.m))}</b></div>
+      <div>${esc(metric.key === "weight" ? t.measurement : t.chartMetrics[metric.key])}: <b class="num">${fmt(this._w(best.m))}</b></div>
       ${best.m.clothes_kg ? `<div class="muted small">👕 ${esc(t.measuredWithClothes(this._kg(best.m.weight)))}</div>` : ""}
-      ${best.m.trend !== null && best.m.trend !== undefined ? `<div>${esc(t.trend)}: <span class="num">${this._kg(best.m.trend)}</span></div>` : ""}
+      ${best.m.trend !== null && best.m.trend !== undefined ? `<div>${esc(t.trend)}: <span class="num">${fmt(best.m.trend)}</span></div>` : ""}
       ${best.m.note ? `<div class="note" style="max-width:220px">📝 ${esc(best.m.note)}</div>` : ""}
       ${rel}`;
     tip.style.display = "block";
@@ -4672,6 +4767,14 @@ class WeightTrackerPanel extends HTMLElement {
       this._setAccess(person.id, { user_id: owner, viewers });
     } else if (el.dataset.action === "sensor-toggle") {
       this._toggleSensor(el.dataset.kind, el.dataset.id, el.dataset.key, el.checked);
+    } else if (el.dataset.action === "metric") {
+      this._metric = el.value;
+      try {
+        localStorage.setItem("wt-metric", el.value);
+      } catch (err) {
+        // only a convenience
+      }
+      this._render();
     } else if (el.dataset.action === "unit") {
       this._unitPref = el.value;
       try {

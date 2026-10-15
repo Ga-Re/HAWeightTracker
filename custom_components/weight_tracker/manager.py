@@ -107,6 +107,7 @@ from .const import (
     DOMAIN,
     DUPLICATE_WINDOW,
     BACKFILL_PERIOD,
+    SERIES_LIMIT,
     EXTRA_ENTITIES,
     EXTRA_READING_MAX_AGE,
     KIND_CHILD,
@@ -1432,10 +1433,33 @@ class WeightTrackerManager:
                         "fat_range": body_fat_range(sex, age),
                         "fat_change_30d": round(latest.body_fat - month_ago[-1].body_fat, 1) if month_ago and latest.body_fat is not None else None,
                         "history": [[int(m.ts.timestamp() * 1000), c.body_fat, c.muscle_mass] for m, c in history if c.body_fat is not None][-365:],
+                        "series": self._body_series(history[-SERIES_LIMIT:], height, age, sex),
                     }
                 )
+            if pulses := [[int(m.ts.timestamp() * 1000), round(m.heart_rate)] for m in own if m.heart_rate][-SERIES_LIMIT:]:
+                data.setdefault("series", {})["heart_rate"] = pulses
             data.setdefault("metrics", metrics(impedance=next((m.body_impedance for m in reversed(assigned) if m.body_impedance), None)))
             self.body[person_id] = data
+
+    @staticmethod
+    def _body_series(
+        history: list[tuple[Measurement, Composition]], height: float | None, age: int | None, sex: str | None
+    ) -> dict[str, list[list[float]]]:
+        """Body values per measurement for the history chart: key -> [[ts in ms, value], ...]."""
+        series: dict[str, list[list[float]]] = {}
+        for m, c in history:
+            ts = int(m.ts.timestamp() * 1000)
+            analysis = analyze(m.effective, height, age, sex, c, m.body_impedance)
+            values = {
+                "body_fat": c.body_fat, "muscle_mass": c.muscle_mass, "water": c.water, "bmr": c.bmr,
+                **{key: analysis.get(key) for key in (
+                    "fat_mass", "lean_mass", "skeletal_muscle", "visceral_fat", "protein", "body_score", "metabolic_age",
+                )},
+            }
+            for key, value in values.items():
+                if value is not None:
+                    series.setdefault(key, []).append([ts, value])
+        return series
 
     # ------------------------------------------------------------- AI hints
 

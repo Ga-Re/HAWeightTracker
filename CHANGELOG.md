@@ -7,6 +7,11 @@ Alle Versionen der Integration. Die Nummern folgen [Semantic Versioning](https:/
 Jeder Abschnitt wird beim Push automatisch zu einem [GitHub-Release](https://github.com/Ga-Re/HAWeightTracker/releases)
 (siehe `.github/workflows/release.yml`). HACS zeigt diese Releases als Updates an.
 
+## [2.13.0] – 2026-10-15
+
+### Neu
+- **Verlauf für weitere Werte:** Im Tab *Verlauf* lässt sich neben dem Gewicht auch BMI, Körperfett, Fettmasse, fettfreie Masse, Muskelmasse, Skelettmuskelmasse, Körperwasser, Viszeralfett, Eiweiß, Grundumsatz, Körperbewertung, Körperalter, Puls oder Taille anzeigen – für alle sichtbaren Personen, mit geglätteter Linie, Zeitraum und „Veränderung“. Angeboten werden nur Werte, für die es Messungen gibt; die Auswahl bleibt gespeichert.
+
 ## [2.12.0] – 2026-10-14
 
 ### Neu

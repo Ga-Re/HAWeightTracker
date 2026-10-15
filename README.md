@@ -58,6 +58,7 @@ Das Panel hat die Tabs **Übersicht**, **Verlauf**, **Messungen** und **Meine Da
   - **Erklärungen:** Die Beschriftung jedes Werts (gepunktet unterstrichen) ist antippbar und erklärt, wie der Wert entsteht, was er bedeutet und welcher Bereich normal ist.
   - Die Körperwerte erscheinen nur, wenn die Waage Impedanz oder direkte Werte liefert. Sind für die Person Sensoren angelegt, öffnet ein Klick auf einen Wert die Entitätsansicht von Home Assistant.
 ### Verlauf
+- **Wert wählen:** Gewicht, BMI, Körperfett, Fett- und fettfreie Masse, Muskel- und Skelettmuskelmasse, Körperwasser, Viszeralfett, Eiweiß, Grundumsatz, Körperbewertung, Körperalter, Puls oder Taille – angeboten wird, wofür es Messungen gibt. Andere Werte als das Gewicht werden ebenso geglättet; Ziellinie und Prognose gibt es nur beim Gewicht.
 - **Graph:** Jede Messung ist ein Punkt, dazu kommt die geglättete Trendlinie und das Zielgewicht als gestrichelte Linie. Zeiträume: 30 Tage, 90 Tage, 1 Jahr, alles. Mit *Veränderung* starten alle Personen bei 0, das ist praktisch für den Vergleich. Personen lassen sich ein- und ausblenden, beim Überfahren zeigt ein Tooltip die Details.
 - **Monatsdurchschnitt** pro Person mit Veränderung zum Vormonat.
 - **Kalender** der letzten 12 Monate für die in der Übersicht gewählte Person.
