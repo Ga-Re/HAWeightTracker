@@ -7,6 +7,18 @@ Alle Versionen der Integration. Die Nummern folgen [Semantic Versioning](https:/
 Jeder Abschnitt wird beim Push automatisch zu einem [GitHub-Release](https://github.com/Ga-Re/HAWeightTracker/releases)
 (siehe `.github/workflows/release.yml`). HACS zeigt diese Releases als Updates an.
 
+## [2.15.0] – 2026-10-15
+
+### Neu
+- **Übersicht als Raster mit Widget-Karten:** 4 Spalten am PC, 2 an Tablet und Handy. Jede Karte hat feste Größen (S = 1×1, M = 2×1, L = 2×2, XL = ganze Breite × 2 Zeilen) und zeigt je nach Größe mehr oder weniger Inhalt. Karten gleicher Größe sind immer exakt gleich groß; passt der Inhalt nicht hinein, wird er unten ausgeblendet und **Mehr** öffnet die ganze Karte. Kleinere Karten füllen Lücken neben größeren.
+- **✎ Anpassen** direkt in der Übersicht: Größe ändern, verschieben (← →), ausblenden (✕), wieder einblenden, zurücksetzen. Gespeichert pro Benutzer und Gerät.
+- Körpertyp und Vorschläge zum Gewicht sind zwei eigene Karten; die Körperwerte sind fünf Karten (Fett und Wasser, Muskeln und Knochen, Stoffwechsel, Herz und Fitness, weitere Kennzahlen) statt Reitern.
+- Auf dem Handy werden einige Karten kompakter (z. B. Bewertungspunkt neben dem Wert), XL zeigt dort den Inhalt von L.
+- Startanordnung: Gewicht L, daneben Körperbewertung und KI-Hinweise (M), dann Figur und Körpertyp (L), Vorschläge und Körperwerte (M), Herz und Fitness (L).
+
+### Behoben
+- Die Bewertung unter der Punktzahl der Körperbewertung war immer grau statt farbig.
+
 ## [2.14.0] – 2026-10-15
 
 ### Neu

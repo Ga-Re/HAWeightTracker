@@ -49,6 +49,22 @@ const COLORS = {
   dark: ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"],
 };
 
+// Overview cards: allowed sizes and the size they start with, in their default order.
+const BOARD_CARDS = {
+  main: { sizes: ["S", "M", "L", "XL"], size: "L" },
+  score: { sizes: ["S", "M", "L"], size: "M" },
+  ai: { sizes: ["S", "M", "L", "XL"], size: "M" },
+  composition: { sizes: ["M", "L"], size: "L" },
+  bodytype: { sizes: ["M", "L"], size: "L" },
+  suggestions: { sizes: ["S", "M"], size: "M" },
+  fat: { sizes: ["S", "M", "L"], size: "M" },
+  muscle: { sizes: ["S", "M", "L"], size: "M" },
+  metabolism: { sizes: ["S", "M", "L"], size: "M" },
+  heart: { sizes: ["S", "M", "L"], size: "L" },
+  indices: { sizes: ["S", "M", "L"], size: "M" },
+};
+const BOARD_ORDER = Object.keys(BOARD_CARDS);
+
 // Values the history chart can show: key, unit, decimals, kg (follows the display unit).
 const CHART_METRICS = [
   { key: "weight", unit: "kg", digits: 1, kg: true },
@@ -334,6 +350,21 @@ const TEXT = {
     aiPrompt: "Anweisungen an die KI",
     aiPromptHint: "Was die KI tun soll und wie sie antwortet. Die freigegebenen Messwerte jeder Person werden automatisch darunter angehängt. Damit die Hinweise sauber angezeigt werden: erste Zeile eine Einschätzung, danach Empfehlungen als Zeilen mit „- “.",
     aiPromptReset: "Auf Standard zurücksetzen",
+    cardNames: {
+      main: "Gewicht", score: "Körperbewertung", ai: "KI-Hinweise", composition: "Körperzusammensetzung", bodytype: "Körpertyp",
+      suggestions: "Vorschläge zum Gewicht", fat: "Fett und Wasser", muscle: "Muskeln und Knochen", metabolism: "Stoffwechsel",
+      heart: "Herz und Fitness", indices: "Weitere Kennzahlen",
+    },
+    showMore: "Mehr",
+    boardEdit: "Anpassen",
+    boardDone: "Fertig",
+    boardReset: "Zurücksetzen",
+    hiddenCards: "Ausgeblendet",
+    noHiddenCards: "Keine Karte ausgeblendet.",
+    cardSize: (z) => `Größe ${z}`,
+    moveEarlier: "Nach vorne",
+    moveLater: "Nach hinten",
+    hideCard: "Ausblenden",
     valuesTitle: "Körperwerte",
     valueGroupsExtra: { heart: "Herz und Fitness", indices: "Weitere Kennzahlen" },
     bmrMifflin: "Grundumsatz (Mifflin-St Jeor)",
@@ -803,6 +834,21 @@ const TEXT = {
     aiPrompt: "Instructions for the AI",
     aiPromptHint: "What the AI should do and how it answers. Each person's shared values are appended automatically. For the hints to show nicely: first line an assessment, then recommendations as lines starting with “- ”.",
     aiPromptReset: "Reset to default",
+    cardNames: {
+      main: "Weight", score: "Body score", ai: "AI hints", composition: "Body composition", bodytype: "Body type",
+      suggestions: "Weight suggestions", fat: "Fat and water", muscle: "Muscle and bone", metabolism: "Metabolism",
+      heart: "Heart and fitness", indices: "More figures",
+    },
+    showMore: "More",
+    boardEdit: "Customise",
+    boardDone: "Done",
+    boardReset: "Reset",
+    hiddenCards: "Hidden",
+    noHiddenCards: "No card hidden.",
+    cardSize: (z) => `Size ${z}`,
+    moveEarlier: "Move earlier",
+    moveLater: "Move later",
+    hideCard: "Hide",
     valuesTitle: "Body values",
     valueGroupsExtra: { heart: "Heart and fitness", indices: "More figures" },
     bmrMifflin: "Basal metabolic rate (Mifflin-St Jeor)",
@@ -1293,7 +1339,7 @@ const STYLE = `
   .score-row { display: flex; gap: 16px; align-items: flex-start; margin-top: 12px; }
   .score { white-space: nowrap; }
   .score b { font-size: 44px; font-weight: 500; line-height: 1; }
-  .score span { font-size: 13px; color: var(--wt-muted); margin-left: 4px; }
+  .score > span { font-size: 13px; color: var(--wt-muted); margin-left: 4px; }
   .score-text { flex: 1; font-size: 13px; line-height: 1.45; color: var(--wt-muted); }
   .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--wt-grid); }
   .pair > div + div { border-left: 1px solid var(--wt-grid); padding-left: 16px; }
@@ -1334,6 +1380,90 @@ const STYLE = `
   .ai-tips { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; line-height: 1.4; }
   .report-note { font-size: 12px; color: var(--wt-muted); line-height: 1.4; }
   .report.single { grid-template-columns: 1fr; }
+  .ov-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .ov-head .switcher { flex: 1 1 auto; }
+  .ov-head .board-btn { margin-left: auto; }
+  /* overview board: fixed card sizes like widgets. S = 1x1, M = 2x1, L = 2x2,
+     XL = full width x 2; 4 columns on wide screens, 2 below. */
+  .board-wrap { container-type: inline-size; }
+  .board { --row: 184px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: var(--row); grid-auto-flow: row dense; gap: 16px; }
+  @container (max-width: 940px) { .board { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  /* phones: less room per card, so a few parts get more compact */
+  @container (max-width: 520px) {
+    .hero-m .stats .stat:nth-child(n+3) { display: none; }
+    .hero-m .stats { grid-template-columns: minmax(0, 1fr); }
+    .hero-l .stat { display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; }
+    .hero-l .stat .label { flex-basis: 100%; }
+    .hero-l .stat .st { font-size: 0; }
+    .hero-l .stat .st::before { margin-right: 0; width: 8px; height: 8px; }
+    .hero-l .rh-mini > .ml { display: none; }
+  }
+  .bc { position: relative; min-width: 0; min-height: 0; }
+  .bc.size-s { grid-column: span 1; grid-row: span 1; }
+  .bc.size-m { grid-column: span 2; grid-row: span 1; }
+  .bc.size-l { grid-column: span 2; grid-row: span 2; }
+  .bc.size-xl { grid-column: 1 / -1; grid-row: span 2; }
+  .bc > .card { position: relative; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; }
+  .bc-body { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+  /* content that does not fit: fade out and offer "Mehr" */
+  .bc.overflow .bc-body::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 44px; pointer-events: none;
+    background: linear-gradient(to bottom, transparent, var(--wt-card)); }
+  .bc-more { display: none; position: absolute; right: 10px; bottom: 8px; padding: 2px 10px; border: 0; border-radius: 999px; font: inherit; font-size: 12px;
+    background: color-mix(in srgb, var(--primary-color, #03a9f4) 18%, var(--wt-card)); color: var(--primary-text-color); cursor: pointer; }
+  .bc.overflow .bc-more { display: inline-block; }
+  .board.editing .bc-more { display: none; }
+  .board.editing .bc > .card { outline: 2px dashed color-mix(in srgb, var(--primary-color, #03a9f4) 50%, transparent); outline-offset: -2px; }
+  /* edit controls lie on top of the card, so its size stays the same */
+  .bc-edit { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; padding: 10px;
+    background: color-mix(in srgb, var(--wt-card) 82%, transparent); backdrop-filter: blur(2px); text-align: center; }
+  .bc-name { font-weight: 500; font-size: 14px; }
+  .bc-sizes, .bc-tools { display: inline-flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+  .bc-btn { min-width: 34px; height: 32px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--wt-border); background: var(--wt-card);
+    color: var(--primary-text-color); font: inherit; font-size: 13px; cursor: pointer; }
+  .bc-btn[aria-pressed="true"] { background: var(--primary-color, #03a9f4); border-color: var(--primary-color, #03a9f4); color: var(--text-primary-color, #fff); font-weight: 500; }
+  .bc-btn:disabled { opacity: .4; cursor: default; }
+  .bc-btn:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: 1px; }
+  /* compact value list (S, M) */
+  .vlist { display: grid; gap: 8px 20px; margin-top: 10px; }
+  .vlist.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .vrow .vtop { display: flex; align-items: baseline; gap: 8px; }
+  .vrow .vl { flex: 1; min-width: 0; font-size: 13px; color: var(--wt-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vrow .vv { font-size: 17px; font-weight: 500; white-space: nowrap; }
+  .vrow .vv small { font-size: 12px; font-weight: 400; color: var(--wt-muted); }
+  .hero-m { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: center; }
+  .hero-m .stats { margin-top: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; }
+  .comp2.compact { grid-template-columns: 70px 1fr; gap: 14px; margin-top: 6px; }
+  .comp2.compact svg { max-height: 118px; }
+  .comp2.compact .seg-list { gap: 2px; }
+  .comp2.compact .seg .sv { font-size: 14px; }
+  .comp2.compact .seg .sl { font-size: 12px; }
+  .card-dialog { width: min(720px, calc(100vw - 32px)); }
+  .card-dialog .card-full { margin-top: 4px; }
+  /* the dialog already shows the card's name */
+  .card-dialog .card-full > h2:first-child, .card-dialog .card-full .ai-head h2 { display: none; }
+  .card-dialog .card-full .ai-head { justify-content: flex-end; }
+  .board-hidden { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 14px; border: 1px dashed var(--wt-border); border-radius: var(--wt-radius); }
+  .board-hidden .spacer { flex: 1; }
+  /* size-dependent content */
+  .size-s .rh-weight .int { font-size: 44px; }
+  .size-s .rh-weight .dec { font-size: 24px; }
+  .size-s .score b { font-size: 36px; }
+  .size-s .sugg { grid-template-columns: 1fr; gap: 8px; }
+  .size-s .rh-class, .size-m .rh-class { text-align: left; }
+  .size-s .rh-label, .size-s .rh-weight, .size-m .rh-label, .size-m .rh-weight { text-align: left; }
+  .hero-xl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 24px; align-items: center; }
+  .bt2.compact { display: block; }
+  .bt2.compact { margin-top: 8px; }
+  .bt2.compact .bt2-grid { border: 0; padding: 0; gap: 3px; grid-template-rows: repeat(4, 23px); }
+  .bt2.compact .bt2-cell { min-height: 0; padding: 0 4px; font-size: 11px; }
+  .bt2.compact .bt2-cell.on { align-content: center; padding-top: 0; }
+  .bt2.compact .bt2-dot { width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; }
+  .hero-l .rh-weight { margin-top: 2px; }
+  .hero-l .rh-weight .int { font-size: 54px; }
+  .hero-l .rh-weight .dec { font-size: 28px; }
+  .hero-l .rh-mini { margin-top: 4px; }
+  .hero-l .stats { margin-top: 8px; }
+  .goal.compact { margin-top: 10px; padding-top: 8px; }
   .sw .avatar.pet { background: rgba(127,127,127,.15); }
   /* labels that open their explanation: dotted underline instead of an icon */
   .term { padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: help; text-align: inherit;
@@ -1405,7 +1535,7 @@ const STYLE = `
     background: color-mix(in srgb, var(--primary-color, #03a9f4) 10%, var(--wt-card)); }
   .suggest-box > div { flex: 1 1 260px; }
   .zhead { font-size: 12px; color: var(--wt-muted); margin-top: 14px; }
-  .zlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px 24px; font-size: 14px; }
+  .zlist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; font-size: 14px; }
   .zrow { display: grid; grid-template-columns: 10px 1fr auto; align-items: center; gap: 10px; }
   .zdot { width: 10px; height: 10px; border-radius: 3px; }
   .zname small { display: block; font-size: 12px; color: var(--wt-muted); }
@@ -1633,7 +1763,10 @@ class WeightTrackerPanel extends HTMLElement {
       this._hideHover();
       this._hideMiniHover();
     }, true);
-    this._sparkObserver = new ResizeObserver(() => this._drawSparks());
+    this._sparkObserver = new ResizeObserver(() => {
+      this._drawSparks();
+      this._layoutBoard();
+    });
     this._sparkObserver.observe(root.getElementById("content"));
     this._resizeObserver = new ResizeObserver(() => {
       const el = root.getElementById("chart");
@@ -1917,7 +2050,7 @@ class WeightTrackerPanel extends HTMLElement {
     if (noteInput && this._editNote) this._editNote.draft = noteInput.value;  // survive live updates
     const canAdd = this._entry.persons.some((p) => p.can_manage) || (this._entry.pets || []).length;
     // "+": add a measurement / weigh a pet from every page (not where the form is already).
-    const fab = canAdd && this._tab !== "measurements" && this._tab !== "settings" ? `
+    const fab = canAdd && this._tab !== "measurements" && this._tab !== "settings" && !this._boardEdit ? `
       <button class="fab" data-action="add-open" aria-haspopup="dialog"><b aria-hidden="true">+</b><span>${esc(t.addOpen)}</span></button>
       ${this._addOpen ? this._renderAddSheet() : ""}` : "";
     if (this._tab === "settings") {
@@ -1945,13 +2078,15 @@ class WeightTrackerPanel extends HTMLElement {
       this._content(`
         ${this._renderPetSession()}
         ${this._renderPendingBar()}
-        ${this._renderSwitcher(current)}
-        ${person ? `<div class="report">${this._renderReport(person)}</div>` : `<div class="report single">${current.kind === "child" ? this._renderChildCard(current.subject) : this._renderPetCard(current.subject)}</div>`}
+        <div class="ov-head">${this._renderSwitcher(current)}
+          ${person && !this._boardEdit ? `<button class="btn quiet board-btn" data-action="board-edit">✎ ${esc(t.boardEdit)}</button>` : ""}</div>
+        ${person ? this._renderReport(person) : `<div class="report single">${current.kind === "child" ? this._renderChildCard(current.subject) : this._renderPetCard(current.subject)}</div>`}
         ${fab}`);
     }
     this._syncCountdown();
     this._mountFields();
     this._drawSparks();
+    this._layoutBoard();
     this._resizeObserver.disconnect();
     const chart = this.shadowRoot.getElementById("chart");
     if (chart) {
@@ -2164,7 +2299,7 @@ class WeightTrackerPanel extends HTMLElement {
     return `<span class="int num">${esc(match[1])}</span><span class="dec num">${esc(match[2] || "")}</span><span class="u">${esc(this._unitLabel)}</span>`;
   }
 
-  _goalHtml(person, color) {
+  _goalHtml(person, color, compact = false) {
     const t = this._t;
     const s = person.stats || {};
     if (person.goal === null || person.goal === undefined || s.trend === null || s.trend === undefined) return "";
@@ -2172,6 +2307,13 @@ class WeightTrackerPanel extends HTMLElement {
     const span = start - person.goal;
     const progress = span ? Math.min(1, Math.max(0, (start - s.trend) / span)) : 1;
     const eta = s.goal_reached ? t.goalReached : s.goal_eta ? t.goalEta(this._date(Date.parse(s.goal_eta))) : t.goalNoEta;
+    if (compact) {
+      return `
+      <div class="goal compact">
+        <div class="row"><span>${esc(t.goal)} ${this._kg(person.goal)} · ${Math.round(progress * 100)} %</span><span class="num">${s.goal_reached ? esc(t.goalReached) : this._link(person, "goal_distance", t.goal, esc(t.goalLeft(this._kg(Math.abs(s.goal_remaining)))))}</span></div>
+        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(progress * 100)}"><div style="width:${(progress * 100).toFixed(1)}%;background:${color}"></div></div>
+      </div>`;
+    }
     return `
       <div class="goal">
         <div class="row"><span>${esc(t.goal)} ${this._kg(person.goal)}</span><span class="num">${s.goal_reached ? "" : this._link(person, "goal_distance", t.goal, esc(t.goalLeft(this._kg(Math.abs(s.goal_remaining)))))}</span></div>
@@ -2215,25 +2357,8 @@ class WeightTrackerPanel extends HTMLElement {
     })() : null;
     const bmiStatus = s.bmi && adult ? (s.bmi < 18.5 ? "low" : s.bmi < 25 ? "standard" : s.bmi < 30 ? "high" : "very_high") : null;
 
-    const hero = `
-      <div class="card report-hero span" style="--accent:${color}">
-        <div class="rh-head">${this._avatar(person, 44)}
-          <div><div class="rh-name">${esc(person.name)}${age !== null ? ` <span class="muted small" style="font-weight:400">· ${esc(t.years(age))}</span>` : ""}</div>
-          <div class="muted small">${latestTs ? link("last_measured", t.measured, esc(this._dateTime(latestTs))) : esc(t.noData)}</div></div></div>
-        <div class="rh-label">${term("weight", t.weight)}</div>
-        <div class="rh-weight">${link("weight", t.weight, this._bigWeight(s.latest_weight))}</div>
-        <div class="rh-class">${bmiStatus ? `<span class="st st-${bmiStatus}">${esc(t.bmiCat(s.bmi))}</span>` : ""}${s.change_last !== null && s.change_last !== undefined ? `${bmiStatus ? " · " : ""}<span class="muted num">${link("change_last", t.weight, this._kg(s.change_last, { signed: true }))} ${esc(t.sinceLast)}</span>` : ""}</div>
-        ${this._personMini(person, color)}
-        <div class="stats">
-          ${stat("trend", t.trend, this._kg(s.trend), "trend", trendStatus)}
-          ${stat("change_7d", t.d7, this._kg(s.change_7d, { signed: true }), "changes", pace(s.change_7d))}
-          ${stat("change_30d", t.d30, this._kg(s.change_30d, { signed: true }), "changes", pace(s.change_30d === null || s.change_30d === undefined ? null : s.change_30d * 7 / 30))}
-          ${stat("rate", t.perWeek, this._kg(s.rate_per_week, { signed: true, digits: 2 }), "changes", pace(s.rate_per_week))}
-          ${person.goal ? "" : stat("change_total", t.total, this._kg(s.change_total, { signed: true }))}
-        </div>
-        ${this._goalHtml(person, color)}
-      </div>`;
-
+    const missingData = body.missing && body.missing.length
+      ? `<div class="card"><div class="hint">${esc(t.bodyMissing(body.missing.map((k) => t.bodyFields[k]).join(", ")))}</div></div>` : "";
     // Short rule-based assessment (the AI's own text has its card).
     const advice = () => {
       if (st.body_fat === "high" || st.body_fat === "very_high") return t.advice.fat;
@@ -2244,41 +2369,71 @@ class WeightTrackerPanel extends HTMLElement {
       return t.advice.good;
     };
     const ai = person.ai || {};
-    const score = a && a.body_score !== undefined ? `
-      <div class="card">
-        <h2>${term("body_score", t.bodyReport)}</h2>
-        <div class="score-row">
-          <div class="score">${link("body_score", t.bodyReport, `<b class="num">${a.body_score}</b>`)}<span>${esc(t.points)}</span>
-            <div>${this._status(a.body_score >= 85 ? "good" : a.body_score >= 70 ? "standard" : a.body_score >= 50 ? ["high", t.status.low] : ["very_high", t.status.very_low])}</div></div>
-          <div class="score-text">${esc(advice())}</div>
-        </div>
-        <div class="pair">
-          <div><div class="pv num">${s.bmi ? link("bmi", t.bmi, num(s.bmi)) : "–"}</div><div class="pl">${term("bmi", t.bmi)}</div>${this._status(bmiStatus)}</div>
-          <div><div class="pv num">${b.body_fat !== null && b.body_fat !== undefined ? link("body_fat", t.bodyFat, `${num(b.body_fat)} <small>%</small>`) : "–"}</div><div class="pl">${term("body_fat", t.bodyFat)}</div>${this._status(st.body_fat)}</div>
-        </div>
-      </div>` : "";
 
-    let aiCard = "";
+    // ---- cards: each builds its content for a size (S, M, L, XL) ----
+    const cards = {};
+
+    const weightBlock = `
+        <div class="rh-label">${term("weight", t.weight)}</div>
+        <div class="rh-weight">${link("weight", t.weight, this._bigWeight(s.latest_weight))}</div>
+        <div class="rh-class">${bmiStatus ? `<span class="st st-${bmiStatus}">${esc(t.bmiCat(s.bmi))}</span>` : ""}${s.change_last !== null && s.change_last !== undefined ? `${bmiStatus ? " · " : ""}<span class="muted num">${link("change_last", t.weight, this._kg(s.change_last, { signed: true }))} ${esc(t.sinceLast)}</span>` : ""}</div>`;
+    const heroStats = `
+        <div class="stats">
+          ${stat("trend", t.trend, this._kg(s.trend), "trend", trendStatus)}
+          ${stat("change_7d", t.d7, this._kg(s.change_7d, { signed: true }), "changes", pace(s.change_7d))}
+          ${stat("change_30d", t.d30, this._kg(s.change_30d, { signed: true }), "changes", pace(s.change_30d === null || s.change_30d === undefined ? null : s.change_30d * 7 / 30))}
+          ${stat("rate", t.perWeek, this._kg(s.rate_per_week, { signed: true, digits: 2 }), "changes", pace(s.rate_per_week))}
+          ${person.goal ? "" : stat("change_total", t.total, this._kg(s.change_total, { signed: true }))}
+        </div>`;
+    // Name and avatar are in the switcher above; the card starts with the weight.
+    const weightLabel = `<div class="rh-label">${term("weight", t.weight)}${latestTs ? ` <span class="muted small">· ${link("last_measured", t.measured, esc(this._dateTime(latestTs)))}</span>` : ""}</div>`;
+    const weightOnly = weightBlock.replace(/<div class="rh-label">[\s\S]*?<\/div>/, "");
+    cards.main = {
+      cls: "report-hero",
+      style: `--accent:${color}`,
+      build: (size) => size === "S" ? `${weightLabel}${weightOnly}`
+        : size === "M" ? `<div class="hero-m"><div>${weightLabel}${weightOnly}</div>${heroStats}</div>`
+        : size === "L" ? `<div class="hero-l">${weightLabel}${weightOnly}${this._personMini(person, color, 80)}${heroStats}${this._goalHtml(person, color, true)}</div>`
+        : `<div class="hero-xl"><div class="hero-l">${weightLabel}${weightOnly}${heroStats}${this._goalHtml(person, color, true)}</div><div>${this._personMini(person, color, 200)}</div></div>`,
+    };
+
+    if (a && a.body_score !== undefined) {
+      const scoreStatus = a.body_score >= 85 ? "good" : a.body_score >= 70 ? "standard" : a.body_score >= 50 ? ["high", t.status.low] : ["very_high", t.status.very_low];
+      cards.score = {
+        build: (size) => `
+          <h2>${term("body_score", t.bodyReport)}</h2>
+          <div class="score-row">
+            <div class="score">${link("body_score", t.bodyReport, `<b class="num">${a.body_score}</b>`)}<span>${esc(t.points)}</span>
+              <div>${this._status(scoreStatus)}</div></div>
+            ${size === "S" ? "" : `<div class="score-text">${esc(advice())}</div>`}
+          </div>
+          ${size === "L" ? `<div class="pair">
+            <div><div class="pv num">${s.bmi ? link("bmi", t.bmi, num(s.bmi)) : "–"}</div><div class="pl">${term("bmi", t.bmi)}</div>${this._status(bmiStatus)}</div>
+            <div><div class="pv num">${b.body_fat !== null && b.body_fat !== undefined ? link("body_fat", t.bodyFat, `${num(b.body_fat)} <small>%</small>`) : "–"}</div><div class="pl">${term("body_fat", t.bodyFat)}</div>${this._status(st.body_fat)}</div>
+          </div>` : ""}`,
+      };
+    }
+
     // Switched off: only the person can switch it on, so only they get the hint.
     if (ai.enabled || (person.is_me && this._entry.ai_available)) {
       const hasText = Boolean(ai.summary || (ai.tips || []).length);
-      aiCard = `
-        <div class="card" aria-live="polite">
+      cards.ai = {
+        live: true,
+        build: (size) => {
+          const tips = (ai.tips || []).slice(0, size === "S" ? 0 : size === "M" ? 2 : undefined);
+          return `
           <div class="ai-head"><h2>🤖 ${term("ai", t.aiTitle)}</h2>
             ${ai.enabled && person.can_manage ? `<button class="btn" data-action="ai-refresh" data-person="${esc(person.id)}" ${ai.busy ? "disabled" : ""}>${esc(ai.busy ? t.aiBusy : t.aiRefresh)}</button>` : ""}</div>
           ${!ai.enabled ? `<div class="hint" style="margin-top:8px">${esc(t.aiOffHint)}</div>`
-            : hasText ? `${ai.summary ? `<p class="ai-summary">${esc(ai.summary)}</p>` : ""}${(ai.tips || []).length ? `<ul class="ai-tips">${ai.tips.map((tip) => `<li>${esc(tip)}</li>`).join("")}</ul>` : ""}`
+            : hasText ? `${ai.summary ? `<p class="ai-summary">${esc(ai.summary)}</p>` : ""}${tips.length ? `<ul class="ai-tips">${tips.map((tip) => `<li>${esc(tip)}</li>`).join("")}</ul>` : ""}`
             : `<div class="hint" style="margin-top:8px">${esc(ai.busy ? t.aiBusy : t.aiNone)}</div>`}
           ${ai.enabled && ai.error ? `<div class="form-error" role="alert">${esc(t.aiError(ai.error))}</div>` : ""}
-          ${ai.enabled && hasText && ai.ts ? `<div class="hint" style="margin-top:10px">${esc(t.aiAt(this._relative(Date.parse(ai.ts))))} · ${esc(t.aiDisclaimer)}</div>` : ""}
-        </div>`;
+          ${ai.enabled && hasText && ai.ts && (size === "L" || size === "XL") ? `<div class="hint" style="margin-top:10px">${esc(t.aiAt(this._relative(Date.parse(ai.ts))))} · ${esc(t.aiDisclaimer)}</div>` : ""}`;
+        },
+      };
     }
 
-    const missing = body.missing && body.missing.length
-      ? `<div class="card span"><div class="hint">${esc(t.bodyMissing(body.missing.map((k) => t.bodyFields[k]).join(", ")))}</div></div>` : "";
-
     // Body figure filled with bands, one per part, as high as its share.
-    let composition = "";
     const segments = (a && a.segments) || [];
     if (segments.length) {
       const female = person.sex === "female";
@@ -2299,20 +2454,20 @@ class WeightTrackerPanel extends HTMLElement {
         return `<line x1="0" x2="200" y1="${gapY.toFixed(1)}" y2="${gapY.toFixed(1)}" stroke="var(--wt-card)" stroke-width="3"/>`;
       }).join("");
       const clip = `wt-figure-${esc(person.id)}`;
-      composition = `
-      <div class="card">
-        <h2>${term("composition", t.composition)}</h2>
-        <div class="comp2">
-          <svg viewBox="0 0 200 400" role="img" aria-label="${esc(`${t.composition}: ${segments.map((seg) => `${t.segments[seg.key]} ${this._num(seg.pct)} %`).join(", ")}`)}">
-            <defs><clipPath id="${clip}"><path d="${outline}"/></clipPath></defs>
-            <g clip-path="url(#${clip})">${bands.join("")}${gaps}</g>
-          </svg>
-          <div class="seg-list">${segments.map((seg, i) => `
-            <div class="seg"><span class="sw-dot" style="background:${this._color(i)}"></span><span class="sl">${esc(t.segments[seg.key])}</span>
-              <span class="sv num">${this._num(seg.pct)} <small>%</small></span>
-              <span class="skg num">${this._kg(seg.kg)}</span></div>`).join("")}</div>
-        </div>
-      </div>`;
+      cards.composition = {
+        build: (size) => `
+          <h2>${term("composition", t.composition)}</h2>
+          <div class="comp2 ${size === "M" ? "compact" : ""}">
+            <svg viewBox="0 0 200 400" role="img" aria-label="${esc(`${t.composition}: ${segments.map((seg) => `${t.segments[seg.key]} ${this._num(seg.pct)} %`).join(", ")}`)}">
+              <defs><clipPath id="${clip}"><path d="${outline}"/></clipPath></defs>
+              <g clip-path="url(#${clip})">${bands.join("")}${gaps}</g>
+            </svg>
+            <div class="seg-list">${segments.map((seg, i) => `
+              <div class="seg"><span class="sw-dot" style="background:${this._color(i)}"></span><span class="sl">${esc(t.segments[seg.key])}</span>
+                <span class="sv num">${this._num(seg.pct)} <small>%</small></span>
+                ${size === "L" ? `<span class="skg num">${this._kg(seg.kg)}</span>` : ""}</div>`).join("")}</div>
+          </div>`,
+      };
     }
 
     const facts = this._profileFacts(person, { height: person.height, goal_weight: person.goal, birth_month: person.birth_month, sex: person.sex });
@@ -2372,33 +2527,23 @@ class WeightTrackerPanel extends HTMLElement {
     const cfg = this._entry.settings;
     const pulseNote = heart ? "" : `<div class="hint" style="margin-top:10px">${esc(
       !cfg ? t.pulseMissing : cfg.heart_rate_entity ? t.pulseWaiting : t.pulseMissingAdmin)}</div>`;
-    const groups = ["fat", "muscle", "metabolism", "heart", "indices"]
-      .map((group) => [group, tiles.filter((tile) => tile[0] === group)])
-      .filter(([, items]) => items.length);
-    // One group at a time (sub tabs), remembered per browser.
-    if (this._valuesTab === undefined) {
-      try {
-        this._valuesTab = localStorage.getItem("wt-values-tab");
-      } catch (err) {
-        this._valuesTab = null;
-      }
+    // One card per group; S shows the first two values, M four, L all.
+    for (const group of ["fat", "muscle", "metabolism", "heart", "indices"]) {
+      const items = tiles.filter((tile) => tile[0] === group);
+      if (!items.length) continue;
+      cards[group] = {
+        build: (size) => size === "L" ? `
+          <h2>${esc(groupNames[group])}</h2>
+          <div class="vgrid">${items.map(([, key, label, value, fmt, status, infoKey, note]) => `
+            <div class="vt"><div class="mv num">${key ? link(key, label, fmt(value)) : fmt(value)}</div><div class="ml">${term(infoKey, label)}</div>${this._status(status)}${note ? `<div class="ml">${esc(note)}</div>` : ""}</div>`).join("")}</div>
+          ${group === "heart" ? zones + pulseNote : ""}` : `
+          <h2>${esc(groupNames[group])}</h2>
+          <div class="vlist ${size === "M" ? "two" : ""}">${items.slice(0, size === "S" ? 2 : 4).map(([, key, label, value, fmt, status, infoKey]) => `
+            <div class="vrow"><div class="vtop"><span class="vl">${term(infoKey, label)}</span><span class="vv num">${key ? link(key, label, fmt(value)) : fmt(value)}</span></div>${this._status(status)}</div>`).join("")}</div>`,
+      };
     }
-    const shown = groups.find(([group]) => group === this._valuesTab) ? this._valuesTab : groups.length ? groups[0][0] : null;
-    const tileGrid = groups.length ? `
-      <div class="card span">
-        <h2>${esc(t.valuesTitle)}</h2>
-        <div class="vtabs" role="tablist">${groups.map(([group]) => `
-          <button class="vtab" role="tab" data-action="values-tab" data-group="${group}" aria-selected="${group === shown}">${esc(groupNames[group])}</button>`).join("")}</div>
-        ${groups.filter(([group]) => group === shown).map(([group, items]) => `
-          <div class="vgroup" role="tabpanel">
-            <div class="vgrid">${items.map(([, key, label, value, fmt, status, infoKey, note]) => `
-              <div class="vt"><div class="mv num">${key ? link(key, label, fmt(value)) : fmt(value)}</div><div class="ml">${term(infoKey, label)}</div>${this._status(status)}${note ? `<div class="ml">${esc(note)}</div>` : ""}</div>`).join("")}</div>
-            ${group === "heart" ? zones + pulseNote : ""}
-          </div>`).join("")}
-      </div>` : "";
 
     // Body type map: BMI (rows, top = high) x body fat (columns), like the scale apps.
-    let bodyType = "";
     if (a && a.body_type && s.bmi && b.body_fat !== null && b.body_fat !== undefined) {
       const female = person.sex === "female";
       const fatEdges = female ? [12, 20, 25, 30, 42] : [4, 10, 15, 20, 32];
@@ -2421,34 +2566,158 @@ class WeightTrackerPanel extends HTMLElement {
       const here = areas[row][col];
       const accent = this._color(1);
       const pct = (v) => `${this._num(v, { digits: 0 })} %`;
-      bodyType = `
-        <h2>${term("body_type", t.bodyType)}: ${esc(t.bodyTypes[a.body_type])}</h2>
-        <div class="bt2" role="img" aria-label="${esc(`${t.bodyType}: ${t.bodyTypes[a.body_type]} (BMI ${num(s.bmi)}, ${t.axisFat} ${num(b.body_fat)} %)`)}">
-          <div class="bt2-y"><span style="top:25%">${this._num(25, { digits: 1 })}</span><span style="top:75%">${this._num(18.5, { digits: 1 })}</span></div>
-          <div class="bt2-grid">
-            ${[...new Set(areas.flat())].map((area) => `<div class="bt2-cell ${area === here ? "on" : ""}" style="grid-area:${area}${area === here ? `;background:${accent}` : ""}" title="${esc(t.bodyTypes[typeOf[area]])}">${esc(t.bodyTypes[typeOf[area]])}</div>`).join("")}
-            <span class="bt2-dot" style="left:${((col + fx) * 25).toFixed(1)}%;top:${((row + fy) * 25).toFixed(1)}%"></span>
-          </div>
-          <div class="bt2-ycap">BMI</div>
-          <div class="bt2-x"><span style="left:25%">${pct(fatEdges[1])}</span><span style="left:75%">${pct(fatEdges[3])}</span></div>
-          <div></div><div class="bt2-xcap">${esc(t.axisFat)}</div>
-        </div>`;
+      const grid = (labels = true) => `
+            <div class="bt2-grid">
+              ${[...new Set(areas.flat())].map((area) => `<div class="bt2-cell ${area === here ? "on" : ""}" style="grid-area:${area}${area === here ? `;background:${accent}` : ""}" title="${esc(t.bodyTypes[typeOf[area]])}">${labels || area === here ? esc(t.bodyTypes[typeOf[area]]) : ""}</div>`).join("")}
+              <span class="bt2-dot" style="left:${((col + fx) * 25).toFixed(1)}%;top:${((row + fy) * 25).toFixed(1)}%"></span>
+            </div>`;
+      cards.bodytype = {
+        build: (size) => `
+          <h2>${term("body_type", t.bodyType)}: ${esc(t.bodyTypes[a.body_type])}</h2>
+          ${size === "M" ? `<div class="bt2 compact" role="img" aria-label="${esc(`${t.bodyType}: ${t.bodyTypes[a.body_type]}`)}">${grid(false)}</div>` : `
+          <div class="bt2" role="img" aria-label="${esc(`${t.bodyType}: ${t.bodyTypes[a.body_type]} (BMI ${num(s.bmi)}, ${t.axisFat} ${num(b.body_fat)} %)`)}">
+            <div class="bt2-y"><span style="top:25%">${this._num(25, { digits: 1 })}</span><span style="top:75%">${this._num(18.5, { digits: 1 })}</span></div>
+            ${grid()}
+            <div class="bt2-ycap">BMI</div>
+            <div class="bt2-x"><span style="left:25%">${pct(fatEdges[1])}</span><span style="left:75%">${pct(fatEdges[3])}</span></div>
+            <div></div><div class="bt2-xcap">${esc(t.axisFat)}</div>
+          </div>`}`,
+      };
     }
 
     const sugg = (icon, label, value) => value === null || value === undefined ? "" : `<div class="sg"><span class="ic" aria-hidden="true">${icon}</span><div><div class="sl">${esc(label)}</div><div class="sv num">${value}</div></div></div>`;
-    const suggestions = a && a.ideal_weight !== undefined ? `
-        <h2 ${bodyType ? 'class="sub-h"' : ""}>${term("suggestions", t.suggestions)}</h2>
-        <div class="sugg">
-          ${sugg("⚖️", t.idealWeight, kg(a.ideal_weight))}
-          ${sugg("🎯", t.weightControl, a.weight_control !== undefined ? signedKg(a.weight_control) : null)}
-          ${sugg("🔥", t.fatControl, a.fat_control !== undefined ? signedKg(a.fat_control) : null)}
-          ${sugg("💪", t.muscleControl, a.muscle_control === undefined ? null : a.muscle_control > 0 ? signedKg(a.muscle_control) : esc(t.keepUp))}
-        </div>` : "";
-    // Body type and suggestions share a card, next to the figure.
-    const typeCard = bodyType || suggestions ? `<div class="card">${bodyType}${suggestions}</div>` : "";
+    if (a && a.ideal_weight !== undefined) {
+      cards.suggestions = {
+        build: (size) => `
+          <h2>${term("suggestions", t.suggestions)}</h2>
+          <div class="sugg">
+            ${sugg("⚖️", t.idealWeight, kg(a.ideal_weight))}
+            ${sugg("🎯", t.weightControl, a.weight_control !== undefined ? signedKg(a.weight_control) : null)}
+            ${size === "S" ? "" : sugg("🔥", t.fatControl, a.fat_control !== undefined ? signedKg(a.fat_control) : null)}
+            ${size === "S" ? "" : sugg("💪", t.muscleControl, a.muscle_control === undefined ? null : a.muscle_control > 0 ? signedKg(a.muscle_control) : esc(t.keepUp))}
+          </div>`,
+      };
+    }
 
-    const note = a ? `<div class="report-note span">${esc(t.analysisNote)}</div>` : "";
-    return `${hero}${score}${aiCard}${missing}${composition}${typeCard}${tileGrid}${note}`;
+    const note = a ? `<div class="report-note">${esc(t.analysisNote)}</div>` : "";
+    return `${this._renderBoard(cards)}${missingData}${note}`;
+  }
+
+  // Overview board: cards on a grid (4 columns on wide screens, 2 otherwise).
+  // Each user sets visibility, size and order per device (kept in the browser).
+  _boardKey() {
+    return `wt-board-${(this._data && this._data.user && this._data.user.id) || "me"}`;
+  }
+
+  _board() {
+    if (!this._boardState) {
+      let saved = null;
+      try {
+        saved = JSON.parse(localStorage.getItem(this._boardKey()) || "null");
+      } catch (err) {
+        saved = null;
+      }
+      this._boardState = { order: [], size: {}, hidden: [], ...(saved || {}) };
+    }
+    const st = this._boardState;
+    // Cards added by an update take their default place.
+    BOARD_ORDER.forEach((id, index) => {
+      if (!st.order.includes(id)) st.order.splice(Math.min(index, st.order.length), 0, id);
+    });
+    st.order = st.order.filter((id) => BOARD_CARDS[id]);
+    return st;
+  }
+
+  _saveBoard() {
+    try {
+      localStorage.setItem(this._boardKey(), JSON.stringify(this._boardState));
+    } catch (err) {
+      // private mode etc.: the layout just is not remembered
+    }
+  }
+
+  _cardSize(id) {
+    const wanted = this._board().size[id];
+    return BOARD_CARDS[id].sizes.includes(wanted) ? wanted : BOARD_CARDS[id].size;
+  }
+
+  _renderBoard(cards) {
+    const t = this._t;
+    const st = this._board();
+    const editing = Boolean(this._boardEdit);
+    const available = st.order.filter((id) => cards[id]);
+    const visible = available.filter((id) => !st.hidden.includes(id));
+    this._boardVisible = visible;
+    this._boardCards = cards;  // for "Mehr": the full content in a dialog
+    const items = visible.map((id, i) => {
+      const size = this._cardSize(id);
+      // on phones XL takes the same space as L, so it shows the L content
+      const content = size === "XL" && this._boardNarrow ? "L" : size;
+      const name = t.cardNames[id];
+      const bar = editing ? `
+        <div class="bc-edit" role="group" aria-label="${esc(name)}">
+          <span class="bc-name">${esc(name)}</span>
+          <span class="bc-sizes">${BOARD_CARDS[id].sizes.map((z) => `<button class="bc-btn" data-action="card-size" data-card="${id}" data-size="${z}" aria-pressed="${z === size}" aria-label="${esc(t.cardSize(z))}">${z}</button>`).join("")}</span>
+          <span class="bc-tools">
+            <button class="bc-btn" data-action="card-move" data-card="${id}" data-dir="-1" ${i === 0 ? "disabled" : ""} aria-label="${esc(t.moveEarlier)}">←</button>
+            <button class="bc-btn" data-action="card-move" data-card="${id}" data-dir="1" ${i === visible.length - 1 ? "disabled" : ""} aria-label="${esc(t.moveLater)}">→</button>
+            <button class="bc-btn" data-action="card-hide" data-card="${id}" aria-label="${esc(t.hideCard)}" title="${esc(t.hideCard)}">✕</button>
+          </span>
+        </div>` : "";
+      return `<div class="bc size-${size.toLowerCase()}" data-card="${id}"><div class="card bc-card ${cards[id].cls || ""}" style="${cards[id].style || ""}" ${cards[id].live ? 'aria-live="polite"' : ""}>
+        <div class="bc-body">${cards[id].build(content)}</div>
+        <button class="bc-more" data-action="card-more" data-card="${id}" aria-haspopup="dialog">${esc(t.showMore)}</button>
+        ${bar}</div></div>`;
+    }).join("");
+    const hidden = available.filter((id) => st.hidden.includes(id));
+    return `
+      <div class="board-wrap"><div class="board ${editing ? "editing" : ""}">${items}</div></div>
+      ${editing ? `
+        <div class="board-hidden">
+          ${hidden.length ? `<span class="muted small">${esc(t.hiddenCards)}:</span>${hidden.map((id) => `<button class="chip" data-action="card-show" data-card="${id}">+ ${esc(t.cardNames[id])}</button>`).join("")}` : `<span class="muted small">${esc(t.noHiddenCards)}</span>`}
+          <span class="spacer"></span>
+          <button class="btn" data-action="board-reset">${esc(t.boardReset)}</button>
+          <button class="btn primary" data-action="board-edit">${esc(t.boardDone)}</button>
+        </div>` : ""}`;
+  }
+
+  // Cards have fixed sizes; content that does not fit fades out and gets "Mehr".
+  _layoutBoard() {
+    const board = this.shadowRoot.querySelector(".board");
+    if (!board) return;
+    const narrow = board.clientWidth < 520;
+    if (narrow !== Boolean(this._boardNarrow)) {
+      this._boardNarrow = narrow;
+      this._render();  // XL content depends on it
+      return;
+    }
+    for (const bc of board.querySelectorAll(".bc")) {
+      const body = bc.querySelector(".bc-body");
+      bc.classList.toggle("overflow", body.scrollHeight > body.clientHeight + 2);
+    }
+  }
+
+  // "Mehr": the card with its largest content in a dialog.
+  _showCardMore(id) {
+    const cards = this._boardCards || {};
+    if (!cards[id]) return;
+    const sizes = BOARD_CARDS[id].sizes;
+    let dialog = this.shadowRoot.getElementById("wt-card");
+    if (!dialog) {
+      dialog = document.createElement("dialog");
+      dialog.id = "wt-card";
+      dialog.className = "info-dialog card-dialog";
+      dialog.setAttribute("aria-labelledby", "wt-card-title");
+      dialog.addEventListener("click", (ev) => {
+        if (ev.target === dialog || ev.target.closest("[data-close]")) dialog.close();
+      });
+      this.shadowRoot.appendChild(dialog);
+    }
+    dialog.innerHTML = `<div class="ih"><h2 id="wt-card-title">${esc(this._t.cardNames[id])}</h2>
+      <button class="ix" type="button" data-close aria-label="${esc(this._t.infoClose)}">×</button></div>
+      <div class="card-full ${cards[id].cls || ""}" style="${cards[id].style || ""}">${cards[id].build(sizes[sizes.length - 1])}</div>`;
+    if (!dialog.open) dialog.showModal();
+    this._drawSparks();
   }
 
   // ---------------------------------------------------------------- pets
@@ -2647,13 +2916,13 @@ class WeightTrackerPanel extends HTMLElement {
 
   // Small history chart of one pet (last 180 days): dots + trend line.
   // Last 30 days of a person, same small chart as for pets.
-  _personMini(person, color) {
+  _personMini(person, color, height = 96) {
     const now = Date.now();
     const pts = this._entry.measurements
       .filter((m) => m.person_id === person.id && m.status === "assigned" && m.ts >= now - 30 * DAY)
       .map((m) => ({ ...m, weight: m.weight - (m.clothes_kg || 0) }));
     if (pts.length < 2) return "";
-    return `<div class="rh-mini"><div class="ml">${esc(this._t.last30)}</div>${this._spark(`person-${person.id}`, (W) => this._miniChartSvg(person, color, pts, now, W, `person-${person.id}`))}</div>`;
+    return `<div class="rh-mini"><div class="ml">${esc(this._t.last30)}</div>${this._spark(`person-${person.id}`, (W) => this._miniChartSvg(person, color, pts, now, W, `person-${person.id}`, height))}</div>`;
   }
 
   _miniChart(pet, color) {
@@ -2663,8 +2932,8 @@ class WeightTrackerPanel extends HTMLElement {
     return this._spark(`pet-${pet.id}`, (W) => this._miniChartSvg(pet, color, pts, now, W));
   }
 
-  _miniChartSvg(pet, color, pts, now, W, key = `pet-${pet.id}`) {
-    const H = 96, padL = 34, padR = 8, padT = 8, padB = 8;
+  _miniChartSvg(pet, color, pts, now, W, key = `pet-${pet.id}`, H = 96) {
+    const padL = 34, padR = 8, padT = 8, padB = 8;
     const values = pts.flatMap((m) => [m.weight, m.trend ?? m.weight]);
     let lo = Math.min(...values), hi = Math.max(...values);
     if (hi - lo < 0.4) { lo -= 0.2; hi += 0.2; }
@@ -4537,18 +4806,38 @@ class WeightTrackerPanel extends HTMLElement {
       this._render();
       return;
     }
-    if (action === "pending-toggle") {
-      this._pendingOpen = !this._pendingOpen;
+    if (action === "card-more") {
+      this._showCardMore(el.dataset.card);
+      return;
+    }
+    if (action === "board-edit") {
+      this._boardEdit = !this._boardEdit;
       this._render();
       return;
     }
-    if (action === "values-tab") {
-      this._valuesTab = el.dataset.group;
-      try {
-        localStorage.setItem("wt-values-tab", this._valuesTab);
-      } catch (err) {
-        // only a convenience
+    if (action === "card-size" || action === "card-hide" || action === "card-show" || action === "card-move" || action === "board-reset") {
+      const st = this._board();
+      const id = el.dataset.card;
+      if (action === "card-size") st.size[id] = el.dataset.size;
+      else if (action === "card-hide") st.hidden = [...new Set([...st.hidden, id])];
+      else if (action === "card-show") st.hidden = st.hidden.filter((x) => x !== id);
+      else if (action === "card-move") {
+        // swap with the neighbour among the cards shown
+        const visible = this._boardVisible || [];
+        const other = visible[visible.indexOf(id) + Number(el.dataset.dir)];
+        if (other) {
+          const a = st.order.indexOf(id), b = st.order.indexOf(other);
+          [st.order[a], st.order[b]] = [st.order[b], st.order[a]];
+        }
+      } else {
+        this._boardState = { order: [...BOARD_ORDER], size: {}, hidden: [] };
       }
+      this._saveBoard();
+      this._render();
+      return;
+    }
+    if (action === "pending-toggle") {
+      this._pendingOpen = !this._pendingOpen;
       this._render();
       return;
     }
